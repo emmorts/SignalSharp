@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - 'main'       # Run the workflow when pushing to the main branch
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - '*'          # Run the workflow for all pull requests
@@ -99,6 +101,7 @@ jobs:
     name: Release pushed tag
     runs-on: ubuntu-22.04
     if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ validate, test ]
     steps:
       - name: Create release
         env:
@@ -119,7 +122,7 @@ jobs:
     strategy:
       matrix:
         dotnet-version: [ '8.x' ]
-    needs: [ validate, test ]
+    needs: [ release ]
     
     steps:
       # Download the NuGet package created in the previous job
