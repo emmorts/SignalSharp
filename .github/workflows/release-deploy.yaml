@@ -101,8 +101,8 @@ jobs:
           tag: ${{ github.ref_name }}
         run: |
           gh release create "$tag" \
-              --repo="$GITHUB_REPOSITORY" \
-              --title="${GITHUB_REPOSITORY#*/} ${tag#v}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "${GITHUB_REPOSITORY#*/} ${tag#v}" \
               --generate-notes
 
   deploy:
