@@ -5,7 +5,7 @@
         {
           "src": "../",
           "files": [
-            "SignalSharp/SignalSharp.csproj"
+            "**/*.csproj"
           ]
         }
       ],
@@ -19,8 +19,7 @@
           "**/*.{md,yml}"
         ],
         "exclude": [
-          "_site/**",
-          "obj/**"
+          "_site/**"
         ]
       }
     ],
@@ -28,10 +27,6 @@
       {
         "files": [
           "images/**"
-        ],
-        "exclude": [
-          "_site/**",
-          "obj/**"
         ]
       }
     ],
