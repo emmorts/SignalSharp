@@ -1,0 +1,38 @@
+name: CI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - '*'
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: [ '8.x' ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Run tests
+        run: dotnet test --configuration Release
