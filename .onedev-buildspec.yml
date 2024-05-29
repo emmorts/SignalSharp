@@ -3,15 +3,13 @@ jobs:
   - name: Release
     steps:
       - !CommandStep
-        name: publish
+        name: push
         runInContainer: true
         image: mcr.microsoft.com/dotnet/sdk
         interpreter: !DefaultInterpreter
           commands: |
-            mkdir -p ./SignalSharp/nupkgs
             dotnet nuget add source --name onedev --username @secret:ci-user@ --password @secret:ci-token@ --store-password-in-clear-text @secret:package-repository-url@
-            dotnet pack ./SignalSharp/SignalSharp.csproj --output ./SignalSharp/nupkgs
-            dotnet nuget push --source onedev ./SignalSharp/nupkgs/*.nupkg
+            dotnet nuget push --source onedev ./nupkgs/*.nupkg
         useTTY: false
         condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
     triggers:
@@ -79,6 +77,20 @@ jobs:
           commands: |
             dotnet test ./SignalSharp.Tests/SignalSharp.Tests.csproj --configuration Release
         useTTY: true
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+      - !CommandStep
+        name: pack
+        runInContainer: true
+        image: mcr.microsoft.com/dotnet/sdk
+        interpreter: !DefaultInterpreter
+          commands: |
+            mkdir ./nupkgs
+            dotnet pack ./SignalSharp/SignalSharp.csproj --output ./nupkgs
+        useTTY: true
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+      - !PublishArtifactStep
+        name: publish
+        artifacts: nupkgs/*
         condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
     triggers:
       - !BranchUpdateTrigger {}
