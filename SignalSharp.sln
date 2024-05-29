@@ -9,7 +9,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 		README.md = README.md
 		LICENSE = LICENSE
 		.gitignore = .gitignore
-		CHANGELOG = CHANGELOG
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CI", "CI", "{F8D06701-4509-4019-89DD-3F69846B28A0}"
@@ -17,6 +16,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CI", "CI", "{F8D06701-4509-
 		.onedev-buildspec.yml = .onedev-buildspec.yml
 		.github\workflows\publish.yaml = .github\workflows\publish.yaml
 		.github\release.yml = .github\release.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{7998A0D4-7F98-4E35-B0EF-9085C2ED0A3D}"
+	ProjectSection(SolutionItems) = preProject
+		docfx.json = docfx.json
+		docs\getting-started.md = docs\getting-started.md
+		docs\introduction.md = docs\introduction.md
+		docs\toc.yml = docs\toc.yml
+		docs\index.md = docs\index.md
 	EndProjectSection
 EndProject
 Global
@@ -36,5 +44,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F8D06701-4509-4019-89DD-3F69846B28A0} = {C76D49ED-7F7F-414B-814D-654195760F6A}
+		{7998A0D4-7F98-4E35-B0EF-9085C2ED0A3D} = {C76D49ED-7F7F-414B-814D-654195760F6A}
 	EndGlobalSection
 EndGlobal

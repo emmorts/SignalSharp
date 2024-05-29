@@ -2,6 +2,8 @@ bin/
 obj/
 nupkgs/
 .idea/
+_site/
+api/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/

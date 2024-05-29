@@ -97,6 +97,32 @@ jobs:
       - name: Run tests
         run: dotnet test --configuration Release
         
+  docs:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    strategy:
+      matrix:
+        dotnet-version: [ '8.x' ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dotnet Setup
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - run: dotnet tool update -g docfx
+      - run: docfx <docfx-project-path>/docfx.json
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '<docfx-project-path>/_site'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        
   release:
     name: Release pushed tag
     runs-on: ubuntu-22.04

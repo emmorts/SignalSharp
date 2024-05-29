@@ -1,28 +1,4 @@
-SignalSharp is a library designed for signal processing and time series analysis.
-
-## Features
-
-- **PELT Algorithm**: Efficiently detects multiple change points in time series data.
-  - **L1 Cost Function**: Robust to outliers and non-Gaussian noise.
-  - **L2 Cost Function**: Suitable for normally distributed data.
-  - **RBF Cost Function**: Handles non-linear relationships between data points.
-- **Savitzky-Golay Filter**: Smooths data to reduce noise while preserving the shape of the signal.
-- **Kalman Filter**: Estimates the state of a linear dynamic system from a series of noisy measurements.
-
-## Future Plans
-
-- [ ] Implement additional signal processing algorithms.
-  - [x] PELT
-    - [x] L1 Cost Function
-    - [x] L2 Cost Function
-    - [x] RBF Cost Function
-  - [x] Savitzky-Golay Filter
-  - [ ] FFT
-  - [ ] Wavelet Transform
-  - [x] Kalman Filter
-  - [ ] Autoregressive (AR) models
-- [ ] Enhance the performance of existing algorithms.
-- [ ] Provide more comprehensive examples and documentation.
+# Getting Started
 
 ## Installation
 
@@ -31,6 +7,7 @@ To install SignalSharp, you can use NuGet Package Manager:
 ```sh
 dotnet add package SignalSharp
 ```
+
 
 ## Usage
 
@@ -95,7 +72,3 @@ double[] smoothedSignal = SavitzkyGolay.Filter(signal, windowSize, polynomialOrd
 
 Console.WriteLine("Smoothed Signal: " + string.Join(", ", smoothedSignal));
 ```
-
-## License
-
-SignalSharp is licensed under the MIT License. See the [LICENSE](./LICENSE) file for more details.
