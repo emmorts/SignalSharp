@@ -8,10 +8,13 @@ SignalSharp is a library designed for signal processing and time series analysis
   - **RBF Cost Function**: Handles non-linear relationships between data points.
 - **Savitzky-Golay Filter**: Smooths data to reduce noise while preserving the shape of the signal.
 
-## Future Plans****
+## Future Plans
 
 - [ ] Implement additional signal processing algorithms.
-- [ ] Add more cost functions for the PELT algorithm.
+  - [ ] FFT
+  - [ ] Wavelet Transform
+  - [ ] Kalman Filter
+  - [ ] Autoregressive (AR) models
 - [ ] Enhance the performance of existing algorithms.
 - [ ] Provide more comprehensive examples and documentation.
 
