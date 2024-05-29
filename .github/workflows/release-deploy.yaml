@@ -71,6 +71,7 @@ jobs:
 
       - name: Validate package
         run: meziantou.validate-nuget-package (Get-ChildItem "${{ env.NuGetDirectory }}/*.nupkg")
+        shell: pwsh
 
   test:
     runs-on: ubuntu-latest
