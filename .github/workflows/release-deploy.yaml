@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  release:
-    types:
-      - published
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
