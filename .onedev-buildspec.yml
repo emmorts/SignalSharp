@@ -1,0 +1,27 @@
+version: 29
+jobs:
+  - name: Release
+    steps:
+      - !CheckoutStep
+        name: checkout
+        cloneCredential: !DefaultCredential {}
+        withLfs: false
+        withSubmodules: false
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+      - !CommandStep
+        name: publish
+        runInContainer: true
+        image: mcr.microsoft.com/dotnet/sdk
+        interpreter: !DefaultInterpreter
+          commands: |
+            dotnet nuget add source --name onedev --username @secret:ci-user@ --password @secret:ci-token@ --store-password-in-clear-text @secret:package-repository-url@
+            dotnet pack ./SignalSharp/SignalSharp.csproj --output ./SignalSharp/nupkgs
+            dotnet nuget push --source onedev ./SignalSharp/nupkgs/*.nupkg
+        useTTY: false
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    triggers:
+      - !TagCreateTrigger {}
+    retryCondition: never
+    maxRetries: 3
+    retryDelay: 30
+    timeout: 3600

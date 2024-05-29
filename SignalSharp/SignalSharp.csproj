@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Version>0.0.1</Version>
+        <Title>SignalSharp</Title>
+        <Authors>emmorts</Authors>
+        <Description>SignalSharp is a library designed for signal processing and time series analysis.</Description>
+        <PackageProjectUrl>https://github.com/emmorts/SignalSharp</PackageProjectUrl>
+        <PackageLicenseUrl>https://raw.githubusercontent.com/emmorts/SignalSharp/main/LICENSE</PackageLicenseUrl>
+        <RepositoryUrl>https://github.com/emmorts/SignalSharp</RepositoryUrl>
+        <PackageTags>signal,smoothing,segmentation,segment,signal-processing</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+    </ItemGroup>
+
+</Project>

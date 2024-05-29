@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalSharp", "SignalSharp\SignalSharp.csproj", "{C2CBDFD9-2001-40A9-BD6E-B08E2505BAF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalSharp.Tests", "SignalSharp.Tests\SignalSharp.Tests.csproj", "{2E495583-35E5-4AF2-8C14-B86574540604}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{C76D49ED-7F7F-414B-814D-654195760F6A}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+		LICENSE = LICENSE
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CI", "CI", "{F8D06701-4509-4019-89DD-3F69846B28A0}"
+	ProjectSection(SolutionItems) = preProject
+		.onedev-buildspec.yml = .onedev-buildspec.yml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2CBDFD9-2001-40A9-BD6E-B08E2505BAF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2CBDFD9-2001-40A9-BD6E-B08E2505BAF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2CBDFD9-2001-40A9-BD6E-B08E2505BAF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2CBDFD9-2001-40A9-BD6E-B08E2505BAF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E495583-35E5-4AF2-8C14-B86574540604}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E495583-35E5-4AF2-8C14-B86574540604}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E495583-35E5-4AF2-8C14-B86574540604}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E495583-35E5-4AF2-8C14-B86574540604}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F8D06701-4509-4019-89DD-3F69846B28A0} = {C76D49ED-7F7F-414B-814D-654195760F6A}
+	EndGlobalSection
+EndGlobal
