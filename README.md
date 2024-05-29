@@ -1,7 +1,7 @@
 SignalSharp is a library designed for signal processing and time series analysis.
 
 ## Features
-~~~~
+
 - **PELT Algorithm**: Efficiently detects multiple change points in time series data.
   - **L1 Cost Function**: Robust to outliers and non-Gaussian noise.
   - **L2 Cost Function**: Suitable for normally distributed data.
