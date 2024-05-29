@@ -56,7 +56,7 @@ jobs:
           commands: |
             # Define new remote URL with authentication
             
-            AUTH = "emmorts:@secret:github-token@"
+            AUTH="emmorts:@secret:github-token@"
             
             GITHUB_REMOTE="https://${AUTH}@@github.com/emmorts/SignalSharp.git"
             
