@@ -105,6 +105,7 @@ jobs:
     strategy:
       matrix:
         dotnet-version: [ '8.x' ]
+    needs: [ validate, test ]
     steps:
       - uses: actions/checkout@v4
       - name: Dotnet Setup
@@ -113,12 +114,12 @@ jobs:
           dotnet-version: ${{ matrix.dotnet-version }}
 
       - run: dotnet tool update -g docfx
-      - run: docfx <docfx-project-path>/docfx.json
+      - run: docfx docfx.json
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '<docfx-project-path>/_site'
+          path: './_site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
