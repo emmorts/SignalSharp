@@ -25,8 +25,9 @@
     ],
     "resource": [
       {
+        "src": "../assets/",
         "files": [
-          "images/**"
+          "**"
         ]
       }
     ],
@@ -38,6 +39,7 @@
     "globalMetadata": {
       "_appName": "SignalSharp",
       "_appTitle": "SignalSharp",
+      "_appLogoUrl": "logo.jpg",
       "_enableSearch": true,
       "pdf": false
     }

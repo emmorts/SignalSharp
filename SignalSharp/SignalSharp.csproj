@@ -4,7 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>0.0.3</Version>
+        <Version>0.0.4</Version>
         <Title>SignalSharp</Title>
         <Authors>emmorts</Authors>
         <Description>SignalSharp is a library designed for signal processing and time series analysis.</Description>
@@ -13,13 +13,13 @@
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
         <RepositoryUrl>https://github.com/emmorts/SignalSharp</RepositoryUrl>
         <PackageTags>signal,smoothing,segmentation,segment,signal-processing</PackageTags>
-        <PackageIcon>SignalSharp.jpg</PackageIcon>
+        <PackageIcon>logo.jpg</PackageIcon>
 
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
-    
+
     <PropertyGroup Condition="'$(CI_BUILD)'=='true'">
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     </PropertyGroup>
@@ -29,10 +29,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\assets\SignalSharp.jpg">
+        <None Include="..\assets\logo.jpg">
             <Pack>True</Pack>
             <PackagePath></PackagePath>
-            <Link>SignalSharp.jpg</Link>
+            <Link>logo.jpg</Link>
             <Visible>False</Visible>
         </None>
         <None Include="..\LICENSE">
