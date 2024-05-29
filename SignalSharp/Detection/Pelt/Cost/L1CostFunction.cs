@@ -31,6 +31,7 @@ namespace SignalSharp.Detection.Pelt.Cost;
 public class L1CostFunction : IPELTCostFunction
 {
     private double[] _data = null!;
+    private double[,] _medians = null!;
     
     /// <summary>
     /// Fits the cost function to the provided data.
@@ -51,7 +52,13 @@ public class L1CostFunction : IPELTCostFunction
     /// </remarks>
     public IPELTCostFunction Fit(double[] data)
     {
-        _data = data ?? throw new ArgumentNullException(nameof(data), "Data must not be null.");
+        if (data is null)
+        {
+            throw new ArgumentNullException(nameof(data), "Data must not be null.");
+        }
+        
+        _data = SortData(data);
+        _medians = PrecomputeMedians(data);
 
         return this;
     }
@@ -78,22 +85,44 @@ public class L1CostFunction : IPELTCostFunction
     /// This computes the cost for the segment of the data from index 0 to index 10.
     /// </example>
     /// </remarks>
-    /// <exception cref="PeltSignalDataUndefinedException">Thrown when data is not initialized.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when data is not initialized.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the segment indices are out of bounds.</exception>
+    /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
     public double ComputeCost(int? start, int? end)
     {
         if (_data is null)
         {
-            throw new PeltSignalDataUndefinedException("Data must be set before calling ComputeCost.");
+            throw new InvalidOperationException("Data must be set before calling ComputeCost.");
+        }
+
+        if (_data.Length == 0)
+        {
+            return 0;
         }
         
+        var startIndex = start ?? 0;
+        var endIndex = end ?? _data.Length;
+
+        var segmentLength = endIndex - startIndex;
+        if (segmentLength < 1)
+        {
+            throw new SegmentLengthException("Segment length must be at least 1.");
+        }
+
+        if (startIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(start), "Segment start index must be non-negative.");
+        }
+        
+        if (endIndex > _data.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(end), "Segment end index must be within the bounds of the data array.");
+        }
+        
+        var median = _medians[startIndex, endIndex - 1];
+        
         double sum = 0;
-            
-        start ??= 0;
-        end ??= _data.Length;
-        
-        var median = CalculateMedian(_data, start.Value, end.Value);
-        
-        for (var i = start.Value; i < end.Value; i++)
+        for (var i = startIndex; i < endIndex; i++)
         {
             sum += Math.Abs(_data[i] - median);
         }
@@ -110,17 +139,50 @@ public class L1CostFunction : IPELTCostFunction
     /// <returns>The median value of the segment.</returns>
     private static double CalculateMedian(double[] data, int start, int end)
     {
-        var length = end - start;
-        var sortedData = new double[length];
-        
-        Array.Copy(data, start, sortedData, 0, length);
-        Array.Sort(sortedData);
-        
+        var slice = data[start..end];
+        var length = slice.Length;
+
         if (length % 2 == 0)
         {
-            return (sortedData[length / 2 - 1] + sortedData[length / 2]) / 2;
+            return (slice[length / 2 - 1] + slice[length / 2]) / 2;
+        }
+        
+        return slice[length / 2];
+    }
+    
+    /// <summary>
+    /// Sorts the data array in ascending order.
+    /// </summary>
+    /// <param name="data">The data array to sort.</param>
+    /// <returns>A sorted copy of the data array.</returns>
+    private static double[] SortData(double[] data)
+    {
+        var sortedData = new double[data.Length];
+        
+        Array.Copy(data, 0, sortedData, 0, data.Length);
+        Array.Sort(sortedData);
+        
+        return sortedData;
+    }
+
+    /// <summary>
+    /// Precomputes the medians for all possible segments of the data array.
+    /// </summary>
+    /// <param name="data">The data array.</param>
+    /// <returns>A 2D array of precomputed medians for all segments.</returns>
+    private static double[,] PrecomputeMedians(double[] data)
+    {
+        var n = data.Length;
+        var medians = new double[n, n];
+
+        for (var i = 0; i < n; i++)
+        {
+            for (var j = i; j < n; j++)
+            {
+                medians[i, j] = CalculateMedian(data, i, j + 1);
+            }
         }
 
-        return sortedData[length / 2];
+        return medians;
     }
 }

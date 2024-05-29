@@ -31,6 +31,7 @@ namespace SignalSharp.Detection.Pelt.Cost;
 public class L2CostFunction : IPELTCostFunction
 {
     private double[] _data = null!;
+    private double[,] _means = null!;
     
     /// <summary>
     /// Fits the cost function to the provided data.
@@ -52,6 +53,7 @@ public class L2CostFunction : IPELTCostFunction
     public IPELTCostFunction Fit(double[] data)
     {
         _data = data ?? throw new ArgumentNullException(nameof(data), "Data must not be null.");
+        _means = PrecomputeMeans(data);
 
         return this;
     }
@@ -78,21 +80,44 @@ public class L2CostFunction : IPELTCostFunction
     /// This computes the cost for the segment of the data from index 0 to index 10.
     /// </example>
     /// </remarks>
-    /// <exception cref="PeltSignalDataUndefinedException">Thrown when data is not initialized.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when data is not initialized.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the segment indices are out of bounds.</exception>
+    /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
     public double ComputeCost(int? start, int? end)
     {
         if (_data is null)
         {
-            throw new PeltSignalDataUndefinedException("Data must be set before calling ComputeCost.");
+            throw new InvalidOperationException("Data must be set before calling ComputeCost.");
+        }
+
+        if (_data.Length == 0)
+        {
+            return 0;
         }
         
+        var startIndex = start ?? 0;
+        var endIndex = end ?? _data.Length;
+
+        var segmentLength = endIndex - startIndex;
+        if (segmentLength < 1)
+        {
+            throw new SegmentLengthException("Segment length must be at least 1.");
+        }
+
+        if (startIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(start), "Segment start index must be non-negative.");
+        }
+        
+        if (endIndex > _data.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(end), "Segment end index must be within the bounds of the data array.");
+        }
+        
+        var mean = _means[startIndex, endIndex - 1];
+        
         double sum = 0;
-        
-        start ??= 0;
-        end ??= _data.Length;
-        
-        var mean = CalculateMean(_data, start.Value, end.Value);
-        for (var i = start.Value; i < end.Value; i++)
+        for (var i = startIndex; i < endIndex; i++)
         {
             sum += Math.Pow(_data[i] - mean, 2);
         }
@@ -117,5 +142,26 @@ public class L2CostFunction : IPELTCostFunction
         }
         
         return sum / (end - start);
+    }
+    
+    /// <summary>
+    /// Precomputes the means for all possible segments of the data array.
+    /// </summary>
+    /// <param name="data">The data array.</param>
+    /// <returns>A 2D array of precomputed means for all segments.</returns>
+    private static double[,] PrecomputeMeans(double[] data)
+    {
+        var n = data.Length;
+        var means = new double[n, n];
+
+        for (var i = 0; i < n; i++)
+        {
+            for (var j = i; j < n; j++)
+            {
+                means[i, j] = CalculateMean(data, i, j + 1);
+            }
+        }
+
+        return means;
     }
 }

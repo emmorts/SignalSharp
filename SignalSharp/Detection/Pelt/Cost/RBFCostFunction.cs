@@ -64,7 +64,7 @@ public class RBFCostFunction : IPELTCostFunction
     /// </summary>
     /// <param name="data">The data array to fit.</param>
     /// <returns>The fitted <see cref="RBFCostFunction"/> instance.</returns>
-    /// <exception cref="RBFInvalidDataException">Thrown when data is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when data is null.</exception>
     /// <remarks>
     /// This method initializes the internal structures needed to compute the cost for segments of the data. 
     /// It calculates the pairwise distances between data points, applies the RBF kernel to these distances, 
@@ -111,13 +111,14 @@ public class RBFCostFunction : IPELTCostFunction
     /// This computes the cost for the segment of the data from index 0 to index 10.
     /// </example>
     /// </remarks>
-    /// <exception cref="RBFUninitializedException">Thrown when data, distances, or prefix sum is not initialized.</exception>
-    /// <exception cref="RBFSegmentLengthException">Thrown when the segment length is less than 1.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when data, distances, or prefix sum is not initialized.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the segment indices are out of bounds.</exception>
+    /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
     public double ComputeCost(int? start = null, int? end = null)
     {
         if (_data is null)
         {
-            throw new RBFUninitializedException("Data must be set before calling ComputeCost.");
+            throw new InvalidOperationException("Data must be set before calling ComputeCost.");
         }
 
         var startIndex = start ?? 0;
@@ -126,17 +127,27 @@ public class RBFCostFunction : IPELTCostFunction
         var segmentLength = endIndex - startIndex;
         if (segmentLength < 1)
         {
-            throw new RBFSegmentLengthException("Segment length must be at least 1.");
+            throw new SegmentLengthException("Segment length must be at least 1.");
         }
 
         if (_distances is null)
         {
-            throw new RBFUninitializedException("Distances matrix is not initialized. Call Fit method first.");
+            throw new InvalidOperationException("Distances matrix is not initialized. Call Fit method first.");
         }
         
         if (_prefixSum is null)
         {
-            throw new RBFUninitializedException("Data must be set before calling ComputeCost.");
+            throw new InvalidOperationException("Data must be set before calling ComputeCost.");
+        }
+
+        if (startIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(start), "Segment start index must be non-negative.");
+        }
+        
+        if (endIndex > _data.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(end), "Segment end index must be within the bounds of the data array.");
         }
         
         var sumAll = ComputeSumFromPrefixSum(_prefixSum, startIndex, endIndex);

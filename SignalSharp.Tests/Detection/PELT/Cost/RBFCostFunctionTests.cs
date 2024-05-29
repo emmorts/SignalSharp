@@ -68,7 +68,7 @@ public class RBFCostFunctionTests
 
         var rbfCostFunction = new RBFCostFunction(gamma);
         
-        Assert.Throws<RBFSegmentLengthException>(() => rbfCostFunction.Fit(data).ComputeCost(), "Segment length must be at least 1.");
+        Assert.Throws<SegmentLengthException>(() => rbfCostFunction.Fit(data).ComputeCost(), "Segment length must be at least 1.");
     }
 
     [Test]
@@ -78,9 +78,10 @@ public class RBFCostFunctionTests
 
         var rbfCostFunction = new RBFCostFunction();
         var cost = rbfCostFunction.Fit(data).ComputeCost();
-
+        
         // Expected result based on default gamma calculation (using median heuristic)
-        var gamma = 1.0 / 1.0; // Median of pairwise distances [1.0, 4.0, 1.0] is 1.0
+        // Median of pairwise distances [1.0, 4.0, 1.0] is 1.0
+        // Gamma = 1 / median = 1 / 1 = 1
         const double expected = 1.497283652;
         
         Assert.That(cost, Is.EqualTo(expected).Within(1e-6));
@@ -94,13 +95,12 @@ public class RBFCostFunctionTests
         
         var rbfCostFunction = new RBFCostFunction(gamma).Fit(data);
         
-        // Cache subsegment sums
-        rbfCostFunction.ComputeCost(1, 3);
+        var costOneToThree = rbfCostFunction.ComputeCost(1, 3);
+        const double expectedCostOneToThree = 0.11750309741540454;
+        Assert.That(costOneToThree, Is.EqualTo(expectedCostOneToThree).Within(1e-6));
         
-        var costOfZeroToThree = rbfCostFunction.ComputeCost(0, 4);
-        
-        const double expected = 0.90739775273129819;
-        
-        Assert.That(costOfZeroToThree, Is.EqualTo(expected).Within(1e-6));
+        var costOfZeroToFour = rbfCostFunction.ComputeCost(0, 4);
+        const double expectedCostZeroToFour = 0.90739775273129819;
+        Assert.That(costOfZeroToFour, Is.EqualTo(expectedCostZeroToFour).Within(1e-6));
     }
 }

@@ -9,12 +9,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 		README.md = README.md
 		LICENSE = LICENSE
 		.gitignore = .gitignore
+		CHANGELOG = CHANGELOG
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CI", "CI", "{F8D06701-4509-4019-89DD-3F69846B28A0}"
 	ProjectSection(SolutionItems) = preProject
 		.onedev-buildspec.yml = .onedev-buildspec.yml
-		.github\workflows\release.yaml = .github\workflows\release.yaml
+		.github\workflows\publish.yaml = .github\workflows\publish.yaml
+		.github\release.yml = .github\release.yml
 	EndProjectSection
 EndProject
 Global
