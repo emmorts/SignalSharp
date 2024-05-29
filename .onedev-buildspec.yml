@@ -62,9 +62,9 @@ jobs:
             
             git remote add origin-gh $GITHUB_REMOTE
             git fetch origin --all
+            git fetch origin --tags
             
-            git push origin-gh --all
-            git push origin-gh --tags
+            git push origin-gh --mirror
             
             echo "Repository has been successfully mirrored to the new remote."
         useTTY: true
