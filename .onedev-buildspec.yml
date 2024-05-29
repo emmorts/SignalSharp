@@ -14,6 +14,7 @@ jobs:
         image: mcr.microsoft.com/dotnet/sdk
         interpreter: !DefaultInterpreter
           commands: |
+            mkdir -p ./SignalSharp/nupkgs
             dotnet nuget add source --name onedev --username @secret:ci-user@ --password @secret:ci-token@ --store-password-in-clear-text @secret:package-repository-url@
             dotnet pack ./SignalSharp/SignalSharp.csproj --output ./SignalSharp/nupkgs
             dotnet nuget push --source onedev ./SignalSharp/nupkgs/*.nupkg
