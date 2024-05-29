@@ -125,6 +125,7 @@ jobs:
           dotnet-version: ${{ matrix.dotnet-version }}
 
       - name: Publish NuGet package
+        shell: pwsh
         run: |
           foreach($file in (Get-ChildItem "${{ env.NuGetDirectory }}" -Recurse -Include *.nupkg)) {
               dotnet nuget push $file --api-key "${{ secrets.NUGET_APIKEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
