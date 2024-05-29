@@ -61,8 +61,8 @@ jobs:
             GITHUB_REMOTE="https://${AUTH}@@github.com/emmorts/SignalSharp.git"
             
             git remote add origin-gh $GITHUB_REMOTE
-            git fetch origin --all
-            git fetch origin --tags
+            git fetch origin
+            git pull --tags
             
             git push origin-gh --mirror
             
