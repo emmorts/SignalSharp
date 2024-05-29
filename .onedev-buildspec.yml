@@ -1,47 +1,88 @@
 version: 33
 jobs:
-- name: Release
-  steps:
-  - !CheckoutStep
-    name: checkout
-    cloneCredential: !DefaultCredential {}
-    withLfs: false
-    withSubmodules: false
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
-  - !CommandStep
-    name: publish
-    runInContainer: true
-    image: mcr.microsoft.com/dotnet/sdk
-    interpreter: !DefaultInterpreter
-      commands: |
-        mkdir -p ./SignalSharp/nupkgs
-        dotnet nuget add source --name onedev --username @secret:ci-user@ --password @secret:ci-token@ --store-password-in-clear-text @secret:package-repository-url@
-        dotnet pack ./SignalSharp/SignalSharp.csproj --output ./SignalSharp/nupkgs
-        dotnet nuget push --source onedev ./SignalSharp/nupkgs/*.nupkg
-    useTTY: false
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
-  triggers:
-  - !TagCreateTrigger {}
-  retryCondition: never
-  maxRetries: 3
-  retryDelay: 30
-  timeout: 3600
-- name: Push to Github
-  steps:
-  - !CheckoutStep
-    name: checkout
-    cloneCredential: !DefaultCredential {}
-    withLfs: false
-    withSubmodules: false
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
-  - !PushRepository
-    name: push to github
-    remoteUrl: https://github.com/emmorts/SignalSharp
-    userName: emmorts
-    passwordSecret: github-token
-    force: false
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
-  retryCondition: never
-  maxRetries: 3
-  retryDelay: 30
-  timeout: 3600
+  - name: Release
+    steps:
+      - !CommandStep
+        name: publish
+        runInContainer: true
+        image: mcr.microsoft.com/dotnet/sdk
+        interpreter: !DefaultInterpreter
+          commands: |
+            mkdir -p ./SignalSharp/nupkgs
+            dotnet nuget add source --name onedev --username @secret:ci-user@ --password @secret:ci-token@ --store-password-in-clear-text @secret:package-repository-url@
+            dotnet pack ./SignalSharp/SignalSharp.csproj --output ./SignalSharp/nupkgs
+            dotnet nuget push --source onedev ./SignalSharp/nupkgs/*.nupkg
+        useTTY: false
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    triggers:
+      - !TagCreateTrigger {}
+    jobDependencies:
+      - jobName: Build and Test
+        requireSuccessful: true
+        artifacts: '**'
+    retryCondition: never
+    maxRetries: 3
+    retryDelay: 30
+    timeout: 3600
+  - name: Pull from Github
+    steps:
+      - !PullRepository
+        name: pull
+        remoteUrl: https://github.com/emmorts/SignalSharp
+        userName: emmorts
+        passwordSecret: github-token
+        refs: refs/heads/*
+        withLfs: false
+        force: true
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    triggers:
+      - !ScheduleTrigger
+        cronExpression: 0 */30 * * * ? *
+    retryCondition: never
+    maxRetries: 3
+    retryDelay: 30
+    timeout: 3600
+  - name: Push to Github
+    steps:
+      - !CheckoutStep
+        name: checkout
+        cloneCredential: !DefaultCredential {}
+        withLfs: false
+        withSubmodules: false
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+      - !PushRepository
+        name: push to github
+        remoteUrl: https://github.com/emmorts/SignalSharp
+        userName: emmorts
+        passwordSecret: github-token
+        force: false
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    triggers:
+      - !BranchUpdateTrigger {}
+    retryCondition: never
+    maxRetries: 3
+    retryDelay: 30
+    timeout: 3600
+  - name: Build and Test
+    steps:
+      - !CheckoutStep
+        name: checkout
+        cloneCredential: !DefaultCredential {}
+        withLfs: false
+        withSubmodules: false
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+      - !CommandStep
+        name: test
+        runInContainer: true
+        image: mcr.microsoft.com/dotnet/sdk
+        interpreter: !DefaultInterpreter
+          commands: |
+            dotnet test ./SignalSharp.Tests/SignalSharp.Tests.csproj --configuration Release
+        useTTY: true
+        condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    triggers:
+      - !BranchUpdateTrigger {}
+    retryCondition: never
+    maxRetries: 3
+    retryDelay: 30
+    timeout: 3600
