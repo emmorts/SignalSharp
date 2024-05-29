@@ -9,13 +9,42 @@
         <Authors>emmorts</Authors>
         <Description>SignalSharp is a library designed for signal processing and time series analysis.</Description>
         <PackageProjectUrl>https://github.com/emmorts/SignalSharp</PackageProjectUrl>
-        <PackageLicenseUrl>https://raw.githubusercontent.com/emmorts/SignalSharp/main/LICENSE</PackageLicenseUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
         <RepositoryUrl>https://github.com/emmorts/SignalSharp</RepositoryUrl>
         <PackageTags>signal,smoothing,segmentation,segment,signal-processing</PackageTags>
+        <PackageIcon>SignalSharp.jpg</PackageIcon>
+
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="'$(CI_BUILD)'=='true'">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+        <PackageReference Include="MathNet.Numerics" Version="5.0.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\assets\SignalSharp.jpg">
+            <Pack>True</Pack>
+            <PackagePath></PackagePath>
+            <Link>SignalSharp.jpg</Link>
+            <Visible>False</Visible>
+        </None>
+        <None Include="..\LICENSE">
+            <Pack>true</Pack>
+            <PackagePath></PackagePath>
+            <Visible>False</Visible>
+        </None>
+        <None Include="..\README.md">
+            <Pack>true</Pack>
+            <PackagePath></PackagePath>
+            <Visible>False</Visible>
+        </None>
     </ItemGroup>
 
 </Project>
