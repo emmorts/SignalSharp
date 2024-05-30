@@ -100,6 +100,10 @@ jobs:
     strategy:
       matrix:
         dotnet-version: [ '8.x' ]
+    permissions:
+      actions: read
+      pages: write
+      id-token: write
     needs: [ validate, test ]
     steps:
       - uses: actions/checkout@v4
