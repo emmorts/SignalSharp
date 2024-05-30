@@ -34,12 +34,14 @@
     "output": "_site",
     "template": [
       "default",
-      "modern"
+      "modern",
+      "signalsharp"
     ],
     "globalMetadata": {
       "_appName": "SignalSharp",
       "_appTitle": "SignalSharp",
-      "_appLogoUrl": "logo.jpg",
+      "_appLogoPath": "logo.svg",
+      "_appFaviconPath": "logo.ico",
       "_enableSearch": true,
       "pdf": false
     }

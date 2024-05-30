@@ -1,4 +1,4 @@
-namespace SignalSharp.Detection.Pelt.Cost;
+namespace SignalSharp.Detection.PELT.Cost;
 
 /// <summary>
 /// Defines the interface for cost functions used in the Piecewise Linear Trend Change (PELT) algorithm.

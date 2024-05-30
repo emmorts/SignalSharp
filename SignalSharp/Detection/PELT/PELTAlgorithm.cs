@@ -1,6 +1,6 @@
-using SignalSharp.Detection.Pelt.Models;
+using SignalSharp.Detection.PELT.Models;
 
-namespace SignalSharp.Detection.Pelt;
+namespace SignalSharp.Detection.PELT;
 
 /// <summary>
 /// Implements the Piecewise Linear Trend Change (PELT) algorithm for segmenting time series data.

@@ -1,4 +1,4 @@
-SignalSharp is a library designed for signal processing and time series analysis.
+SignalSharp is a C# library designed for efficient signal processing and time series analysis. Whether you're dealing with noise reduction, state estimation, or change point detection, SignalSharp provides the tools to help you get the job done.
 
 ## Features
 
@@ -11,7 +11,7 @@ SignalSharp is a library designed for signal processing and time series analysis
 
 ## Future Plans
 
-- [ ] Implement additional signal processing algorithms.
+- [ ] Implement most important signal processing algorithms.
   - [x] PELT
     - [x] L1 Cost Function
     - [x] L2 Cost Function
@@ -34,67 +34,11 @@ dotnet add package SignalSharp
 
 ## Usage
 
-### PELT Algorithm
+Refer to [documentation](https://emmorts.github.io/SignalSharp/) for examples and API documentation.
 
-The PELT algorithm can be used with different cost functions to detect change points in time series data.
+## Contributing
 
-#### Example: Using PELT with L2 Cost Function
-
-```csharp
-using SignalSharp;
-
-double[] signal = { /* your time series data */ };
-double penalty = 10.0;
-
-var pelt = new PELTAlgorithm(new PELTOptions
-{
-    CostFunction = new L2CostFunction(),
-    MinSize = 2,
-    Jump = 5
-});
-
-int[] changePoints = pelt.FitPredict(signal, penalty);
-
-Console.WriteLine("Change Points: " + string.Join(", ", changePoints));
-```
-
-#### Example: Using PELT with RBF Cost Function
-
-```csharp
-using SignalSharp;
-
-double[] signal = { /* your time series data */ };
-double penalty = 10.0;
-
-var pelt = new PELTAlgorithm(new PELTOptions
-{
-    CostFunction = new RBFCostFunction(gamma: 0.5),
-    MinSize = 2,
-    Jump = 5
-});
-
-int[] changePoints = pelt.FitPredict(signal, penalty);
-
-Console.WriteLine("Change Points: " + string.Join(", ", changePoints));
-```
-
-### Smoothing Filters
-
-The Savitzky-Golay filter can be used to smooth a noisy signal.
-
-#### Example: Using Savitzky-Golay Filter
-
-```csharp
-using SignalSharp;
-
-double[] signal = { /* your noisy signal data */ };
-int windowSize = 5;
-int polynomialOrder = 2;
-
-double[] smoothedSignal = SavitzkyGolay.Filter(signal, windowSize, polynomialOrder);
-
-Console.WriteLine("Smoothed Signal: " + string.Join(", ", smoothedSignal));
-```
+Contributions are welcome! If you have ideas, suggestions, or bug reports, feel free to open an issue or submit a pull request. We appreciate your help in making SignalSharp better.
 
 ## License
 

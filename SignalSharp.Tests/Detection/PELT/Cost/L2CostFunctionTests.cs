@@ -1,5 +1,5 @@
-using SignalSharp.Detection.Pelt.Cost;
-using SignalSharp.Detection.Pelt.Exceptions;
+using SignalSharp.Detection.PELT.Cost;
+using SignalSharp.Detection.PELT.Exceptions;
 
 namespace SignalSharp.Tests.Detection.PELT.Cost;
 

@@ -5,40 +5,80 @@ using SignalSharp.Filters.SavitzkyGolay.Exceptions;
 namespace SignalSharp.Filters.SavitzkyGolay;
 
 /// <summary>
-/// A static class providing methods to apply the Savitzky-Golay filter to a signal. 
-/// This filter smooths a signal by fitting successive sub-sets of adjacent data points 
-/// with a low-degree polynomial using the method of linear least squares.
+/// Provides methods to apply the Savitzky-Golay filter to a signal for smoothing.
 /// </summary>
-public static class SavitzkyGolay
+/// <remarks>
+/// <para>
+/// The Savitzky-Golay filter smooths a signal by fitting successive sub-sets of adjacent data points 
+/// with a low-degree polynomial using the method of linear least squares. It is widely used in data 
+/// preprocessing for its ability to preserve features of the dataset such as relative maxima, minima, 
+/// and width, which are usually flattened by other smoothing techniques.
+/// </para>
+/// <para>
+/// This implementation requires the specification of a window length and a polynomial order. 
+/// The window length must be an odd number, and the polynomial order must be less than the window length.
+/// </para>
+/// </remarks>
+public class SavitzkyGolay
 {
+    private readonly int _windowLength;
+    private readonly int _polynomialOrder;
+
     /// <summary>
-    /// Applies the Savitzky-Golay filter to the input signal.
+    /// Initializes a new instance of the SavitzkyGolay class with the specified window length and polynomial order.
     /// </summary>
-    /// <param name="inputSignal">The array of data points to be filtered.</param>
     /// <param name="windowLength">The length of the filter window. Must be an odd number.</param>
     /// <param name="polynomialOrder">The order of the polynomial used for filtering. Must be less than the window length.</param>
-    /// <returns>The filtered signal.</returns>
-    /// <exception cref="SavitzkyGolayInvalidPolynomialOrderException">Thrown when the polynomial order is greater than or equal to the window length.</exception>
-    public static double[] Filter(double[] inputSignal, int windowLength, int polynomialOrder)
+    /// <exception cref="SavitzkyGolayInvalidPolynomialOrderException">
+    /// Thrown when the polynomial order is greater than or equal to the window length.
+    /// </exception>
+    public SavitzkyGolay(int windowLength, int polynomialOrder)
     {
-        if (inputSignal.Length == 0) return [];
-        
-        // Input signal must be at least 2 * windowLength + 1 in order to apply Savitzky-Golay filter
-        if (inputSignal.Length < (windowLength << 1) + 1) return inputSignal;
-
         if (polynomialOrder >= windowLength)
         {
             throw new SavitzkyGolayInvalidPolynomialOrderException($"{nameof(polynomialOrder)} must be less than {nameof(windowLength)}.");
         }
+        
+        _windowLength = windowLength;
+        _polynomialOrder = polynomialOrder;
+    }
 
-        var halfWindow = windowLength / 2;
+    /// <summary>
+    /// Applies the Savitzky-Golay filter to the input signal.
+    /// </summary>
+    /// <param name="inputSignal">The array of data points to be filtered.</param>
+    /// <returns>The filtered signal.</returns>
+    /// <exception cref="ArgumentException">Thrown when the input signal length is insufficient for the specified window length.</exception>
+    /// <example>
+    /// For example, to apply the Savitzky-Golay filter to an array of measurements:
+    /// <code>
+    /// double[] inputSignal = {1.0, 2.0, 3.0, 4.0, 5.0};
+    /// var savitzkyGolay = new SavitzkyGolay(3, 1);
+    /// double[] filteredSignal = savitzkyGolay.Filter(inputSignal);
+    /// </code>
+    /// </example>
+    /// <remarks>
+    /// <para>
+    /// The method processes the input signal by applying the Savitzky-Golay filter. If the input signal 
+    /// length is insufficient to apply the filter (i.e., less than 2 * window length + 1), the original 
+    /// signal is returned.
+    /// </para>
+    /// </remarks>
+    public double[] Filter(double[] inputSignal)
+    {
+        if (inputSignal.Length == 0) return [];
+        
+        // Input signal must be at least 2 * windowLength + 1 in order to apply Savitzky-Golay filter
+        if (inputSignal.Length < (_windowLength << 1) + 1) return inputSignal;
 
-        var coefficients = ComputeCoefficients(windowLength, polynomialOrder);
+        var halfWindow = _windowLength / 2;
+
+        var coefficients = ComputeCoefficients(_windowLength, _polynomialOrder);
         var filteredSignal = ApplyConvolution(inputSignal, coefficients, halfWindow);
         
-        if (inputSignal.Length >= windowLength)
+        if (inputSignal.Length >= _windowLength)
         {
-            PolynomialFitEdges(inputSignal, filteredSignal, windowLength, polynomialOrder);
+            PolynomialFitEdges(inputSignal, filteredSignal, _windowLength, _polynomialOrder);
         }
 
         RestoreMiddleSection(inputSignal, filteredSignal, halfWindow);

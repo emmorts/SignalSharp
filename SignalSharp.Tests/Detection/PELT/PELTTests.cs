@@ -1,6 +1,6 @@
-using SignalSharp.Detection.Pelt;
-using SignalSharp.Detection.Pelt.Cost;
-using SignalSharp.Detection.Pelt.Models;
+using SignalSharp.Detection.PELT;
+using SignalSharp.Detection.PELT.Cost;
+using SignalSharp.Detection.PELT.Models;
 
 namespace SignalSharp.Tests.Detection.PELT;
 

@@ -8,67 +8,27 @@ To install SignalSharp, you can use NuGet Package Manager:
 dotnet add package SignalSharp
 ```
 
+Alternatively, you can add SignalSharp to your project via the NuGet Package Manager UI in Visual Studio, JetBrains Rider or any other IDE of your choice.
 
-## Usage
+## Basic Usage
 
-### PELT Algorithm
+SignalSharp offers a variety of algorithms for different signal processing tasks. Here's a basic example to demonstrate how to use the library.
 
-The PELT algorithm can be used with different cost functions to detect change points in time series data.
+### Example: Applying the Savitzky-Golay Filter
 
-#### Example: Using PELT with L2 Cost Function
+The [Savitzky-Golay](./algorithms/savitzky-golay-filter.md) filter smooths a signal by fitting successive sub-sets of adjacent data points with a low-degree polynomial.
 
-```csharp
-using SignalSharp;
+1. **Initialize the Filter**:
+    ```csharp
+    var savitzkyGolay = new SavitzkyGolay(windowLength: 5, polynomialOrder: 2);
+    ```
 
-double[] signal = { /* your time series data */ };
-double penalty = 10.0;
+2. **Apply the Filter**:
+    ```csharp
+    double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0};
+    double[] smoothedSignal = savitzkyGolay.Filter(signal);
+    
+    Console.WriteLine("Smoothed Signal: " + string.Join(", ", smoothedSignal));
+    ```
 
-var pelt = new PELTAlgorithm(new PELTOptions
-{
-    CostFunction = new L2CostFunction(),
-    MinSize = 2,
-    Jump = 5
-});
-
-int[] changePoints = pelt.FitPredict(signal, penalty);
-
-Console.WriteLine("Change Points: " + string.Join(", ", changePoints));
-```
-
-#### Example: Using PELT with RBF Cost Function
-
-```csharp
-using SignalSharp;
-
-double[] signal = { /* your time series data */ };
-double penalty = 10.0;
-
-var pelt = new PELTAlgorithm(new PELTOptions
-{
-    CostFunction = new RBFCostFunction(gamma: 0.5),
-    MinSize = 2,
-    Jump = 5
-});
-
-int[] changePoints = pelt.FitPredict(signal, penalty);
-
-Console.WriteLine("Change Points: " + string.Join(", ", changePoints));
-```
-
-### Smoothing Filters
-
-The Savitzky-Golay filter can be used to smooth a noisy signal.
-
-#### Example: Using Savitzky-Golay Filter
-
-```csharp
-using SignalSharp;
-
-double[] signal = { /* your noisy signal data */ };
-int windowSize = 5;
-int polynomialOrder = 2;
-
-double[] smoothedSignal = SavitzkyGolay.Filter(signal, windowSize, polynomialOrder);
-
-Console.WriteLine("Smoothed Signal: " + string.Join(", ", smoothedSignal));
-```
+For more examples and algorithms, please refer to the algorithm documentation page.

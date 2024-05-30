@@ -1,6 +1,6 @@
-using SignalSharp.Detection.Pelt.Exceptions;
+using SignalSharp.Detection.PELT.Exceptions;
 
-namespace SignalSharp.Detection.Pelt.Cost;
+namespace SignalSharp.Detection.PELT.Cost;
 
 /// <summary>
 /// Represents a cost function using the Radial Basis Function (RBF) kernel for the Piecewise Linear Trend Change (PELT) method.

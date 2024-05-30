@@ -1,43 +1,43 @@
-using SignalSharp.Detection.Pelt.Exceptions;
+using SignalSharp.Detection.PELT.Exceptions;
 
-namespace SignalSharp.Detection.Pelt.Cost;
+namespace SignalSharp.Detection.PELT.Cost;
 
 /// <summary>
-/// Represents a cost function using the L2 norm (Euclidean distance) for the Piecewise Linear Trend Change (PELT) method.
+/// Represents a cost function using the L1 norm for the Piecewise Linear Trend Change (PELT) method.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The L2 norm, also known as the Euclidean distance, is a measure of the straight-line distance 
-/// between points in a multi-dimensional space. It is calculated as the square root of the sum of the 
-/// squared differences between the coordinates of the points.
+/// The L1 norm, also known as the Manhattan distance or absolute deviation, is a measure of distance 
+/// between points in a multi-dimensional space. It is calculated as the sum of the absolute differences 
+/// between the coordinates of the points.
 /// </para>
 ///
 /// <para>
-/// In the context of the Piecewise Linear Trend Change (PELT) method, the L2 cost function is used to 
+/// In the context of the Piecewise Linear Trend Change (PELT) method, the L1 cost function is used to 
 /// compute the cost of segmenting a time series or sequential data into different segments where the 
-/// statistical properties change. The L2 norm is sensitive to outliers, making it a good choice when the 
-/// data is relatively clean and normally distributed.
+/// statistical properties change. The L1 norm is particularly robust to outliers, making it a good choice 
+/// when the data contains anomalies or non-Gaussian noise.
 /// </para>
 ///
 /// <para>
-/// Consider using the L2 cost function in scenarios where:
+/// Consider using the L1 cost function in scenarios where:
 /// <list type="bullet">
-///     <item>The data is relatively clean and free of outliers.</item>
-///     <item>You need a precise measure of segment dissimilarity.</item>
-///     <item>The underlying data distribution is approximately normal.</item>
+///     <item>The data contains outliers or non-Gaussian noise.</item>
+///     <item>You need a robust measure of segment dissimilarity.</item>
+///     <item>Traditional L2 norm (Euclidean distance) based models are too sensitive to outliers.</item>
 /// </list>
 /// </para>
 /// </remarks>
-public class L2CostFunction : IPELTCostFunction
+public class L1CostFunction : IPELTCostFunction
 {
     private double[] _data = null!;
-    private double[,] _means = null!;
+    private double[,] _medians = null!;
     
     /// <summary>
     /// Fits the cost function to the provided data.
     /// </summary>
     /// <param name="data">The data array to fit.</param>
-    /// <returns>The fitted <see cref="L2CostFunction"/> instance.</returns>
+    /// <returns>The fitted <see cref="L1CostFunction"/> instance.</returns>
     /// <remarks>
     /// This method initializes the internal data needed to compute the cost for segments of the data.
     ///
@@ -45,37 +45,42 @@ public class L2CostFunction : IPELTCostFunction
     /// For example, to fit the cost function to a data array:
     /// <code>
     /// double[] data = {1.0, 2.0, 3.0, 4.0};
-    /// var l2Cost = new L2CostFunction().Fit(data);
+    /// var l1Cost = new L1CostFunction().Fit(data);
     /// </code>
     /// This initializes the cost function with the provided data, making it ready for segment cost computation.
     /// </example>
     /// </remarks>
     public IPELTCostFunction Fit(double[] data)
     {
-        _data = data ?? throw new ArgumentNullException(nameof(data), "Data must not be null.");
-        _means = PrecomputeMeans(data);
+        if (data is null)
+        {
+            throw new ArgumentNullException(nameof(data), "Data must not be null.");
+        }
+        
+        _data = SortData(data);
+        _medians = PrecomputeMedians(data);
 
         return this;
     }
     
     /// <summary>
-    /// Computes the cost for a segment of the data using the L2 norm.
+    /// Computes the cost for a segment of the data using the L1 norm.
     /// </summary>
     /// <param name="start">The start index of the segment. If null, defaults to 0.</param>
     /// <param name="end">The end index of the segment. If null, defaults to the length of the data.</param>
     /// <returns>The computed cost for the segment.</returns>
     /// <remarks>
-    /// <para>The cost function measures the sum of squared deviations from the mean of the segment,
+    /// <para>The cost function measures the sum of absolute deviations from the median of the segment,
     /// which is useful for detecting change points in time series analysis.</para>
     ///
     /// <para>This method must be called after the <see cref="Fit(double[])"/> method has been used to 
     /// initialize the data.</para>
     ///
     /// <example>
-    /// For example, given a fitted L2CostFunction instance:
+    /// For example, given a fitted L1CostFunction instance:
     /// <code>
-    /// var l2Cost = new L2CostFunction().Fit(data);
-    /// double cost = l2Cost.ComputeCost(0, 10);
+    /// var l1Cost = new L1CostFunction().Fit(data);
+    /// double cost = l1Cost.ComputeCost(0, 10);
     /// </code>
     /// This computes the cost for the segment of the data from index 0 to index 10.
     /// </example>
@@ -114,54 +119,70 @@ public class L2CostFunction : IPELTCostFunction
             throw new ArgumentOutOfRangeException(nameof(end), "Segment end index must be within the bounds of the data array.");
         }
         
-        var mean = _means[startIndex, endIndex - 1];
+        var median = _medians[startIndex, endIndex - 1];
         
         double sum = 0;
         for (var i = startIndex; i < endIndex; i++)
         {
-            sum += Math.Pow(_data[i] - mean, 2);
+            sum += Math.Abs(_data[i] - median);
         }
         
         return sum;
     }
 
     /// <summary>
-    /// Calculates the mean of a segment of the data array.
+    /// Calculates the median of a segment of the data array.
     /// </summary>
     /// <param name="data">The data array.</param>
     /// <param name="start">The start index of the segment.</param>
     /// <param name="end">The end index of the segment.</param>
-    /// <returns>The mean value of the segment.</returns>
-    private static double CalculateMean(double[] data, int start, int end)
+    /// <returns>The median value of the segment.</returns>
+    private static double CalculateMedian(double[] data, int start, int end)
     {
-        double sum = 0;
-        
-        for (var i = start; i < end; i++)
+        var slice = data[start..end];
+        var length = slice.Length;
+
+        if (length % 2 == 0)
         {
-            sum += data[i];
+            return (slice[length / 2 - 1] + slice[length / 2]) / 2;
         }
         
-        return sum / (end - start);
+        return slice[length / 2];
     }
     
     /// <summary>
-    /// Precomputes the means for all possible segments of the data array.
+    /// Sorts the data array in ascending order.
+    /// </summary>
+    /// <param name="data">The data array to sort.</param>
+    /// <returns>A sorted copy of the data array.</returns>
+    private static double[] SortData(double[] data)
+    {
+        var sortedData = new double[data.Length];
+        
+        Array.Copy(data, 0, sortedData, 0, data.Length);
+        Array.Sort(sortedData);
+        
+        return sortedData;
+    }
+
+    /// <summary>
+    /// Precomputes the medians for all possible segments of the data array.
     /// </summary>
     /// <param name="data">The data array.</param>
-    /// <returns>A 2D array of precomputed means for all segments.</returns>
-    private static double[,] PrecomputeMeans(double[] data)
+    /// <returns>A 2D array of precomputed medians for all segments.</returns>
+    private static double[,] PrecomputeMedians(double[] data)
     {
         var n = data.Length;
-        var means = new double[n, n];
+        var medians = new double[n, n];
 
         for (var i = 0; i < n; i++)
         {
             for (var j = i; j < n; j++)
             {
-                means[i, j] = CalculateMean(data, i, j + 1);
+                medians[i, j] = CalculateMedian(data, i, j + 1);
             }
         }
 
-        return means;
+        return medians;
     }
 }
