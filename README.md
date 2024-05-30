@@ -1,14 +1,4 @@
-SignalSharp is a C# library designed for efficient signal processing and time series analysis. Whether you're dealing with noise reduction, state estimation, or change point detection, SignalSharp provides robust tools to help you get the job done.
-
-## Overview
-
-Signal processing is a critical component in various applications, including telecommunications, audio processing, finance, and biomedical engineering. While other ecosystems, such as Python, have a plethora of signal processing libraries, C# lacks comprehensive open-source alternatives, often offering only paid or closed-source solutions. SignalSharp aims to fill this void by providing a free, open-source library for the C# community, enabling developers to work with advanced signal processing algorithms with ease.
-
-### Why Use SignalSharp?
-
-- **Performance**: SignalSharp is optimized for performance, ensuring that your signal processing tasks are executed efficiently.
-- **Flexibility**: With a range of algorithms and configurable options, SignalSharp can be tailored to meet the specific requirements of your projects.
-- **Ease of Use**: The library is designed with user-friendliness in mind, providing clear documentation and practical examples to help you get started.
+SignalSharp is a C# library designed for efficient signal processing and time series analysis. 
 
 ## Algorithms
 

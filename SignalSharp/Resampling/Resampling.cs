@@ -169,9 +169,14 @@ public static class Resampling
     /// <summary>
     /// Applies a moving average filter to the signal with the specified window size.
     /// </summary>
-    /// <param name="signal">The input signal.</param>
-    /// <param name="windowSize">The size of the moving window.</param>
-    /// <returns>The filtered signal.</returns>
+    /// <param name="signal">The input signal as an array of doubles.</param>
+    /// <param name="windowSize">The size of the moving window. Must be greater than zero. Larger window sizes smooth the signal more but may also reduce detail.</param>
+    /// <returns>The filtered signal as an array of doubles.</returns>
+    /// <remarks>
+    /// <para>A moving average filter smooths the input signal by averaging each point with its neighbors. This is useful for reducing noise and creating a smoother signal.</para>
+    /// 
+    /// <para>The <paramref name="windowSize"/> parameter determines how many neighboring points are considered in the average. A larger window size results in a smoother signal, as it averages over more points, but can also obscure finer details.</para>
+    /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when the signal is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the window size is less than or equal to zero.</exception>
     public static double[] MovingAverage(double[] signal, int windowSize)
@@ -190,11 +195,16 @@ public static class Resampling
     }
 
     /// <summary>
-    /// Approximates the signal using Chebyshev polynomials of the specified order.
+    /// Approximates the input signal using Chebyshev polynomials of the specified order.
     /// </summary>
-    /// <param name="signal">The input signal.</param>
-    /// <param name="order">The order of the Chebyshev polynomials.</param>
-    /// <returns>The approximated signal.</returns>
+    /// <param name="signal">The input signal as an array of doubles.</param>
+    /// <param name="order">The order of the Chebyshev polynomials. Must be greater than zero. Higher orders can capture more detail but may also lead to overfitting.</param>
+    /// <returns>The approximated signal as an array of doubles.</returns>
+    /// <remarks>
+    /// <para>Chebyshev polynomials are a sequence of orthogonal polynomials which can be used to approximate a function. This method fits Chebyshev polynomials to the given signal and returns the approximated values.</para>
+    /// 
+    /// <para>Consider using this method when you need a smooth approximation of a signal, especially if the signal is noisy. The <paramref name="order"/> parameter determines the complexity of the approximation: higher order values allow the approximation to capture more detail from the signal, but can also increase the risk of overfitting, especially in the presence of noise.</para>
+    /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when the signal is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the order is less than or equal to zero.</exception>
     public static double[] ChebyshevApproximation(double[] signal, int order)

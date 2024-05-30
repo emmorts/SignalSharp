@@ -1,8 +1,6 @@
 # PELT Algorithm
 
-The PELT (Pruned Exact Linear Time) algorithm is a powerful method for detecting multiple change points in time series data. It is particularly efficient and scales well with the size of the data, making it suitable for a variety of applications where change point detection is crucial. This document provides detailed information about the PELT algorithm, including its mathematical foundation, common use cases, and practical examples.
-
-## Overview
+The PELT (Pruned Exact Linear Time) algorithm is a powerful method for detecting multiple change points in time series data. It is particularly efficient and scales well with the size of the data, making it suitable for a variety of applications where change point detection is crucial.
 
 PELT algorithm is a dynamic programming approach that aims to partition a time series into segments where the statistical properties are homogenous within each segment but differ between segments. It uses a cost function to measure the fit of the segments and a penalty term to control the number of change points. The penalty term helps prevent overfitting by discouraging too many segments.
 

@@ -1,8 +1,6 @@
 # Savitzky-Golay Filter
 
-The Savitzky-Golay filter is a widely used digital filter for smoothing data. It is particularly effective at preserving the features of a dataset, such as relative maxima, minima, and width, which are usually flattened by other smoothing techniques. This document provides detailed information about the Savitzky-Golay filter, including its mathematical foundation, common use cases, and practical examples.
-
-## Overview
+The Savitzky-Golay filter is a widely used digital filter for smoothing data. It is particularly effective at preserving the features of a dataset, such as relative maxima, minima, and width, which are usually flattened by other smoothing techniques. 
 
 The Savitzky-Golay filter smooths a signal by fitting successive sub-sets of adjacent data points with a low-degree polynomial using the method of linear least squares. This technique reduces noise while preserving the shape and features of the original signal.
 

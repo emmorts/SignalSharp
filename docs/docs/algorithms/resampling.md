@@ -4,7 +4,7 @@ Resampling is a critical process in signal processing and data analysis. It invo
 
 ## Overview
 
-The `Resampling` class in SignalSharp includes methods for:
+The @"SignalSharp.Resampling.Resampling" class includes methods for:
 - **Downsampling**: Reducing the number of samples in a signal.
 - **Segment Statistics**: Computing statistics (mean, median, max, min) for segments of a signal.
 - **Moving Average**: Smoothing a signal using a moving average filter.
@@ -21,7 +21,7 @@ Resampling is necessary in various scenarios:
 
 ## Usage Examples
 
-Here are some practical examples demonstrating how to use the resampling methods provided by SignalSharp.
+Here are some practical examples demonstrating how to use the resampling methods.
 
 ### Example 1: Downsampling Heart Rate Data
 

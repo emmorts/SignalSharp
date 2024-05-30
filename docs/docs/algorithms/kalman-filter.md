@@ -1,10 +1,8 @@
 # Kalman Filter
 
-The Kalman filter is a powerful algorithm for estimating the state of a linear dynamic system from a series of noisy measurements. It is widely used in control systems, navigation, and time series analysis. This document provides detailed information about the Kalman filter, including its mathematical foundation, common use cases, and practical examples.
+The Kalman filter is a powerful algorithm for estimating the state of a linear dynamic system from a series of noisy measurements. It is widely used in control systems, navigation, and time series analysis.
 
-## Overview
-
-The Kalman filter is an optimal recursive algorithm that estimates the state of a linear dynamic system from a series of noisy measurements. It operates in two steps: prediction and update. During the prediction step, the filter estimates the state at the next time step. During the update step, it adjusts this prediction based on the new measurement.
+The Kalman filter is an optimal recursive algorithm that estimates the state of a linear dynamic system from a series of noisy measurements. It operates in two steps: *prediction* and *update*. During the prediction step, the filter estimates the state at the next time step. During the update step, it adjusts this prediction based on the new measurement.
 
 ### Mathematical Foundation
 
