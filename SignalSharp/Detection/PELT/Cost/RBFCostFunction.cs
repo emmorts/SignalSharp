@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using SignalSharp.Detection.PELT.Exceptions;
 
 namespace SignalSharp.Detection.PELT.Cost;
@@ -39,7 +41,6 @@ namespace SignalSharp.Detection.PELT.Cost;
 public class RBFCostFunction : IPELTCostFunction
 {
     private double[] _data = null!;
-    private double[,] _distances = null!;
     private double[,] _prefixSum = null!;
     
     private readonly double? _gamma;
@@ -83,8 +84,9 @@ public class RBFCostFunction : IPELTCostFunction
     {
         _data = data ?? throw new ArgumentNullException(nameof(data), "Data must not be null.");
 
-        _distances = GenerateGramMatrix(data, _gamma);
-        _prefixSum = PrecomputePrefixSum(_distances);
+        var distances = GenerateGramMatrix(data, _gamma);
+        PrecomputePrefixSum(distances);
+        _prefixSum = distances;
 
         return this;
     }
@@ -129,11 +131,6 @@ public class RBFCostFunction : IPELTCostFunction
         {
             throw new SegmentLengthException("Segment length must be at least 1.");
         }
-
-        if (_distances is null)
-        {
-            throw new InvalidOperationException("Distances matrix is not initialized. Call Fit method first.");
-        }
         
         if (_prefixSum is null)
         {
@@ -158,26 +155,29 @@ public class RBFCostFunction : IPELTCostFunction
     /// <summary>
     /// Precomputes the prefix sum matrix from the distances matrix.
     /// </summary>
-    /// <param name="distances">The distances matrix.</param>
-    /// <returns>The prefix sum matrix.</returns>
-    private static double[,] PrecomputePrefixSum(double[,] distances)
+    /// <param name="distances">The distance matrix.</param>
+    private static void PrecomputePrefixSum(double[,] distances)
     {
         var n = distances.GetLength(0);
-        
-        var prefixSum = new double[n, n];
 
-        for (var i = 0; i < n; i++)
+        // Initialize the first row and first column
+        for (var i = 1; i < n; i++)
         {
-            for (var j = 0; j < n; j++)
-            {
-                prefixSum[i, j] = distances[i, j] // current
-                                   + (i > 0 ? prefixSum[i - 1, j] : 0) // top
-                                   + (j > 0 ? prefixSum[i, j - 1] : 0) // left
-                                   - (i > 0 && j > 0 ? prefixSum[i - 1, j - 1] : 0); // above left overlap
-            }
+            distances[i, 0] += distances[i - 1, 0];
+            distances[0, i] = distances[i, 0];
         }
 
-        return prefixSum;
+        // Calculate the prefix sum for the upper triangle and copy to the lower triangle
+        for (var i = 1; i < n; i++)
+        {
+            for (var j = 1; j <= i; j++)
+            {
+                distances[i, j] += distances[i - 1, j]
+                                   + distances[i, j - 1]
+                                   - distances[i - 1, j - 1];
+                distances[j, i] = distances[i, j];
+            }
+        }
     }
     
     /// <summary>
@@ -211,49 +211,36 @@ public class RBFCostFunction : IPELTCostFunction
     private static double[,] GenerateGramMatrix(double[] data, double? gamma = null)
     {
         var pairwiseDistances = CalculatePairwiseDistances(data);
-
+        
         gamma ??= CalculateGamma(pairwiseDistances);
-
-        return ApplyRBFKernel(pairwiseDistances, gamma.Value);
+        
+        var kernel = ApplyRBFKernel(pairwiseDistances, gamma.Value);
+        
+        return kernel;
     }
 
     /// <summary>
     /// Calculates the pairwise distances between elements in the data array.
     /// </summary>
     /// <param name="data">The data array.</param>
-    /// <returns>The pairwise distances matrix.</returns>
+    /// <returns>The pairwise distance matrix.</returns>
     private static double[,] CalculatePairwiseDistances(double[] data)
     {
         var n = data.Length;
         var distances = new double[n, n];
 
-        for (var i = 0; i < n; i++)
+        Parallel.For(0, n, i =>
         {
-            for (var j = 0; j < n; j++)
+            for (var j = i; j < n; j++)
             {
-                var dist = Math.Pow(data[i] - data[j], 2);
-
-                distances[i, j] = dist;
+                var distance = SquaredDistance(data[i], data[j]);
+                
+                distances[i, j] = distance;
+                distances[j, i] = distance;
             }
-        }
+        });
 
         return distances;
-    }
-
-    /// <summary>
-    /// Calculates the gamma parameter based on the pairwise distances matrix.
-    /// </summary>
-    /// <param name="distances">The pairwise distances matrix.</param>
-    /// <returns>The calculated gamma value.</returns>
-    private static double CalculateGamma(double[,] distances)
-    {
-        var upperTriangleValues = GetUpperTriangleValues(distances);
-
-        var median = upperTriangleValues.Length > 0 ? Median(upperTriangleValues) : 1.0;
-
-        return median != 0.0
-            ? 1.0 / median
-            : 1.0;
     }
 
     /// <summary>
@@ -267,7 +254,7 @@ public class RBFCostFunction : IPELTCostFunction
         var n = distances.GetLength(0);
         var gramMatrix = new double[n, n];
 
-        for (var i = 0; i < n; i++)
+        Parallel.For(0, n, i =>
         {
             for (var j = 0; j < n; j++)
             {
@@ -284,9 +271,25 @@ public class RBFCostFunction : IPELTCostFunction
                     gramMatrix[i, j] = Math.Exp(-value);
                 }
             }
-        }
+        });
 
         return gramMatrix;
+    }
+
+    /// <summary>
+    /// Calculates the gamma parameter based on the pairwise distances matrix.
+    /// </summary>
+    /// <param name="distances">The pairwise distances matrix.</param>
+    /// <returns>The calculated gamma value.</returns>
+    private static double CalculateGamma(double[,] distances)
+    {
+        var upperTriangleValues = GetUpperTriangleValues(distances);
+    
+        var median = upperTriangleValues.Count > 0 ? Median(upperTriangleValues) : 1.0;
+    
+        return median != 0.0
+            ? 1.0 / median
+            : 1.0;
     }
 
     /// <summary>
@@ -294,39 +297,57 @@ public class RBFCostFunction : IPELTCostFunction
     /// </summary>
     /// <param name="matrix">The matrix to extract values from.</param>
     /// <returns>An array of values from the upper triangle of the matrix.</returns>
-    private static double[] GetUpperTriangleValues(double[,] matrix)
+    private static List<double> GetUpperTriangleValues(double[,] matrix)
     {
         var rows = matrix.GetLength(0);
         var cols = matrix.GetLength(1);
-        var values = new List<double>();
-
-        for (var i = 0; i < rows; i++)
+        var values = new List<double>(rows * (rows - 1) / 2);
+    
+        Parallel.For(0, rows, i =>
         {
             for (var j = i + 1; j < cols; j++)
             {
                 values.Add(matrix[i, j]);
             }
-        }
-
-        return values.ToArray();
+        });
+    
+        return values;
     }
-
+    
     /// <summary>
     /// Computes the median value of an array of doubles.
     /// </summary>
     /// <param name="data">The array of doubles.</param>
     /// <returns>The median value.</returns>
-    private static double Median(double[] data)
+    private static double Median(List<double> data)
     {
-        Array.Sort(data);
-
-        var n = data.Length;
-
+        var n = data.Count;
+        if (n == 0)
+        {
+            return 0;
+        }
+        
+        data.Sort();
+    
         if (n % 2 == 0)
         {
             return (data[n / 2 - 1] + data[n / 2]) / 2.0;
         }
-
+    
         return data[n / 2];
+    }
+    
+    /// <summary>
+    /// Computes the squared distance between two values.
+    /// </summary>
+    /// <param name="a">The first value.</param>
+    /// <param name="b">The second value.</param>
+    /// <returns>The squared distance</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static double SquaredDistance(double a, double b)
+    {
+        var diff = a - b;
+        
+        return diff * diff;
     }
 }

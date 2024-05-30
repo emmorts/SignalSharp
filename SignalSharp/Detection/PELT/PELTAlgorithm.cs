@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using SignalSharp.Detection.PELT.Models;
 
 namespace SignalSharp.Detection.PELT;
