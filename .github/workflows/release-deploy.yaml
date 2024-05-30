@@ -1,4 +1,4 @@
-name: Release and Deploy
+name: Pack and Publish
 on:
   workflow_dispatch:
   push:
