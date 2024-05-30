@@ -37,10 +37,10 @@ namespace SignalSharp.Detection.PELT.Cost;
 /// </list>
 /// </para>
 /// </remarks>
-public class RBFCostFunction : IPELTCostFunction
+public class RBFCostFunction : CostFunctionBase
 {
-    private double[] _data = null!;
-    private double[,] _prefixSum = null!;
+    private double[,] _data = null!;
+    private double[,,] _prefixSum = null!;
     
     private readonly double? _gamma;
     
@@ -62,7 +62,7 @@ public class RBFCostFunction : IPELTCostFunction
     /// <summary>
     /// Fits the cost function to the provided data.
     /// </summary>
-    /// <param name="data">The data array to fit.</param>
+    /// <param name="signalMatrix">The signal matrix to fit.</param>
     /// <returns>The fitted <see cref="RBFCostFunction"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when data is null.</exception>
     /// <remarks>
@@ -73,17 +73,18 @@ public class RBFCostFunction : IPELTCostFunction
     /// <example>
     /// For example, to fit the cost function to a data array:
     /// <code>
-    /// double[] data = {1.0, 2.0, 3.0, 4.0};
+    /// double[,] data = { { 1.0, 2.0, 3.0, 4.0 } };
     /// var rbfCost = new RBFCostFunction().Fit(data);
     /// </code>
     /// This initializes the cost function with the provided data, making it ready for segment cost computation.
     /// </example>
     /// </remarks>
-    public IPELTCostFunction Fit(double[] data)
+    public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        _data = data ?? throw new ArgumentNullException(nameof(data), "Data must not be null.");
+        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+        _data = signalMatrix;
 
-        var distances = GenerateGramMatrix(data, _gamma);
+        var distances = GenerateGramMatrix(signalMatrix, _gamma);
         PrecomputePrefixSum(distances);
         _prefixSum = distances;
 
@@ -100,7 +101,7 @@ public class RBFCostFunction : IPELTCostFunction
     /// <para>The cost function measures the dissimilarity of the segment compared to the rest of the data,
     /// which is useful for detecting change points in time series analysis.</para>
     ///
-    /// <para>This method must be called after the <see cref="Fit(double[])"/> method has been used to 
+    /// <para>This method must be called after the <see cref="Fit(double[,])"/> method has been used to 
     /// initialize the data and compute the necessary matrices.</para>
     ///
     /// <example>
@@ -112,91 +113,78 @@ public class RBFCostFunction : IPELTCostFunction
     /// This computes the cost for the segment of the data from index 0 to index 10.
     /// </example>
     /// </remarks>
-    /// <exception cref="InvalidOperationException">Thrown when data, distances, or prefix sum is not initialized.</exception>
+    /// <exception cref="UninitializedDataException">Thrown when data, distances, or prefix sum is not initialized.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the segment indices are out of bounds.</exception>
     /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
-    public double ComputeCost(int? start = null, int? end = null)
+    public override double ComputeCost(int? start = null, int? end = null)
     {
-        if (_data is null)
-        {
-            throw new InvalidOperationException("Data must be set before calling ComputeCost.");
-        }
+        UninitializedDataException.ThrowIfUninitialized(_data, "Fit() must be called before ComputeCost().");
 
         var startIndex = start ?? 0;
-        var endIndex = end ?? _data.Length;
-
+        var endIndex = end ?? _data.GetLength(1);
         var segmentLength = endIndex - startIndex;
-        if (segmentLength < 1)
-        {
-            throw new SegmentLengthException("Segment length must be at least 1.");
-        }
         
-        if (_prefixSum is null)
+        SegmentLengthException.ThrowIfInvalid(segmentLength);
+        ArgumentOutOfRangeException.ThrowIfNegative(startIndex, nameof(start));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(endIndex, _data.GetLength(1), nameof(end));
+        
+        double sum = 0;
+        for (var dim = 0; dim < _data.GetLength(0); dim++)
         {
-            throw new InvalidOperationException("Data must be set before calling ComputeCost.");
+            var sumAll = ComputeSumFromPrefixSum(_prefixSum, dim, startIndex, endIndex);
+            sum += segmentLength - sumAll / segmentLength;
         }
 
-        if (startIndex < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(start), "Segment start index must be non-negative.");
-        }
-        
-        if (endIndex > _data.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(end), "Segment end index must be within the bounds of the data array.");
-        }
-        
-        var sumAll = ComputeSumFromPrefixSum(_prefixSum, startIndex, endIndex);
-
-        return segmentLength - sumAll / segmentLength;
+        return sum;
     }
     
     /// <summary>
     /// Precomputes the prefix sum matrix from the distances matrix.
     /// </summary>
     /// <param name="distances">The distance matrix.</param>
-    private static void PrecomputePrefixSum(double[,] distances)
+    private static void PrecomputePrefixSum(double[,,] distances)
     {
-        var n = distances.GetLength(0);
+        var numDimensions = distances.GetLength(0);
+        var numPoints = distances.GetLength(1);
 
-        // Initialize the first row and first column
-        for (var i = 1; i < n; i++)
+        for (var dim = 0; dim < numDimensions; dim++)
         {
-            distances[i, 0] += distances[i - 1, 0];
-            distances[0, i] = distances[i, 0];
-        }
-
-        // Calculate the prefix sum for the upper triangle and copy to the lower triangle
-        for (var i = 1; i < n; i++)
-        {
-            for (var j = 1; j <= i; j++)
+            for (var i = 1; i < numPoints; i++)
             {
-                distances[i, j] += distances[i - 1, j]
-                                   + distances[i, j - 1]
-                                   - distances[i - 1, j - 1];
-                distances[j, i] = distances[i, j];
+                distances[dim, i, 0] += distances[dim, i - 1, 0];
+                distances[dim, 0, i] = distances[dim, i, 0];
+            }
+
+            for (var i = 1; i < numPoints; i++)
+            {
+                for (var j = 1; j <= i; j++)
+                {
+                    distances[dim, i, j] += distances[dim, i - 1, j] + distances[dim, i, j - 1] - distances[dim, i - 1, j - 1];
+                    distances[dim, j, i] = distances[dim, i, j];
+                }
             }
         }
     }
-    
+
     /// <summary>
     /// Computes the sum from the prefix sum matrix for a given segment.
     /// </summary>
     /// <param name="prefixSum">The prefix sum matrix.</param>
+    /// <param name="dimension">The dimension of the data array to compute the sum for.</param>
     /// <param name="start">The start index of the segment.</param>
     /// <param name="end">The end index of the segment.</param>
     /// <returns>The computed sum for the segment.</returns>
-    private static double ComputeSumFromPrefixSum(double[,] prefixSum, int start, int end)
+    private static double ComputeSumFromPrefixSum(double[,,] prefixSum, int dimension, int start, int end)
     {
         var endRow = end - 1;
         var endCol = end - 1;
         var startRow = start - 1;
         var startCol = start - 1;
 
-        var totalSum = prefixSum[endRow, endCol];
-        var topSum = startRow >= 0 ? prefixSum[startRow, endCol] : 0;
-        var leftSum = startCol >= 0 ? prefixSum[endRow, startCol] : 0;
-        var overlapSum = (startRow >= 0 && startCol >= 0) ? prefixSum[startRow, startCol] : 0;
+        var totalSum = prefixSum[dimension, endRow, endCol];
+        var topSum = startRow >= 0 ? prefixSum[dimension, startRow, endCol] : 0;
+        var leftSum = startCol >= 0 ? prefixSum[dimension, endRow, startCol] : 0;
+        var overlapSum = (startRow >= 0 && startCol >= 0) ? prefixSum[dimension, startRow, startCol] : 0;
 
         return totalSum - topSum - leftSum + overlapSum;
     }
@@ -207,33 +195,45 @@ public class RBFCostFunction : IPELTCostFunction
     /// <param name="data">The data array.</param>
     /// <param name="gamma">The gamma parameter for the RBF kernel.</param>
     /// <returns>The Gram matrix.</returns>
-    private static double[,] GenerateGramMatrix(double[] data, double? gamma = null)
+    private static double[,,] GenerateGramMatrix(double[,] data, double? gamma = null)
     {
-        var pairwiseDistances = CalculatePairwiseDistances(data);
-        
-        gamma ??= CalculateGamma(pairwiseDistances);
-        
-        var kernel = ApplyRBFKernel(pairwiseDistances, gamma.Value);
-        
-        return kernel;
+        var numDimensions = data.GetLength(0);
+        var numPoints = data.GetLength(1);
+        var gramMatrix = new double[numDimensions, numPoints, numPoints];
+
+        for (var dim = 0; dim < numDimensions; dim++)
+        {
+            var pairwiseDistances = CalculatePairwiseDistances(data, dim);
+            gamma ??= CalculateGamma(pairwiseDistances);
+            var kernel = ApplyRBFKernel(pairwiseDistances, gamma.Value);
+            for (var i = 0; i < numPoints; i++)
+            {
+                for (var j = 0; j < numPoints; j++)
+                {
+                    gramMatrix[dim, i, j] = kernel[i, j];
+                }
+            }
+        }
+
+        return gramMatrix;
     }
 
     /// <summary>
     /// Calculates the pairwise distances between elements in the data array.
     /// </summary>
     /// <param name="data">The data array.</param>
+    /// <param name="dimension">The dimension of the data array to calculate distances for.</param>
     /// <returns>The pairwise distance matrix.</returns>
-    private static double[,] CalculatePairwiseDistances(double[] data)
+    private static double[,] CalculatePairwiseDistances(double[,] data, int dimension)
     {
-        var n = data.Length;
-        var distances = new double[n, n];
+        var numPoints = data.GetLength(1);
+        var distances = new double[numPoints, numPoints];
 
-        Parallel.For(0, n, i =>
+        Parallel.For(0, numPoints, i =>
         {
-            for (var j = i; j < n; j++)
+            for (var j = i; j < numPoints; j++)
             {
-                var distance = SquaredDistance(data[i], data[j]);
-                
+                var distance = SquaredDistance(data[dimension, i], data[dimension, j]);
                 distances[i, j] = distance;
                 distances[j, i] = distance;
             }
@@ -250,12 +250,12 @@ public class RBFCostFunction : IPELTCostFunction
     /// <returns>The Gram matrix after applying the RBF kernel.</returns>
     private static double[,] ApplyRBFKernel(double[,] distances, double gamma)
     {
-        var n = distances.GetLength(0);
-        var gramMatrix = new double[n, n];
+        var numPoints = distances.GetLength(0);
+        var gramMatrix = new double[numPoints, numPoints];
 
-        Parallel.For(0, n, i =>
+        Parallel.For(0, numPoints, i =>
         {
-            for (var j = 0; j < n; j++)
+            for (var j = 0; j < numPoints; j++)
             {
                 if (distances[i, j] == 0)
                 {
@@ -264,9 +264,7 @@ public class RBFCostFunction : IPELTCostFunction
                 else
                 {
                     var value = distances[i, j] * gamma;
-
-                    value = Math.Clamp(value, 1e-2, 1e2); // Clipping to avoid exponential under/overflow
-
+                    value = Math.Clamp(value, 1e-2, 1e2);
                     gramMatrix[i, j] = Math.Exp(-value);
                 }
             }
@@ -301,7 +299,7 @@ public class RBFCostFunction : IPELTCostFunction
         var rows = matrix.GetLength(0);
         var cols = matrix.GetLength(1);
         var values = new List<double>(rows * (rows - 1) / 2);
-    
+
         Parallel.For(0, rows, i =>
         {
             for (var j = i + 1; j < cols; j++)
@@ -309,7 +307,7 @@ public class RBFCostFunction : IPELTCostFunction
                 values.Add(matrix[i, j]);
             }
         });
-    
+
         return values;
     }
     

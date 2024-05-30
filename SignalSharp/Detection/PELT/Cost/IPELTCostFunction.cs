@@ -11,15 +11,26 @@ namespace SignalSharp.Detection.PELT.Cost;
 public interface IPELTCostFunction
 {
     /// <summary>
-    /// Fits the cost function to the provided data.
+    /// Fits the cost function to the provided one-dimensional time series data.
     /// </summary>
-    /// <param name="signal">The time series data to fit.</param>
+    /// <param name="signal">The one-dimensional time series data to fit.</param>
     /// <returns>The fitted <see cref="IPELTCostFunction"/> instance.</returns>
     /// <remarks>
     /// This method initializes any internal structures or computations needed to evaluate segment costs 
     /// later on. It prepares the cost function for subsequent calls to <see cref="ComputeCost(int?, int?)"/>.
     /// </remarks>
     IPELTCostFunction Fit(double[] signal);
+    
+    /// <summary>
+    /// Fits the cost function to the provided multidimensional time series data.
+    /// </summary>
+    /// <param name="signalMatrix">The multi-dimensional time series data to fit, where each row represents a different time series.</param>
+    /// <returns>The fitted <see cref="IPELTCostFunction"/> instance.</returns>
+    /// <remarks>
+    /// This method initializes any internal structures or computations needed to evaluate segment costs 
+    /// later on. It prepares the cost function for subsequent calls to <see cref="ComputeCost(int?, int?)"/>.
+    /// </remarks>
+    IPELTCostFunction Fit(double[,] signalMatrix);
     
     /// <summary>
     /// Computes the cost for a segment of the data.

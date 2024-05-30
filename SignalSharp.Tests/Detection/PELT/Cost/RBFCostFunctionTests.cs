@@ -3,12 +3,13 @@ using SignalSharp.Detection.PELT.Exceptions;
 
 namespace SignalSharp.Tests.Detection.PELT.Cost;
 
+[TestFixture]
 public class RBFCostFunctionTests
 {
     [Test]
     public void ComputeCost_SimpleCase()
     {
-        double[] data = [1.0, 2.0, 3.0];
+        double[,] data = { { 1.0, 2.0, 3.0 } };
         const double gamma = 1.0;
 
         var rbfCostFunction = new RBFCostFunction(gamma);
@@ -22,7 +23,7 @@ public class RBFCostFunctionTests
     [Test]
     public void ComputeCost_LargerCase()
     {
-        double[] data = [1.0, 1.5, 2.0, 2.5, 3.0];
+        double[,] data = { { 1.0, 1.5, 2.0, 2.5, 3.0 } };
         const double gamma = 0.5;
 
         var rbfCostFunction = new RBFCostFunction(gamma);
@@ -36,7 +37,7 @@ public class RBFCostFunctionTests
     [Test]
     public void ComputeCost_Subset()
     {
-        double[] data = [1.0, 1.5, 2.0, 2.5, 3.0];
+        double[,] data = { { 1.0, 1.5, 2.0, 2.5, 3.0 } };
         const double gamma = 0.5;
 
         var rbfCostFunction = new RBFCostFunction(gamma);
@@ -50,7 +51,7 @@ public class RBFCostFunctionTests
     [Test]
     public void ComputeCost_SinglePoint()
     {
-        double[] data = [1.0];
+        double[,] data = { { 1.0 } };
         const double gamma = 0.5;
 
         var rbfCostFunction = new RBFCostFunction(gamma);
@@ -63,7 +64,7 @@ public class RBFCostFunctionTests
     [Test]
     public void ComputeCost_NoPoints()
     {
-        double[] data = [];
+        double[,] data = { {  } };
         const double gamma = 0.5;
 
         var rbfCostFunction = new RBFCostFunction(gamma);
@@ -74,7 +75,7 @@ public class RBFCostFunctionTests
     [Test]
     public void ComputeCost_DefaultGamma()
     {
-        double[] data = [1.0, 2.0, 3.0];
+        double[,] data = { { 1.0, 2.0, 3.0 } };
 
         var rbfCostFunction = new RBFCostFunction();
         var cost = rbfCostFunction.Fit(data).ComputeCost();
@@ -90,7 +91,7 @@ public class RBFCostFunctionTests
     [Test]
     public void ComputeCost_IterativeComputationUsingPartialSums()
     {
-        double[] data = [1.0, 1.5, 2.0, 2.5, 3.0];
+        double[,] data = { { 1.0, 1.5, 2.0, 2.5, 3.0 } };
         const double gamma = 0.5;
         
         var rbfCostFunction = new RBFCostFunction(gamma).Fit(data);
@@ -102,5 +103,72 @@ public class RBFCostFunctionTests
         var costOfZeroToFour = rbfCostFunction.ComputeCost(0, 4);
         const double expectedCostZeroToFour = 0.90739775273129819;
         Assert.That(costOfZeroToFour, Is.EqualTo(expectedCostZeroToFour).Within(1e-6));
+    }
+    [Test]
+    public void ComputeCost_MultidimensionalData()
+    {
+        double[,] data = 
+        { 
+            { 1.0, 2.0, 3.0 },
+            { 4.0, 5.0, 6.0 }
+        };
+        const double gamma = 1.0;
+
+        var rbfCostFunction = new RBFCostFunction(gamma);
+        var cost = rbfCostFunction.Fit(data).ComputeCost();
+
+        const double expected = 2.99456730;
+        Assert.That(cost, Is.EqualTo(expected).Within(1e-6));
+    }
+
+    [Test]
+    public void ComputeCost_MultidimensionalSubset()
+    {
+        double[,] data = 
+        { 
+            { 1.0, 2.0, 3.0, 4.0, 5.0 },
+            { 6.0, 7.0, 8.0, 9.0, 10.0 }
+        };
+        const double gamma = 0.5;
+
+        var rbfCostFunction = new RBFCostFunction(gamma);
+        var cost = rbfCostFunction.Fit(data).ComputeCost(1, 4);
+
+        // Expected result for subset considering multidimensional data
+        const double expected = 2.20213786; 
+        Assert.That(cost, Is.EqualTo(expected).Within(1e-6));
+    }
+
+    [Test]
+    public void ComputeCost_VaryingGammaValues()
+    {
+        double[,] data = { { 1.0, 2.0, 3.0 } };
+
+        double[] gammaValues = [0.1, 1.0, 10.0];
+        double[] expectedCosts = [0.34667007, 1.49728365, 1.99993946];
+
+        for (var i = 0; i < gammaValues.Length; i++)
+        {
+            var rbfCostFunction = new RBFCostFunction(gammaValues[i]);
+            var cost = rbfCostFunction.Fit(data).ComputeCost();
+            
+            Assert.That(cost, Is.EqualTo(expectedCosts[i]).Within(1e-6));
+        }
+    }
+
+    [Test]
+    public void ComputeCost_DefaultGamma_Multidimensional()
+    {
+        double[,] data = 
+        { 
+            { 1.0, 2.0, 3.0 },
+            { 4.0, 5.0, 6.0 }
+        };
+
+        var rbfCostFunction = new RBFCostFunction();
+        var cost = rbfCostFunction.Fit(data).ComputeCost();
+        
+        const double expected = 2.99456730; 
+        Assert.That(cost, Is.EqualTo(expected).Within(1e-6));
     }
 }

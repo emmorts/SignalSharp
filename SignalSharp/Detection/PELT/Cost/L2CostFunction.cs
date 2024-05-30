@@ -28,15 +28,15 @@ namespace SignalSharp.Detection.PELT.Cost;
 /// </list>
 /// </para>
 /// </remarks>
-public class L2CostFunction : IPELTCostFunction
+public class L2CostFunction : CostFunctionBase
 {
-    private double[] _data = null!;
-    private double[,] _means = null!;
+    private double[,] _data = null!;
+    private double[,,] _means = null!;
     
     /// <summary>
     /// Fits the cost function to the provided data.
     /// </summary>
-    /// <param name="data">The data array to fit.</param>
+    /// <param name="signalMatrix">The data array to fit.</param>
     /// <returns>The fitted <see cref="L2CostFunction"/> instance.</returns>
     /// <remarks>
     /// This method initializes the internal data needed to compute the cost for segments of the data.
@@ -44,16 +44,18 @@ public class L2CostFunction : IPELTCostFunction
     /// <example>
     /// For example, to fit the cost function to a data array:
     /// <code>
-    /// double[] data = {1.0, 2.0, 3.0, 4.0};
+    /// double[,] data = { { 1.0, 2.0, 3.0, 4.0 } };
     /// var l2Cost = new L2CostFunction().Fit(data);
     /// </code>
     /// This initializes the cost function with the provided data, making it ready for segment cost computation.
     /// </example>
     /// </remarks>
-    public IPELTCostFunction Fit(double[] data)
+    public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        _data = data ?? throw new ArgumentNullException(nameof(data), "Data must not be null.");
-        _means = PrecomputeMeans(data);
+        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+        
+        _data = signalMatrix;
+        _means = PrecomputeMeans(signalMatrix);
 
         return this;
     }
@@ -68,7 +70,7 @@ public class L2CostFunction : IPELTCostFunction
     /// <para>The cost function measures the sum of squared deviations from the mean of the segment,
     /// which is useful for detecting change points in time series analysis.</para>
     ///
-    /// <para>This method must be called after the <see cref="Fit(double[])"/> method has been used to 
+    /// <para>This method must be called after the <see cref="Fit(double[,])"/> method has been used to 
     /// initialize the data.</para>
     ///
     /// <example>
@@ -80,46 +82,32 @@ public class L2CostFunction : IPELTCostFunction
     /// This computes the cost for the segment of the data from index 0 to index 10.
     /// </example>
     /// </remarks>
-    /// <exception cref="InvalidOperationException">Thrown when data is not initialized.</exception>
+    /// <exception cref="UninitializedDataException">Thrown when data is not initialized.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the segment indices are out of bounds.</exception>
     /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
-    public double ComputeCost(int? start, int? end)
+    public override double ComputeCost(int? start = null, int? end = null)
     {
-        if (_data is null)
-        {
-            throw new InvalidOperationException("Data must be set before calling ComputeCost.");
-        }
-
-        if (_data.Length == 0)
-        {
-            return 0;
-        }
+        UninitializedDataException.ThrowIfUninitialized(_data, "Fit() must be called before ComputeCost().");
+        
+        if (_data.Length == 0) return 0;
         
         var startIndex = start ?? 0;
-        var endIndex = end ?? _data.Length;
-
+        var endIndex = end ?? _data.GetLength(1);
         var segmentLength = endIndex - startIndex;
-        if (segmentLength < 1)
-        {
-            throw new SegmentLengthException("Segment length must be at least 1.");
-        }
+        
+        SegmentLengthException.ThrowIfInvalid(segmentLength);
+        ArgumentOutOfRangeException.ThrowIfNegative(startIndex, nameof(start));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(endIndex, _data.GetLength(1), nameof(end));
 
-        if (startIndex < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(start), "Segment start index must be non-negative.");
-        }
-        
-        if (endIndex > _data.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(end), "Segment end index must be within the bounds of the data array.");
-        }
-        
-        var mean = _means[startIndex, endIndex - 1];
-        
         double sum = 0;
-        for (var i = startIndex; i < endIndex; i++)
+        for (var dimension = 0; dimension < _data.GetLength(0); dimension++)
         {
-            sum += Math.Pow(_data[i] - mean, 2);
+            var mean = _means[dimension, startIndex, endIndex - 1];
+        
+            for (var i = startIndex; i < endIndex; i++)
+            {
+                sum += Math.Pow(_data[dimension, i] - mean, 2);
+            }
         }
         
         return sum;
@@ -131,14 +119,15 @@ public class L2CostFunction : IPELTCostFunction
     /// <param name="data">The data array.</param>
     /// <param name="start">The start index of the segment.</param>
     /// <param name="end">The end index of the segment.</param>
+    /// <param name="dimension">The dimension of the data array to calculate the mean for.</param>
     /// <returns>The mean value of the segment.</returns>
-    private static double CalculateMean(double[] data, int start, int end)
+    private static double CalculateMean(double[,] data, int start, int end, int dimension)
     {
         double sum = 0;
         
         for (var i = start; i < end; i++)
         {
-            sum += data[i];
+            sum += data[dimension, i];
         }
         
         return sum / (end - start);
@@ -149,16 +138,20 @@ public class L2CostFunction : IPELTCostFunction
     /// </summary>
     /// <param name="data">The data array.</param>
     /// <returns>A 2D array of precomputed means for all segments.</returns>
-    private static double[,] PrecomputeMeans(double[] data)
+    private static double[,,] PrecomputeMeans(double[,] data)
     {
-        var n = data.Length;
-        var means = new double[n, n];
+        var numDimensions = data.GetLength(0);
+        var numPoints = data.GetLength(1);
+        var means = new double[numDimensions, numPoints, numPoints];
 
-        for (var i = 0; i < n; i++)
+        for (var dimension = 0; dimension < numDimensions; dimension++)
         {
-            for (var j = i; j < n; j++)
+            for (var i = 0; i < numPoints; i++)
             {
-                means[i, j] = CalculateMean(data, i, j + 1);
+                for (var j = i; j < numPoints; j++)
+                {
+                    means[dimension, i, j] = CalculateMean(data, i, j + 1, dimension);
+                }
             }
         }
 

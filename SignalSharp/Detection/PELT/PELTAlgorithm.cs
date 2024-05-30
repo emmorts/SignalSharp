@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using SignalSharp.Detection.PELT.Exceptions;
 using SignalSharp.Detection.PELT.Models;
 
 namespace SignalSharp.Detection.PELT;
@@ -21,7 +21,7 @@ namespace SignalSharp.Detection.PELT;
 public class PELTAlgorithm
 {
     private readonly PELTOptions _options;
-    private double[] _signal = null!;
+    private double[,] _signal = null!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PELTAlgorithm"/> class with optional configuration settings.
@@ -31,11 +31,11 @@ public class PELTAlgorithm
     {
         _options = options ?? new PELTOptions();
     }
-
+    
     /// <summary>
-    /// Fits the PELT algorithm to the provided signal data.
+    /// Fits the PELT algorithm to the provided one-dimensional time series data.
     /// </summary>
-    /// <param name="signal">The time series data to be segmented.</param>
+    /// <param name="signal">The one-dimensional time series data to fit.</param>
     /// <returns>The fitted <see cref="PELTAlgorithm"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when the signal data is null.</exception>
     /// <remarks>
@@ -52,9 +52,41 @@ public class PELTAlgorithm
     /// </remarks>
     public PELTAlgorithm Fit(double[] signal)
     {
-        _signal = signal ?? throw new ArgumentNullException(nameof(signal), "Data must not be null.");
+        ArgumentNullException.ThrowIfNull(signal, nameof(signal));
+        
+        var signalMatrix = new double[1, signal.Length];
+        for (var i = 0; i < signal.Length; i++)
+        {
+            signalMatrix[0, i] = signal[i];
+        }
 
-        _options.CostFunction.Fit(signal);
+        return Fit(signalMatrix);
+    }
+
+    /// <summary>
+    /// Fits the PELT algorithm to the provided multi-dimensional time series data.
+    /// </summary>
+    /// <param name="signalMatrix">The multi-dimensional time series data to fit, where each row represents a different time series.</param>
+    /// <returns>The fitted <see cref="PELTAlgorithm"/> instance.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the signal data is null.</exception>
+    /// <remarks>
+    /// This method initializes the internal structures and cost function needed to compute the change points.
+    ///
+    /// <example>
+    /// For example, to fit the algorithm to a signal:
+    /// <code>
+    /// double[,] signal = { { 1.0, 2.0, 3.0, 4.0 } };
+    /// var pelt = new PELTAlgorithm().Fit(signal);
+    /// </code>
+    /// This initializes the algorithm with the provided signal data.
+    /// </example>
+    /// </remarks>
+    public PELTAlgorithm Fit(double[,] signalMatrix)
+    {
+        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+        
+        _signal = signalMatrix;
+        _options.CostFunction.Fit(signalMatrix);
         
         return this;
     }
@@ -62,7 +94,7 @@ public class PELTAlgorithm
     /// <summary>
     /// Predicts the change points in the fitted signal using the specified penalty value.
     /// </summary>
-    /// <param name="pen">The penalty value to control the number of change points.</param>
+    /// <param name="penalty">The penalty value to control the number of change points.</param>
     /// <returns>An array of indices representing the change points in the signal.</returns>
     /// <exception cref="InvalidOperationException">Thrown when Fit method has not been called before Predict.</exception>
     /// <remarks>
@@ -77,14 +109,11 @@ public class PELTAlgorithm
     /// This computes the change points in the signal with a penalty value of 10.0.
     /// </example>
     /// </remarks>
-    public int[] Predict(double pen)
+    public int[] Predict(double penalty)
     {
-        if (_signal is null)
-        {
-            throw new InvalidOperationException("Fit must be called before Predict.");
-        }
+        UninitializedDataException.ThrowIfUninitialized(_signal, "Fit() must be called before Predict().");
 
-        var partition = Segment(pen);
+        var partition = Segment(penalty);
         
         return ExtractBreakpoints(partition);
     }
@@ -92,7 +121,7 @@ public class PELTAlgorithm
     /// <summary>
     /// Fits the PELT algorithm to the provided signal data and predicts the change points using the specified penalty value.
     /// </summary>
-    /// <param name="signal">The time series data to be segmented.</param>
+    /// <param name="signal">The one-dimensional time series data to to be segmented.</param>
     /// <param name="pen">The penalty value to control the number of change points.</param>
     /// <returns>An array of indices representing the change points in the signal.</returns>
     /// <example>
@@ -105,6 +134,26 @@ public class PELTAlgorithm
     /// This fits the algorithm to the signal and computes the change points with a penalty value of 10.0.
     /// </example>
     public int[] FitPredict(double[] signal, double pen)
+    {
+        return Fit(signal).Predict(pen);
+    }
+
+    /// <summary>
+    /// Fits the PELT algorithm to the provided signal data and predicts the change points using the specified penalty value.
+    /// </summary>
+    /// <param name="signal">The multi-dimensional time series data to be segmented, where each row represents a different time series.</param>
+    /// <param name="pen">The penalty value to control the number of change points.</param>
+    /// <returns>An array of indices representing the change points in the signal.</returns>
+    /// <example>
+    /// For example, to fit and predict the change points in one step:
+    /// <code>
+    /// double[,] signal = { { 1.0, 2.0, 3.0, 4.0 } };
+    /// var pelt = new PELTAlgorithm();
+    /// int[] changePoints = pelt.FitPredict(signal, 10.0);
+    /// </code>
+    /// This fits the algorithm to the signal and computes the change points with a penalty value of 10.0.
+    /// </example>
+    public int[] FitPredict(double[,] signal, double pen)
     {
         return Fit(signal).Predict(pen);
     }
@@ -128,8 +177,8 @@ public class PELTAlgorithm
             partitions[bkp] = candidatePartitions.MinBy(d => d.Values.Sum())!;
             admissible = FilterAdmissible(admissible, candidatePartitions, partitions, bkp, pen);
         }
-
-        return CleanPartition(partitions[_signal.Length]);
+        
+        return CleanPartition(partitions[_signal.GetLength(1)]);
     }
     
     /// <summary>

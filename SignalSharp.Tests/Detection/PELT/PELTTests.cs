@@ -1,5 +1,6 @@
 using SignalSharp.Detection.PELT;
 using SignalSharp.Detection.PELT.Cost;
+using SignalSharp.Detection.PELT.Exceptions;
 using SignalSharp.Detection.PELT.Models;
 
 namespace SignalSharp.Tests.Detection.PELT;
@@ -28,7 +29,7 @@ public class PELTAlgorithmTests
         var options = new PELTOptions { CostFunction = new L2CostFunction() };
         var algo = new PELTAlgorithm(options);
 
-        Assert.Throws<InvalidOperationException>(() => algo.Predict(10));
+        Assert.Throws<UninitializedDataException>(() => algo.Predict(10));
     }
 
     [Test]
@@ -36,7 +37,7 @@ public class PELTAlgorithmTests
     {
         var options = new PELTOptions { CostFunction = new L2CostFunction(), MinSize = 1, Jump = 1 };
         var algo = new PELTAlgorithm(options);
-        double[] signal = [1, 1, 1, 5, 5, 5, 1, 1, 1];
+        double[,] signal = { { 1, 1, 1, 5, 5, 5, 1, 1, 1 } };
 
         algo.Fit(signal);
         var breakpoints = algo.Predict(2);
@@ -67,8 +68,13 @@ public class PELTAlgorithmTests
             .Repeat(new double[] { 1, 1, 1, 5, 5, 5, 1, 1, 1, 2, 2, 3, 4, 2, 1 }, 100)
             .SelectMany(x => x)
             .ToArray();
+        var signalMatrix = new double[1, signal.Length];
+        for (var i = 0; i < signal.Length; i++)
+        {
+            signalMatrix[0, i] = signal[i];
+        }
 
-        var breakpoints = algo.FitPredict(signal, 10);
+        var breakpoints = algo.FitPredict(signalMatrix, 10);
 
         Assert.That(new List<double>(), Is.EqualTo(breakpoints));
     }
@@ -78,7 +84,7 @@ public class PELTAlgorithmTests
     {
         var options = new PELTOptions { CostFunction = new RBFCostFunction(), MinSize = 1, Jump = 1 };
         var algo = new PELTAlgorithm(options);
-        double[] signal = [1, 1, 1, 5, 5, 5, 1, 1, 1];
+        double[,] signal = { { 1, 1, 1, 5, 5, 5, 1, 1, 1 } };
 
         algo.Fit(signal);
         var breakpoints = algo.Predict(0.1);

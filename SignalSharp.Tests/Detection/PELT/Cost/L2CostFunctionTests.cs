@@ -8,7 +8,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_SimpleCase()
     {
-        double[] data = [1.0, 2.0, 3.0];
+        double[,] data = { { 1.0, 2.0, 3.0 } };
 
         var l2CostFunction = new L2CostFunction();
         var cost = l2CostFunction.Fit(data).ComputeCost();
@@ -21,7 +21,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_LargerCase()
     {
-        double[] data = [1.0, 1.5, 2.0, 2.5, 3.0];
+        double[,] data = { { 1.0, 1.5, 2.0, 2.5, 3.0 } };
 
         var l2CostFunction = new L2CostFunction();
         var cost = l2CostFunction.Fit(data).ComputeCost();
@@ -34,7 +34,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_Subset()
     {
-        double[] data = [1.0, 1.5, 2.0, 2.5, 3.0];
+        double[,] data = { { 1.0, 1.5, 2.0, 2.5, 3.0 } };
 
         var l2CostFunction = new L2CostFunction();
         var cost = l2CostFunction.Fit(data).ComputeCost(1, 4);
@@ -48,7 +48,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_PartialComputation()
     {
-        double[] data = [1.0, 1.5, 2.0, 2.5, 3.0];
+        double[,] data = { { 1.0, 1.5, 2.0, 2.5, 3.0 } };
 
         var l2CostFunction = new L2CostFunction().Fit(data);
         
@@ -64,7 +64,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_SinglePoint()
     {
-        double[] data = [1.0];
+        double[,] data = { { 1.0 } };
 
         var l2CostFunction = new L2CostFunction();
         var cost = l2CostFunction.Fit(data).ComputeCost();
@@ -76,7 +76,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_NoPoints()
     {
-        double[] data = [];
+        double[,] data = { {  } };
 
         var l2CostFunction = new L2CostFunction();
         var cost = l2CostFunction.Fit(data).ComputeCost();
@@ -87,7 +87,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_InvalidStart()
     {
-        double[] data = [1, 2, 3, 4, 5];
+        double[,] data = { { 1, 2, 3, 4, 5 } };
 
         var l2CostFunction = new L2CostFunction();
 
@@ -97,7 +97,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_InvalidEnd()
     {
-        double[] data = [1, 2, 3, 4, 5];
+        double[,] data = { { 1, 2, 3, 4, 5 } };
 
         var l2CostFunction = new L2CostFunction();
 
@@ -107,7 +107,7 @@ public class L2CostFunctionTests
     [Test]
     public void ComputeCost_InvalidSegment()
     {
-        double[] data = [1, 2, 3, 4, 5];
+        double[,] data = { { 1, 2, 3, 4, 5 } };
 
         var l2CostFunction = new L2CostFunction();
 

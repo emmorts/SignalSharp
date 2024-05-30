@@ -114,6 +114,42 @@ int[] changePointsLowPenalty = pelt.Predict(pen: 5.0);
 Console.WriteLine("Change Points with Low Penalty: " + string.Join(", ", changePointsLowPenalty));
 ```
 
+### Example 5: Detecting Change Points in Multidimensional Time Series Data (L2 Cost Function)
+
+The PELT algorithm now supports multidimensional time series data. Here, we demonstrate how to detect change points in such data.
+
+#### Single Time Series as Multidimensional Data
+
+```csharp
+double[,] signal = { { 1.0, 2.0, 3.0, 4.0 } };
+var options = new PELTOptions
+{
+    CostFunction = new L2CostFunction()
+};
+var pelt = new PELTAlgorithm(options);
+pelt.Fit(signal);
+int[] changePoints = pelt.Predict(pen: 10.0);
+Console.WriteLine("Change Points in Multidimensional Signal: " + string.Join(", ", changePoints));
+```
+
+#### Multiple Time Series
+
+```csharp
+double[,] multiSeriesSignal = {
+    { 1.0, 2.0, 3.0, 4.0 },
+    { 5.0, 6.0, 7.0, 8.0 },
+    { 9.0, 10.0, 11.0, 12.0 }
+};
+var options = new PELTOptions
+{
+    CostFunction = new L2CostFunction()
+};
+var pelt = new PELTAlgorithm(options);
+pelt.Fit(multiSeriesSignal);
+int[] changePoints = pelt.Predict(pen: 10.0);
+Console.WriteLine("Change Points in Multidimensional Signal: " + string.Join(", ", changePoints));
+```
+
 ## Advantages and Limitations
 
 ### Advantages
@@ -121,6 +157,7 @@ Console.WriteLine("Change Points with Low Penalty: " + string.Join(", ", changeP
 - **Efficiency**: The PELT algorithm is computationally efficient and scales linearly with the size of the data.
 - **Flexibility**: Supports various cost functions to suit different types of data and noise characteristics.
 - **Accuracy**: Provides accurate detection of multiple change points in time series data.
+- **Multidimensional Support**: Can handle multidimensional time series data, making it versatile for complex datasets.
 
 ### Limitations
 
