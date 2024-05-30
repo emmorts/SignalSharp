@@ -1,0 +1,43 @@
+name: Build and Deploy Docs
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  actions: read
+  pages: write
+  id-token: write
+    
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+  
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      actions: read
+      pages: write
+      id-token: write
+    needs: [ validate, test ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dotnet Setup
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+
+      - run: dotnet tool update -g docfx
+      - run: docfx ./docs/docfx.json
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs/_site'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

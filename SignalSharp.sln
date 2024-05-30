@@ -17,6 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CI", "CI", "{F8D06701-4509-
 		.github\release.yml = .github\release.yml
 		.github\workflows\ci.yaml = .github\workflows\ci.yaml
 		.github\workflows\release-deploy.yaml = .github\workflows\release-deploy.yaml
+		.github\workflows\docs.yaml = .github\workflows\docs.yaml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{7998A0D4-7F98-4E35-B0EF-9085C2ED0A3D}"
