@@ -44,6 +44,11 @@
       "_appFaviconPath": "logo.ico",
       "_enableSearch": true,
       "pdf": false
+    },
+    "markdownEngineProperties": {
+      "markdigExtensions": [
+        "TaskLists"
+      ]
     }
   }
 }

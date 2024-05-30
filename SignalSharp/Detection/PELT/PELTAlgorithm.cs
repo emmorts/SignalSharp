@@ -96,7 +96,7 @@ public class PELTAlgorithm
     /// </summary>
     /// <param name="penalty">The penalty value to control the number of change points.</param>
     /// <returns>An array of indices representing the change points in the signal.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when Fit method has not been called before Predict.</exception>
+    /// <exception cref="UninitializedDataException">Thrown when Fit method has not been called before Predict.</exception>
     /// <remarks>
     /// This method uses the PELT algorithm to identify the change points in the time series data.
     ///
