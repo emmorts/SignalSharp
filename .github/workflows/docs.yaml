@@ -19,11 +19,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      actions: read
-      pages: write
-      id-token: write
-    needs: [ validate, test ]
     steps:
       - uses: actions/checkout@v4
       - name: Dotnet Setup
