@@ -12,7 +12,7 @@ public class PELTAlgorithmTests
     {
         var options = new PELTOptions { CostFunction = new L2CostFunction() };
         var algo = new PELTAlgorithm(options);
-        var signal = new double[] { 1, 2, 3, 4, 5 };
+        double[] signal = [1, 2, 3, 4, 5];
 
         algo.Fit(signal);
 
@@ -36,12 +36,12 @@ public class PELTAlgorithmTests
     {
         var options = new PELTOptions { CostFunction = new L2CostFunction(), MinSize = 1, Jump = 1 };
         var algo = new PELTAlgorithm(options);
-        var signal = new double[] { 1, 1, 1, 5, 5, 5, 1, 1, 1 };
+        double[] signal = [1, 1, 1, 5, 5, 5, 1, 1, 1];
 
         algo.Fit(signal);
         var breakpoints = algo.Predict(2);
 
-        var expectedBreakpoints = new int[] { 3, 6 };
+        int[] expectedBreakpoints = [3, 6];
         Assert.That(expectedBreakpoints, Is.EqualTo(breakpoints));
     }
 
@@ -50,11 +50,11 @@ public class PELTAlgorithmTests
     {
         var options = new PELTOptions { CostFunction = new L2CostFunction(), MinSize = 1, Jump = 1 };
         var algo = new PELTAlgorithm(options);
-        var signal = new double[] { 1, 1, 1, 5, 5, 5, 1, 1, 1 };
+        double[] signal = [1, 1, 1, 5, 5, 5, 1, 1, 1];
 
         var breakpoints = algo.FitPredict(signal, 2);
 
-        var expectedBreakpoints = new int[] { 3, 6 };
+        int[] expectedBreakpoints = [3, 6];
         Assert.That(expectedBreakpoints, Is.EqualTo(breakpoints));
     }
     
@@ -78,12 +78,12 @@ public class PELTAlgorithmTests
     {
         var options = new PELTOptions { CostFunction = new RBFCostFunction(), MinSize = 1, Jump = 1 };
         var algo = new PELTAlgorithm(options);
-        var signal = new double[] { 1, 1, 1, 5, 5, 5, 1, 1, 1 };
+        double[] signal = [1, 1, 1, 5, 5, 5, 1, 1, 1];
 
         algo.Fit(signal);
         var breakpoints = algo.Predict(0.1);
 
-        var expectedBreakpoints = new[] { 3, 6 };
+        int[] expectedBreakpoints = [3, 6];
         Assert.That(breakpoints, Is.EqualTo(expectedBreakpoints));
     }
 }

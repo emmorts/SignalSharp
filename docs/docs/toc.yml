@@ -10,5 +10,7 @@
     href: algorithms/kalman-filter.md
   - name: Savitzky-Golay Filter
     href: algorithms/savitzky-golay-filter.md
+- name: Resampling
+  href: algorithms/resampling.md
 - name: Future Plans
   href: future-plans.md
