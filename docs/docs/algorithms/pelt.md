@@ -116,7 +116,7 @@ Console.WriteLine("Change Points with Low Penalty: " + string.Join(", ", changeP
 
 ### Example 5: Detecting Change Points in Multidimensional Time Series Data (L2 Cost Function)
 
-The PELT algorithm now supports multidimensional time series data. Here, we demonstrate how to detect change points in such data.
+PELT algorithm supports multidimensional time series data. 
 
 #### Single Time Series as Multidimensional Data
 

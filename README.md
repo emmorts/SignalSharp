@@ -1,4 +1,6 @@
-SignalSharp is a C# library designed for efficient signal processing and time series analysis. 
+## SignalSharp
+
+C# library designed for efficient signal processing and time series analysis. 
 
 ## Algorithms
 
@@ -54,7 +56,3 @@ Refer to [documentation](https://emmorts.github.io/SignalSharp/) for examples an
 ## Contributing
 
 Contributions are welcome! If you have ideas, suggestions, or bug reports, feel free to open an issue or submit a pull request. 
-
-## License
-
-SignalSharp is licensed under the MIT License. See the [LICENSE](./LICENSE) file for more details.
