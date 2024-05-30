@@ -63,7 +63,7 @@ Refer to [documentation](https://emmorts.github.io/SignalSharp/) for examples an
 
 ## Contributing
 
-Contributions are welcome! If you have ideas, suggestions, or bug reports, feel free to open an issue or submit a pull request. We appreciate your help in making SignalSharp better.
+Contributions are welcome! If you have ideas, suggestions, or bug reports, feel free to open an issue or submit a pull request. 
 
 ## License
 

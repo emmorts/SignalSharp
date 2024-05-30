@@ -32,13 +32,13 @@ public class ResamplingTests
     [Test]
     public void SegmentMedian_ShouldThrowArgumentNullException_WhenSignalIsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => SignalSharp.Resampling.Resampling.SegmentMedian(null, 2));
+        Assert.Throws<ArgumentNullException>(() => SignalSharp.Resampling.Resampling.SegmentMedian(null!, 2));
     }
 
     [Test]
     public void SegmentMedian_ShouldThrowArgumentNullException_WhenSignalIsNull_DisableQuickSelect()
     {
-        Assert.Throws<ArgumentNullException>(() => SignalSharp.Resampling.Resampling.SegmentMedian(null, 2, false));
+        Assert.Throws<ArgumentNullException>(() => SignalSharp.Resampling.Resampling.SegmentMedian(null!, 2, false));
     }
 
     [Test]
