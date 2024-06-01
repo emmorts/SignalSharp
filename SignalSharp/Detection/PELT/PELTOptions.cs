@@ -1,6 +1,6 @@
-using SignalSharp.Detection.PELT.Cost;
+using SignalSharp.CostFunctions.Cost;
 
-namespace SignalSharp.Detection.PELT.Models;
+namespace SignalSharp.Detection.PELT;
 
 /// <summary>
 /// Represents the configuration options for the Piecewise Linear Trend Change (PELT) algorithm.

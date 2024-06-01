@@ -2,17 +2,42 @@
 
 ### Algorithms
 
-Algorithm implementation is ranked by priority, top to bottom.
-
-- [x] PELT
-  - [x] L1 Cost Function
-  - [x] L2 Cost Function
-  - [x] RBF Cost Function
-- [x] Savitzky-Golay Filter
-- [x] Kalman Filter
-- [ ] FFT
-- [ ] Wavelet Transform
-- [ ] Autoregressive (AR) models
+- Cost Functions
+    - [x] L1
+    - [x] L2
+    - [x] RBF
+    - [ ] Log Loss
+    - [ ] Huber Loss
+    - [ ] Total Variation Loss
+    - [ ] Hinge Loss
+    - [ ] Log-Cosh Loss
+- Changepoint Detection
+    - [x] PELT
+    - [x] CUSUM
+    - [ ] Bayesian Online Changepoint Detection
+    - [ ] Binary Segmentation
+- Prediction
+    - [x] Kalman Filter
+    - [ ] Exponential Smoothing
+    - [ ] ARIMA (AutoRegressive Integrated Moving Average)
+    - [ ] Holt-Winters Exponential Smoothing
+- Filters
+    - [ ] Butterworth Filter
+    - [ ] Median Filter
+- Resampling
+    - [x] Downsampling
+    - [x] Segment Statistics
+    - [ ] Spline Interpolation
+    - [ ] Fourier Resampling
+- Smoothing
+    - [x] Chebyshev Approximation
+    - [x] Moving Average
+    - [x] Savitzky-Golay Filter
+    - [ ] Gaussian Smoothing
+- Feature Extraction
+    - [ ] PCA
+    - [ ] FFT
+    - [ ] Wavelet Transform
 
 ### Documentation
 

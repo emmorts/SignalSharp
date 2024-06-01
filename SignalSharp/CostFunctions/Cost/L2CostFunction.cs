@@ -1,6 +1,7 @@
-using SignalSharp.Detection.PELT.Exceptions;
+using SignalSharp.Common.Exceptions;
+using SignalSharp.CostFunctions.Exceptions;
 
-namespace SignalSharp.Detection.PELT.Cost;
+namespace SignalSharp.CostFunctions.Cost;
 
 /// <summary>
 /// Represents a cost function using the L2 norm (Euclidean distance) for the Piecewise Linear Trend Change (PELT) method.

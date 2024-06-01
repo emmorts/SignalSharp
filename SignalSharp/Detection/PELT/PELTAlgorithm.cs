@@ -1,5 +1,4 @@
-using SignalSharp.Detection.PELT.Exceptions;
-using SignalSharp.Detection.PELT.Models;
+using SignalSharp.Common.Exceptions;
 
 namespace SignalSharp.Detection.PELT;
 
@@ -92,11 +91,11 @@ public class PELTAlgorithm
     }
 
     /// <summary>
-    /// Predicts the change points in the fitted signal using the specified penalty value.
+    /// Detects the change points in the fitted signal using the specified penalty value.
     /// </summary>
     /// <param name="penalty">The penalty value to control the number of change points.</param>
     /// <returns>An array of indices representing the change points in the signal.</returns>
-    /// <exception cref="UninitializedDataException">Thrown when Fit method has not been called before Predict.</exception>
+    /// <exception cref="UninitializedDataException">Thrown when Fit method has not been called before Detect.</exception>
     /// <remarks>
     /// This method uses the PELT algorithm to identify the change points in the time series data.
     ///
@@ -104,14 +103,14 @@ public class PELTAlgorithm
     /// For example, given a fitted PELTAlgorithm instance:
     /// <code>
     /// var pelt = new PELTAlgorithm().Fit(signal);
-    /// int[] changePoints = pelt.Predict(10.0);
+    /// int[] changePoints = pelt.Detect(10.0);
     /// </code>
     /// This computes the change points in the signal with a penalty value of 10.0.
     /// </example>
     /// </remarks>
-    public int[] Predict(double penalty)
+    public int[] Detect(double penalty)
     {
-        UninitializedDataException.ThrowIfUninitialized(_signal, "Fit() must be called before Predict().");
+        UninitializedDataException.ThrowIfUninitialized(_signal, "Fit() must be called before Detect().");
 
         var partition = Segment(penalty);
         
@@ -119,43 +118,43 @@ public class PELTAlgorithm
     }
 
     /// <summary>
-    /// Fits the PELT algorithm to the provided signal data and predicts the change points using the specified penalty value.
+    /// Fits the PELT algorithm to the provided signal data and detects the change points using the specified penalty value.
     /// </summary>
     /// <param name="signal">The one-dimensional time series data to to be segmented.</param>
     /// <param name="pen">The penalty value to control the number of change points.</param>
     /// <returns>An array of indices representing the change points in the signal.</returns>
     /// <example>
-    /// For example, to fit and predict the change points in one step:
+    /// For example, to fit and detect the change points in one step:
     /// <code>
     /// double[] signal = {1.0, 2.0, 3.0, 4.0};
     /// var pelt = new PELTAlgorithm();
-    /// int[] changePoints = pelt.FitPredict(signal, 10.0);
+    /// int[] changePoints = pelt.FitDetect(signal, 10.0);
     /// </code>
     /// This fits the algorithm to the signal and computes the change points with a penalty value of 10.0.
     /// </example>
-    public int[] FitPredict(double[] signal, double pen)
+    public int[] FitAndDetect(double[] signal, double pen)
     {
-        return Fit(signal).Predict(pen);
+        return Fit(signal).Detect(pen);
     }
 
     /// <summary>
-    /// Fits the PELT algorithm to the provided signal data and predicts the change points using the specified penalty value.
+    /// Fits the PELT algorithm to the provided signal data and detects the change points using the specified penalty value.
     /// </summary>
     /// <param name="signal">The multi-dimensional time series data to be segmented, where each row represents a different time series.</param>
     /// <param name="pen">The penalty value to control the number of change points.</param>
     /// <returns>An array of indices representing the change points in the signal.</returns>
     /// <example>
-    /// For example, to fit and predict the change points in one step:
+    /// For example, to fit and detect the change points in one step:
     /// <code>
     /// double[,] signal = { { 1.0, 2.0, 3.0, 4.0 } };
     /// var pelt = new PELTAlgorithm();
-    /// int[] changePoints = pelt.FitPredict(signal, 10.0);
+    /// int[] changePoints = pelt.FitDetect(signal, 10.0);
     /// </code>
     /// This fits the algorithm to the signal and computes the change points with a penalty value of 10.0.
     /// </example>
-    public int[] FitPredict(double[,] signal, double pen)
+    public int[] FitAndDetect(double[,] signal, double pen)
     {
-        return Fit(signal).Predict(pen);
+        return Fit(signal).Detect(pen);
     }
 
     /// <summary>

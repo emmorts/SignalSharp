@@ -1,7 +1,7 @@
-using SignalSharp.Detection.PELT.Cost;
-using SignalSharp.Detection.PELT.Exceptions;
+using SignalSharp.CostFunctions.Cost;
+using SignalSharp.CostFunctions.Exceptions;
 
-namespace SignalSharp.Tests.Detection.PELT.Cost;
+namespace SignalSharp.Tests.CostFunctions;
 
 public class L2CostFunctionTests
 {

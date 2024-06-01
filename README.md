@@ -27,6 +27,7 @@ C# library designed for efficient signal processing and time series analysis.
     - [x] L1 Cost Function
     - [x] L2 Cost Function
     - [x] RBF Cost Function
+  - [x] CUSUM
   - [x] Savitzky-Golay Filter
   - [x] Resampling
     - [x] Downsampling

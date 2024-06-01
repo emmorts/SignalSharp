@@ -1,4 +1,4 @@
-namespace SignalSharp.Detection.PELT.Cost;
+namespace SignalSharp.CostFunctions.Cost;
 
 /// <summary>
 /// Provides a base implementation of the <see cref="IPELTCostFunction"/> interface.

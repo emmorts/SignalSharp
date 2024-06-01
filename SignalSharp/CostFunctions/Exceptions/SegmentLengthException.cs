@@ -1,4 +1,4 @@
-namespace SignalSharp.Detection.PELT.Exceptions;
+namespace SignalSharp.CostFunctions.Exceptions;
 
 /// <summary>
 /// Exception thrown when the segment length of the RBF kernel is invalid.

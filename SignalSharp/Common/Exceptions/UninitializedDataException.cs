@@ -1,4 +1,4 @@
-namespace SignalSharp.Detection.PELT.Exceptions;
+namespace SignalSharp.Common.Exceptions;
 
 /// <summary>
 /// Exception thrown when data is not initialized.
@@ -12,7 +12,7 @@ public class UninitializedDataException(string? message) : Exception(message)
     /// <param name="data">The data to validate.</param>
     /// <param name="message">The exception message.</param>
     /// <exception cref="UninitializedDataException">Thrown when data is not initialized.</exception>
-    public static void ThrowIfUninitialized(double[,] data, string message)
+    public static void ThrowIfUninitialized(object data, string message)
     {
         if (data is null)
         {

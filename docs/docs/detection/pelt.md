@@ -42,7 +42,7 @@ var options = new PELTOptions
 };
 var pelt = new PELTAlgorithm(options);
 pelt.Fit(networkTraffic);
-int[] changePoints = pelt.Predict(pen: 10.0);
+int[] changePoints = pelt.Detect(penalty: 10.0);
 Console.WriteLine("Change Points in Network Traffic: " + string.Join(", ", changePoints));
 ```
 
@@ -58,7 +58,7 @@ var options = new PELTOptions
 };
 var pelt = new PELTAlgorithm(options);
 pelt.Fit(processMeasurements);
-int[] changePoints = pelt.Predict(pen: 5.0);
+int[] changePoints = pelt.Detect(penalty: 5.0);
 Console.WriteLine("Change Points in Manufacturing Process: " + string.Join(", ", changePoints));
 ```
 
@@ -74,7 +74,7 @@ var options = new PELTOptions
 };
 var pelt = new PELTAlgorithm(options);
 pelt.Fit(financialData);
-int[] changePoints = pelt.Predict(pen: 15.0);
+int[] changePoints = pelt.Detect(penalty: 15.0);
 Console.WriteLine("Change Points in Financial Data: " + string.Join(", ", changePoints));
 ```
 
@@ -94,7 +94,7 @@ var options = new PELTOptions
 };
 var pelt = new PELTAlgorithm(options);
 pelt.Fit(sensorData);
-int[] changePointsHighPenalty = pelt.Predict(pen: 20.0);
+int[] changePointsHighPenalty = pelt.Detect(penalty: 20.0);
 Console.WriteLine("Change Points with High Penalty: " + string.Join(", ", changePointsHighPenalty));
 ```
 
@@ -110,7 +110,7 @@ var options = new PELTOptions
 };
 var pelt = new PELTAlgorithm(options);
 pelt.Fit(sensorData);
-int[] changePointsLowPenalty = pelt.Predict(pen: 5.0);
+int[] changePointsLowPenalty = pelt.Detect(penalty: 5.0);
 Console.WriteLine("Change Points with Low Penalty: " + string.Join(", ", changePointsLowPenalty));
 ```
 
@@ -128,7 +128,7 @@ var options = new PELTOptions
 };
 var pelt = new PELTAlgorithm(options);
 pelt.Fit(signal);
-int[] changePoints = pelt.Predict(pen: 10.0);
+int[] changePoints = pelt.Detect(penalty: 10.0);
 Console.WriteLine("Change Points in Multidimensional Signal: " + string.Join(", ", changePoints));
 ```
 
@@ -146,7 +146,7 @@ var options = new PELTOptions
 };
 var pelt = new PELTAlgorithm(options);
 pelt.Fit(multiSeriesSignal);
-int[] changePoints = pelt.Predict(pen: 10.0);
+int[] changePoints = pelt.Detect(penalty: 10.0);
 Console.WriteLine("Change Points in Multidimensional Signal: " + string.Join(", ", changePoints));
 ```
 
