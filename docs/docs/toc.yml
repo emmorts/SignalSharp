@@ -1,10 +1,10 @@
 - name: Getting Started
   href: getting-started.md
-- name: Detection Algorithms
+- name: Detection
   items:
   - name: PELT
-    href: algorithms/pelt.md
-- name: Filtering Algorithms
+    href: detection/pelt.md
+- name: Filtering
   items:
   - name: Kalman Filter
     href: algorithms/kalman-filter.md
