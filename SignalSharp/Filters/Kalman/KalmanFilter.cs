@@ -116,6 +116,9 @@ public class KalmanFilter
     /// </summary>
     private void Predict()
     {
+        var x = _F * _x;
+        var y = _B * Vector<double>.Build.Dense(1, 0);
+        var xy = x + y;
         _x = _F * _x + _B * Vector<double>.Build.Dense(1, 0); // Assuming control input u is 0
         _P = _F * _P * _F.Transpose() + _Q;
     }

@@ -1,4 +1,5 @@
 using SignalSharp.Detection.CUSUM;
+using SignalSharp.Utilities;
 
 namespace SignalSharp.Tests.Detection;
 

@@ -1,4 +1,6 @@
-namespace SignalSharp.Tests;
+using SignalSharp.Utilities;
+
+namespace SignalSharp.Tests.Utilities;
 
 [TestFixture]
 public class StatisticalFunctionsTests

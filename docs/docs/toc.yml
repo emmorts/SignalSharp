@@ -4,13 +4,19 @@
   items:
   - name: PELT
     href: detection/pelt.md
+  - name: CUSUM
+    href: detection/cusum.md
 - name: Filtering
   items:
   - name: Kalman Filter
-    href: algorithms/kalman-filter.md
+    href: filters/kalman-filter.md
+- name: Smoothing
+  items:
+  - name: Moving Average
+    href: smoothing/moving-average.md
   - name: Savitzky-Golay Filter
-    href: algorithms/savitzky-golay-filter.md
+    href: smoothing/savitzky-golay-filter.md
 - name: Resampling
-  href: algorithms/resampling.md
+  href: resampling/resampling.md
 - name: Future Plans
   href: future-plans.md

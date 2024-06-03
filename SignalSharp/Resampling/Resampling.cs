@@ -1,3 +1,5 @@
+using SignalSharp.Utilities;
+
 namespace SignalSharp.Resampling;
 
 /// <summary>
@@ -108,7 +110,8 @@ public static class Resampling
         {
             var start = i * factor;
             var end = Math.Min(start + factor, signal.Length);
-            result[i] = signal.Skip(start).Take(end - start).Average();
+            var slice = signal[start..end].AsSpan();
+            result[i] = StatisticalFunctions.Mean<double>(slice);
         }
 
         return result;
@@ -134,7 +137,8 @@ public static class Resampling
         {
             var start = i * factor;
             var end = Math.Min(start + factor, signal.Length);
-            result[i] = signal.Skip(start).Take(end - start).Max();
+            var slice = signal[start..end].AsSpan();
+            result[i] = StatisticalFunctions.Max<double>(slice);
         }
 
         return result;
@@ -160,64 +164,8 @@ public static class Resampling
         {
             var start = i * factor;
             var end = Math.Min(start + factor, signal.Length);
-            result[i] = signal.Skip(start).Take(end - start).Min();
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Applies a moving average filter to the signal with the specified window size.
-    /// </summary>
-    /// <param name="signal">The input signal as an array of doubles.</param>
-    /// <param name="windowSize">The size of the moving window. Must be greater than zero. Larger window sizes smooth the signal more but may also reduce detail.</param>
-    /// <returns>The filtered signal as an array of doubles.</returns>
-    /// <remarks>
-    /// <para>A moving average filter smooths the input signal by averaging each point with its neighbors. This is useful for reducing noise and creating a smoother signal.</para>
-    /// 
-    /// <para>The <paramref name="windowSize"/> parameter determines how many neighboring points are considered in the average. A larger window size results in a smoother signal, as it averages over more points, but can also obscure finer details.</para>
-    /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when the signal is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the window size is less than or equal to zero.</exception>
-    public static double[] MovingAverage(double[] signal, int windowSize)
-    {
-        ArgumentNullException.ThrowIfNull(signal, nameof(signal));
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(windowSize, nameof(windowSize));
-
-        var result = new double[signal.Length - windowSize + 1];
-
-        for (var i = 0; i < result.Length; i++)
-        {
-            result[i] = signal.Skip(i).Take(windowSize).Average();
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Approximates the input signal using Chebyshev polynomials of the specified order.
-    /// </summary>
-    /// <param name="signal">The input signal as an array of doubles.</param>
-    /// <param name="order">The order of the Chebyshev polynomials. Must be greater than zero. Higher orders can capture more detail but may also lead to overfitting.</param>
-    /// <returns>The approximated signal as an array of doubles.</returns>
-    /// <remarks>
-    /// <para>Chebyshev polynomials are a sequence of orthogonal polynomials which can be used to approximate a function. This method fits Chebyshev polynomials to the given signal and returns the approximated values.</para>
-    /// 
-    /// <para>Consider using this method when you need a smooth approximation of a signal, especially if the signal is noisy. The <paramref name="order"/> parameter determines the complexity of the approximation: higher order values allow the approximation to capture more detail from the signal, but can also increase the risk of overfitting, especially in the presence of noise.</para>
-    /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when the signal is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the order is less than or equal to zero.</exception>
-    public static double[] ChebyshevApproximation(double[] signal, int order)
-    {
-        ArgumentNullException.ThrowIfNull(signal, nameof(signal));
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(order, nameof(order));
-
-        var coefficients = ChebyshevFit(signal, order);
-        var result = new double[signal.Length];
-
-        for (var i = 0; i < signal.Length; i++)
-        {
-            result[i] = ChebyshevEvaluate(coefficients, i, signal.Length);
+            var slice = signal[start..end].AsSpan();
+            result[i] = StatisticalFunctions.Min<double>(slice);
         }
 
         return result;
@@ -238,7 +186,8 @@ public static class Resampling
         {
             var start = i * factor;
             var end = Math.Min(start + factor, signal.Length);
-            result[i] = CalculateMedian(signal.Skip(start).Take(end - start).ToArray());
+            var slice = signal[start..end].AsSpan();
+            result[i] = StatisticalFunctions.Median<double>(slice);
         }
 
         return result;
@@ -259,172 +208,10 @@ public static class Resampling
         {
             var start = i * factor;
             var end = Math.Min(start + factor, signal.Length);
-            result[i] = QuickSelectMedian(signal, start, end - start);
+            var slice = signal[start..end].AsSpan();
+            result[i] = StatisticalFunctions.Median<double>(slice, true);
         }
 
         return result;
-    }
-
-    /// <summary>
-    /// Calculates the median of an array of values.
-    /// </summary>
-    /// <param name="values">The array of values.</param>
-    /// <returns>The median value.</returns>
-    /// <exception cref="ArgumentException">Thrown when the values array is null or empty.</exception>
-    private static double CalculateMedian(double[] values)
-    {
-        if (values == null || values.Length == 0)
-        {
-            throw new ArgumentException("Values array must not be null or empty.", nameof(values));
-        }
-
-        Array.Sort(values);
-
-        var middle = values.Length / 2;
-
-        return values.Length % 2 == 0
-            ? (values[middle - 1] + values[middle]) / 2.0
-            : values[middle];
-    }
-
-    /// <summary>
-    /// Computes the median using the QuickSelect algorithm for a specified segment.
-    /// </summary>
-    /// <param name="values">The array of values.</param>
-    /// <param name="start">The start index of the segment.</param>
-    /// <param name="length">The length of the segment.</param>
-    /// <returns>The median value.</returns>
-    /// <exception cref="ArgumentException">Thrown when the values array is null or the length is less than or equal to zero.</exception>
-    private static double QuickSelectMedian(double[] values, int start, int length)
-    {
-        if (values == null || length <= 0)
-        {
-            throw new ArgumentException("Values array must not be null or empty.", nameof(values));
-        }
-
-        var mid = length / 2;
-        if (length % 2 == 0)
-        {
-            return 0.5 * (QuickSelect(values, start, length, mid - 1) + QuickSelect(values, start, length, mid));
-        }
-
-        return QuickSelect(values, start, length, mid);
-    }
-
-    /// <summary>
-    /// Selects the k-th smallest element in a segment of the array using the QuickSelect algorithm.
-    /// </summary>
-    /// <param name="values">The array of values.</param>
-    /// <param name="start">The start index of the segment.</param>
-    /// <param name="length">The length of the segment.</param>
-    /// <param name="k">The k-th position to find.</param>
-    /// <returns>The k-th smallest element.</returns>
-    private static double QuickSelect(double[] values, int start, int length, int k)
-    {
-        while (true)
-        {
-            if (length == 1) return values[start];
-
-            var pivotIndex = Partition(values, start, length);
-            var leftLength = pivotIndex - start;
-
-            if (leftLength == k) return values[pivotIndex];
-
-            if (k < leftLength)
-            {
-                length = leftLength;
-            }
-            else
-            {
-                k -= leftLength + 1;
-                start = pivotIndex + 1;
-                length -= leftLength + 1;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Partitions the array segment around a pivot for the QuickSelect algorithm.
-    /// </summary>
-    /// <param name="values">The array of values.</param>
-    /// <param name="start">The start index of the segment.</param>
-    /// <param name="length">The length of the segment.</param>
-    /// <returns>The index of the pivot after partitioning.</returns>
-    private static int Partition(double[] values, int start, int length)
-    {
-        var pivot = values[start];
-        var left = start + 1;
-        var right = start + length - 1;
-
-        while (true)
-        {
-            while (left <= right && values[left] <= pivot) left++;
-            while (left <= right && values[right] > pivot) right--;
-
-            if (left > right) break;
-
-            Swap(values, left, right);
-        }
-
-        Swap(values, start, right);
-
-        return right;
-    }
-
-    /// <summary>
-    /// Swaps two elements in an array.
-    /// </summary>
-    /// <param name="values">The array of values.</param>
-    /// <param name="a">The index of the first element.</param>
-    /// <param name="b">The index of the second element.</param>
-    private static void Swap(double[] values, int a, int b)
-    {
-        (values[a], values[b]) = (values[b], values[a]);
-    }
-
-    /// <summary>
-    /// Fits Chebyshev polynomials to the signal up to the specified order.
-    /// </summary>
-    /// <param name="signal">The input signal.</param>
-    /// <param name="order">The order of the Chebyshev polynomials.</param>
-    /// <returns>The coefficients of the Chebyshev polynomials.</returns>
-    private static double[] ChebyshevFit(double[] signal, int order)
-    {
-        var n = signal.Length;
-        var t = new double[n];
-
-        for (var i = 0; i < n; i++)
-        {
-            t[i] = Math.Cos(Math.PI * (i + 0.5) / n);
-        }
-
-        var coefficients = new double[order + 1];
-
-        for (var k = 0; k <= order; k++)
-        {
-            var sum = 0.0;
-            for (var i = 0; i < n; i++)
-            {
-                sum += signal[i] * Math.Cos(Math.PI * k * (i + 0.5) / n);
-            }
-
-            coefficients[k] = sum * 2.0 / n;
-        }
-
-        return coefficients;
-    }
-
-    /// <summary>
-    /// Evaluates the Chebyshev polynomials at a given point.
-    /// </summary>
-    /// <param name="coefficients">The coefficients of the Chebyshev polynomials.</param>
-    /// <param name="x">The point at which to evaluate the polynomials.</param>
-    /// <param name="length">The length of the signal.</param>
-    /// <returns>The evaluated value.</returns>
-    private static double ChebyshevEvaluate(double[] coefficients, int x, int length)
-    {
-        return coefficients
-            .Select((t, k) => t * Math.Cos(Math.PI * k * (x + 0.5) / length))
-            .Sum();
     }
 }

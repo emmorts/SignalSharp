@@ -17,7 +17,7 @@
     - [ ] Bayesian Online Changepoint Detection
     - [ ] Binary Segmentation
 - Prediction
-    - [x] Kalman Filter
+    - [/] Kalman Filter
     - [ ] Exponential Smoothing
     - [ ] ARIMA (AutoRegressive Integrated Moving Average)
     - [ ] Holt-Winters Exponential Smoothing
@@ -30,7 +30,6 @@
     - [ ] Spline Interpolation
     - [ ] Fourier Resampling
 - Smoothing
-    - [x] Chebyshev Approximation
     - [x] Moving Average
     - [x] Savitzky-Golay Filter
     - [ ] Gaussian Smoothing
