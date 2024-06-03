@@ -198,9 +198,11 @@ public class PELTAlgorithm
     /// <returns>A list of indices to evaluate as change points.</returns>
     private List<int> GenerateIndices()
     {
-        return Enumerable.Range(0, _signal.Length)
+        var length = _signal.GetLength(1);
+        
+        return Enumerable.Range(0, length)
             .Where(k => k % _options.Jump == 0 && k >= _options.MinSize)
-            .Concat(new[] { _signal.Length })
+            .Concat(new[] { length })
             .ToList();
     }
     

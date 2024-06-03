@@ -5,7 +5,7 @@ C# library designed for efficient signal processing and time series analysis.
 ## Algorithms
 
 ### Change Point Detection
-- **PELT**: Pruned Exact Linear Time (PELT) method detects multiple change points with high efficiency, using a pruning technique to improve computation speed without sacrificing accuracy.
+- **PELT**: Pruned Exact Linear Time method detects multiple change points with high efficiency, using a pruning technique to improve computation speed without sacrificing accuracy.
 - **CUSUM**: Detects shifts in the mean value of a signal by accumulating deviations from a target value over time.
 
 ### Cost Functions
