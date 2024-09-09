@@ -2,25 +2,30 @@
 
 C# library designed for efficient signal processing and time series analysis. 
 
-## Algorithms
+## Features
 
 ### Change Point Detection
-- **PELT**: Pruned Exact Linear Time method detects multiple change points with high efficiency, using a pruning technique to improve computation speed without sacrificing accuracy.
-- **CUSUM**: Detects shifts in the mean value of a signal by accumulating deviations from a target value over time.
 
-### Cost Functions
-- **L1 Cost Function**: Robust against outliers and non-Gaussian noise.
-- **L2 Cost Function**: Ideal for normally distributed data.
-- **RBF Cost Function**: Handles non-linear relationships between data points.
+- **PELT (Pruned Exact Linear Time)**: Efficiently detects multiple change points in a signal using a pruning technique for improved speed without sacrificing accuracy.
+- **CUSUM (Cumulative Sum)**: Detects shifts in the mean value of a signal by accumulating deviations from a target value over time.
 
-### Smoothing and Filtering
-- **Savitzky-Golay Filter**: Smooths data to reduce noise while preserving the shape of the signal.
-- **Moving Average**: Smoothing a signal using a moving average filter.
-- **Kalman Filter**: Estimates the state of a linear dynamic system from a series of noisy measurements.
+### Signal Analysis
 
-### Resampling
-- **Downsampling**: Reducing the number of samples in a signal.
-- **Segment Statistics**: Computing statistics (mean, median, max, min) for segments of a signal.
+- **Cost Functions**:
+    - L1: Robust against outliers and non-Gaussian noise.
+    - L2: Ideal for normally distributed data.
+    - RBF (Radial Basis Function): Handles non-linear relationships between data points.
+
+### Signal Processing
+
+- **Smoothing and Filtering**:
+    - Savitzky-Golay Filter: Smooths data while preserving signal shape.
+    - Moving Average: Simple smoothing using a moving window.
+    - Kalman Filter: Estimates the state of a linear dynamic system from noisy measurements.
+
+- **Resampling**:
+    - Downsampling: Reduces the number of samples in a signal.
+    - Segment Statistics: Computes statistics (mean, median, max, min) for signal segments.
 
 ## Installation
 
@@ -32,7 +37,24 @@ dotnet add package SignalSharp
 
 ## Usage
 
-Refer to [documentation](https://emmorts.github.io/SignalSharp/) for examples and API documentation.
+For detailed examples and API documentation, please refer to the [official documentation](https://emmorts.github.io/SignalSharp/).
+
+Here's a quick example of how to use the PELT algorithm for change point detection:
+
+```csharp
+using SignalSharp;
+
+// Create a sample signal
+double[] signal = [1, 1, 1, 5, 5, 5, 1, 1, 1];
+
+// Initialize PELT algorithm
+var options = new PELTOptions { CostFunction = new L2CostFunction(), MinSize = 1, Jump = 1 };
+var algo = new PELTAlgorithm(options);
+
+// Detect change points
+var breakpoints = algo.FitAndDetect(signal, 2); // breakpoints = [3, 6]
+```
+
 
 ## Contributing
 
