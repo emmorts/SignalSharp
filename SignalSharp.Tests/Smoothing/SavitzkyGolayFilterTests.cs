@@ -20,6 +20,34 @@ public class SavitzkyGolayFilterTests
     }
 
     [Test]
+    public void SavitzkyGolayFilter_Decimal_SimpleInput_ReturnsFilteredOutput()
+    {
+        const int windowSize = 3;
+        const int polynomialOrder = 1;
+        
+        decimal[] input = [1.0m, 2.0m, 3.0m, 4.0m, 5.0m];
+        decimal[] expected = [1.0m, 2.0m, 3.0m, 4.0m, 5.0m];
+
+        var result = SavitzkyGolayFilter.Apply(input, windowSize, polynomialOrder);
+
+        Assert.That(result, Is.EqualTo(expected).Within(0.0000000001m));
+    }
+
+    [Test]
+    public void SavitzkyGolayFilter_Int_SimpleInput_ReturnsFilteredOutput()
+    {
+        const int windowSize = 3;
+        const int polynomialOrder = 1;
+        
+        int[] input = [1, 2, 3, 4, 5];
+        int[] expected = [1, 2, 3, 4, 5];
+
+        var result = SavitzkyGolayFilter.Apply(input, windowSize, polynomialOrder);
+
+        Assert.That(result, Is.EqualTo(expected));
+    }
+
+    [Test]
     public void SavitzkyGolayFilter_LargerInput_ReturnsFilteredOutput()
     {
         const int windowSize = 5;

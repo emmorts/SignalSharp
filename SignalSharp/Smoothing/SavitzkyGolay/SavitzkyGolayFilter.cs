@@ -1,4 +1,4 @@
-using MathNet.Numerics;
+using System.Numerics;
 using SignalSharp.Common;
 using SignalSharp.Common.Models;
 using SignalSharp.Utilities;
@@ -24,6 +24,45 @@ namespace SignalSharp.Smoothing.SavitzkyGolay;
 /// </remarks>
 public static class SavitzkyGolayFilter
 {
+    
+    /// <summary>
+    /// Applies the Savitzky-Golay filter to the input signal.
+    /// </summary>
+    /// <param name="inputSignal">The array of data points to be filtered.</param>
+    /// <param name="windowLength">The length of the filter window. Must be an odd number.</param>
+    /// <param name="polynomialOrder">The order of the polynomial used for filtering. Must be less than the window length.</param>
+    /// <param name="derivativeOrder">The order of the derivative to compute. Default is 0 (no derivative).</param>
+    /// <param name="padding">The padding method to apply to the signal. Default is None.</param>
+    /// <param name="paddedValue">The value to use for padding. Default is 0.</param>
+    /// <returns>The filtered signal.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the polynomial order is greater than or equal to the window length. </exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the input signal length is insufficient for the specified window length.</exception>
+    /// <example>
+    /// For example, to apply the Savitzky-Golay filter to an array of measurements:
+    /// <code>
+    /// double[] inputSignal = {1.0, 2.0, 3.0, 4.0, 5.0};
+    /// double[] filteredSignal = SavitzkyGolay.Apply(inputSignal, 3, 1);
+    /// </code>
+    /// </example>
+    /// <remarks>
+    /// <para>
+    /// The method processes the input signal by applying the Savitzky-Golay filter. If the input signal 
+    /// length is insufficient to apply the filter (i.e., less than 2 * window length + 1), the original 
+    /// signal is returned.
+    /// </para>
+    /// </remarks>
+    public static T[] Apply<T>(T[] inputSignal, int windowLength, int polynomialOrder, int derivativeOrder = 0,
+        Padding padding = Padding.None, double paddedValue = 0) where T : INumber<T>
+    {
+        var doubleInputSignal = inputSignal
+            .Select(x => Convert.ToDouble(x))
+            .ToArray();
+        
+        return Apply(doubleInputSignal, windowLength, polynomialOrder, derivativeOrder, padding, paddedValue)
+            .Select(x => (T)Convert.ChangeType(x, typeof(T)))
+            .ToArray();
+    }
+    
     /// <summary>
     /// Applies the Savitzky-Golay filter to the input signal.
     /// </summary>
@@ -236,25 +275,12 @@ public static class SavitzkyGolayFilter
             yVals[i - windowStart] = inputSignal[i];
         }
 
-        var polyCoefficients = Fit.Polynomial(xVals, yVals, polyOrder);
+        var polyCoefficients = PolynomialFitter.FitPolynomial(xVals, yVals, polyOrder);
 
         for (var i = interpStart; i < interpStop; i++)
         {
-            outputSignal[i] = EvaluatePolynomial(polyCoefficients, i - windowStart);
+            outputSignal[i] = PolynomialFitter.EvaluatePolynomial(polyCoefficients, i - windowStart);
         }
-    }
-
-    /// <summary>
-    /// Evaluates a polynomial at a given point.
-    /// </summary>
-    /// <param name="polyCoefficients">The array of polynomial coefficients.</param>
-    /// <param name="t">The point at which to evaluate the polynomial.</param>
-    /// <returns>The value of the polynomial at the given point.</returns>
-    private static double EvaluatePolynomial(double[] polyCoefficients, double t)
-    {
-        return polyCoefficients
-            .Select((t1, j) => t1 * Math.Pow(t, j))
-            .Sum();
     }
 
     /// <summary>
