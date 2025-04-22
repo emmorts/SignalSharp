@@ -25,10 +25,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="MathNet.Numerics" Version="6.0.0-beta2" />
-    </ItemGroup>
-
-    <ItemGroup>
         <None Include="..\assets\logo.jpg">
             <Pack>True</Pack>
             <PackagePath></PackagePath>
