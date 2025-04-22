@@ -16,7 +16,7 @@ SignalSharp offers a variety of algorithms for different signal processing tasks
 
 ### Example: Applying the Savitzky-Golay Filter
 
-The [Savitzky-Golay](./algorithms/savitzky-golay-filter.md) filter smooths a signal by fitting successive sub-sets of adjacent data points with a low-degree polynomial.
+The [Savitzky-Golay](./smoothing/savitzky-golay-filter.md) filter smooths a signal by fitting successive sub-sets of adjacent data points with a low-degree polynomial.
 
 1. **Initialize the Filter**:
     ```csharp

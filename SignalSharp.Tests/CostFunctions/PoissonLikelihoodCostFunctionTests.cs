@@ -271,6 +271,7 @@ public class PoissonLikelihoodCostFunctionTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(-1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(0, 3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(2, 1)); // Length -1 (indices invalid too)
     }
 
     [Test]
@@ -282,6 +283,5 @@ public class PoissonLikelihoodCostFunctionTests
 
         Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(0, 0)); // Length 0
         Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(1, 1)); // Length 0
-        Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(2, 1)); // Length -1 (indices invalid too)
     }
 }

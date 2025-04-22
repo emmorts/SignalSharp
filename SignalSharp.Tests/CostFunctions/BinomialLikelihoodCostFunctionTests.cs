@@ -266,6 +266,7 @@ public class BinomialLikelihoodCostFunctionTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(-1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(0, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(2, 1));
     }
 
     [Test]
@@ -277,6 +278,5 @@ public class BinomialLikelihoodCostFunctionTests
 
         Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(0, 0)); // Length 0
         Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(1, 1)); // Length 0
-        Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(2, 1)); // Length -1 (indices invalid too)
     }
 }

@@ -33,7 +33,7 @@ Signal processing is a critical component in various applications, including tel
 
 ## Getting Started
 
-Ready to dive in? Check out our [Getting Started](./docs/getting-started.html) for detailed instructions on how to install and begin using SignalSharp. This guide will help you set up the library and start processing your data in no time.
+Ready to dive in? Check out our [Getting Started](./docs/getting-started.md) for detailed instructions on how to install and begin using SignalSharp. This guide will help you set up the library and start processing your data in no time.
 
 Explore the documentation to learn more about each algorithm and find detailed usage examples that suit your specific needs. Whether you're working on academic research, developing new technologies, or just exploring signal processing, SignalSharp is here to support your journey.
 

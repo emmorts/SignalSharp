@@ -80,7 +80,7 @@ public class PELTAlgorithmTests
     [Test]
     public void FitDetect_LargeSignal_ShouldReturnExpectedBreakpoints()
     {
-        var options = new PELTOptions { CostFunction = new RBFCostFunction() };
+        var options = new PELTOptions { CostFunction = new RBFCostFunction(), Jump = 5, MinSize = 2 };
         var algo = new PELTAlgorithm(options);
         var signal = Enumerable
             .Repeat(new double[] { 1, 1, 1, 5, 5, 5, 1, 1, 1, 2, 2, 3, 4, 2, 1 }, 100)

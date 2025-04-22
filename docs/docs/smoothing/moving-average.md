@@ -14,7 +14,7 @@ SignalSharp provides implementations for the following common types:
 
 The Simple Moving Average (SMA) is the unweighted mean of the previous $k$ data points, where $k$ is the window size. It gives equal weight to all data points within the window.
 
-The @"SignalSharp.Smoothing.MovingAverage.SimpleMovingAverage(double[],int,SignalSharp.Common.Models.Padding,double)?text=SimpleMovingAverage" method calculates the SMA using an efficient O(N) sliding window algorithm.
+The `SimpleMovingAverage` method calculates the SMA using an efficient O(N) sliding window algorithm.
 
 #### Parameters
 
@@ -151,5 +151,4 @@ The choice of padding mode depends on the specific application and assumptions a
 ## API References
 
 -   @"SignalSharp.Smoothing.MovingAverage"
--   @"SignalSharp.Common.Models.Padding"
--   @"SignalSharp.Common.SignalPadding" (Used internally by SMA/WMA when padding is applied)
+-   @"SignalSharp.Common.SignalPadding"

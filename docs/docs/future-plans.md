@@ -8,12 +8,9 @@
     - [x] RBF
     - [x] Gaussian Likelihood
     - [x] AR
-    - [ ] Poisson Likelihood
-    - [ ] Log Loss
-    - [ ] Huber Loss
-    - [ ] Total Variation Loss
-    - [ ] Hinge Loss
-    - [ ] Log-Cosh Loss
+    - [x] Poisson Likelihood
+    - [x] Binomial Likelihood
+    - [x] Bernoulli Likelihood
 - Changepoint Detection
     - [x] PELT
     - [x] CUSUM
