@@ -127,6 +127,71 @@ variability (volatility). It's commonly used in financial time series (market re
 control data where both setpoint and noise levels might change. It supports multidimensional data and requires a minimum
 segment size of at least 1.
 
+#### @"SignalSharp.CostFunctions.Cost.PoissonLikelihoodCostFunction?text=PoissonLikelihoodCostFunction"
+
+The Poisson likelihood cost function is based on the Poisson negative log-likelihood, suitable for count data. The cost
+is derived from:
+
+$$ \mathcal{C}(y_{a:b}) = 2 \left[ S - S \log(S) + S \log(n) \right] $$
+
+where $S = \sum_{i=a}^{b-1} y_i$ is the sum of counts in the segment, and $n = b-a$ is the segment length. It
+assumes $0 \log(0) = 0$.
+
+This function detects changes in the underlying rate ($\lambda$) of events. It assumes that counts within a segment
+follow a Poisson distribution with a constant rate, estimated by the sample mean $\hat{\lambda} = S/n$. It is sensitive
+to changes in the average count level.
+
+The implementation uses prefix sums of the data (O(N * D) precomputation). Segment cost calculation is O(D). Input data
+must be non-negative counts (small negative values close to zero might be tolerated).
+
+This cost function is ideal for data representing counts of events per interval, such as website hits per day, defects
+per batch, or calls per hour, where you expect the average rate of events to change over time. It supports
+multidimensional data and requires a minimum segment size of at least 1.
+
+#### @"SignalSharp.CostFunctions.Cost.BernoulliLikelihoodCostFunction?text=BernoulliLikelihoodCostFunction"
+
+The Bernoulli likelihood cost function is derived from the Binomial negative log-likelihood for binary (0/1) data. The
+cost is:
+
+$$ \mathcal{C}(y_{a:b}) = -2 \left[ S \log(S) + (n-S) \log(n-S) - n \log(n) \right] $$
+
+where $S = \sum_{i=a}^{b-1} y_i$ is the number of successes (sum of 1s), $n = b-a$ is the segment length, and $n-S$ is
+the number of failures (sum of 0s). It assumes $0 \log(0) = 0$.
+
+This function detects changes in the probability of success ($p$) in a sequence of Bernoulli trials. It assumes data
+within a segment consists of independent 0/1 outcomes with a constant success probability, estimated by the sample
+proportion $\hat{p} = S/n$.
+
+The implementation uses prefix sums of the data (O(N * D) precomputation). Segment cost calculation is O(D). Input data
+must be strictly 0 or 1 (or numerically very close within a small tolerance).
+
+This cost function is suited for binary time series data, such as machine status (up/down), test results (pass/fail), or
+presence/absence indicators, where the underlying probability of the '1' outcome is expected to change. It supports
+multidimensional data and requires a minimum segment size of at least 1.
+
+#### @"SignalSharp.CostFunctions.Cost.BinomialLikelihoodCostFunction?text=BinomialLikelihoodCostFunction"
+
+The Binomial likelihood cost function is used for data where each time point represents $k$ successes out of $n$ trials.
+The cost function is:
+
+$$ \mathcal{C}(y_{a:b}) = - \left[ K \log(K) + (N-K) \log(N-K) - N \log(N) \right] $$
+
+where $K = \sum_{i=a}^{b-1} k_i$ is the total number of successes, $N = \sum_{i=a}^{b-1} n_i$ is the total number of
+trials in the segment. It assumes $0 \log(0) = 0$.
+
+This function detects changes in the underlying success probability ($p$) when the number of trials ($n_i$) might vary
+at each time point. It assumes data within a segment follows a Binomial distribution with a constant success
+probability, estimated by $\hat{p} = K/N$.
+
+The implementation requires a 2D input array where row 0 contains the successes ($k_i$) and row 1 contains the
+trials ($n_i$). It uses prefix sums for both $k$ and $n$ (O(N) precomputation, as D=2). Segment cost calculation is O(
+1). Input $k_i$ and $n_i$ must be non-negative integers with $0 \le k_i \le n_i$ and $n_i \ge 1$.
+
+This cost function is ideal when your data consists of success counts out of a known (possibly varying) number of trials
+at each time point, such as the number of successful conversions per marketing campaign or the number of defective items
+per batch of varying size. It supports only this specific 2D input format and requires a minimum segment size of at
+least 1.
+
 #### @"SignalSharp.CostFunctions.Cost.RBFCostFunction?text=RBFCostFunction"
 
 The RBF cost function measures segment (in)homogeneity using a Radial Basis Function (RBF) kernel. The cost reflects how
@@ -182,48 +247,60 @@ data only and requires a minimum segment length sufficient to estimate the AR pa
 Selecting the most appropriate cost function is crucial for obtaining meaningful results from PELT. Here are key
 considerations for your decision:
 
+**Data Type**: What kind of data do you have?
+
+* Continuous measurements? (L1, L2, Gaussian, RBF, AR)
+* Counts of events? (Poisson)
+* Binary outcomes (0/1)? (Bernoulli)
+* Successes out of N trials? (Binomial)
+
 **Nature of Expected Change**: Consider what type of change you're looking for. Are you interested in shifts in average
-level (mean)? Changes in volatility (variance)? Alterations in both? Changes in the underlying process dynamics (
-autocorrelation)? Or perhaps more complex pattern changes?
+level (mean/median)? Changes in volatility (variance)? Alterations in both? Changes in event rate or success
+probability? Changes in the underlying process dynamics (autocorrelation)? Or perhaps more complex pattern changes?
 
 **Data Characteristics**: Evaluate your data's properties. Is it noisy? Does it contain outliers or spikes? Can the data
-within segments be reasonably approximated by a normal distribution? Is the data univariate or multivariate?
+within segments be reasonably approximated by a specific distribution (Normal, Poisson, Bernoulli/Binomial)? Is the data
+univariate or multivariate?
 
 **Computational Budget**: Assess the size of your dataset and available computing resources. Can you afford O(N²)
-precomputation (L1, RBF) or per-segment OLS fitting (AR), or do you need the speed of O(N) precomputation and O(1)
-segment costs (L2, Gaussian)?
+precomputation (L1, RBF) or per-segment OLS fitting (AR), or do you need the speed of O(N) precomputation and O(1) or O(
+D) segment costs (L2, Gaussian, Poisson, Bernoulli, Binomial)?
 
 The following table provides a comparison of the key features of each cost function:
 
-| Feature                  | L1                              | L2                               | Gaussian-Likelihood             | RBF                                         | AR                                         |
-|:-------------------------|:--------------------------------|:---------------------------------|:--------------------------------|:--------------------------------------------|:-------------------------------------------|
-| **Detects Changes In**   | Median                          | Mean (assuming const. variance)  | Mean AND Variance               | Distribution shape, complex patterns        | Autocorrelation, dynamics                  |
-| **Sensitivity To**       | Central tendency                | Mean, Outliers                   | Mean, Variance, Outliers        | Data density/structure (gamma-dependent)    | AR coefficients, intercept                 |
-| **Robustness**           | Robust to outliers              | Sensitive to outliers            | Sensitive to outliers           | Moderate (depends on data/gamma)            | Sensitive to model misspecification        |
-| **Precomputation Cost**  | O(N²*D*logN) (approx)           | O(N*D) (fast)                    | O(N*D) (fast)                   | O(N²*D) (slow)                              | O(1) (very fast)                           |
-| **Segment Cost**         | O(seg_len*D) (approx)           | O(D) (very fast)                 | O(D) (very fast)                | O(D) (fast, after precomp)                  | ~O(seg_len*order²) (relatively slow)       |
-| **Data Assumptions**     | Outliers okay, non-Gaussian     | Approx. Normal, const. variance  | Approx. Normal                  | Non-linear patterns, distribution changes   | Stationarity within segment (for AR model) |
-| **Dimensionality**       | Multi                           | Multi                            | Multi                           | Multi                                       | Univariate ONLY                            |
-| **Typical Use Case**     | Noisy signals, financial spikes | Clean signals, mean level shifts | Signals with varying volatility | Regime shifts, complex system state changes | Economic time series, process control data |
-| **Minimum Segment Size** | >= 1                            | >= 1                             | >= 1                            | >= 1                                        | `max(p+1, 2p+k)` where `p`=order, `k`=0/1  |
+| Feature                  | L1                              | L2                               | Gaussian-Likelihood             | Poisson-Likelihood        | Bernoulli-Likelihood      | Binomial-Likelihood            | RBF                                         | AR                                         |
+|:-------------------------|:--------------------------------|:---------------------------------|:--------------------------------|:--------------------------|:--------------------------|:-------------------------------|:--------------------------------------------|:-------------------------------------------|
+| **Data Type**            | Continuous                      | Continuous                       | Continuous                      | Non-neg Counts            | Binary (0/1)              | Success/Trial Counts (k/n)     | Continuous                                  | Continuous                                 |
+| **Detects Changes In**   | Median                          | Mean (assuming const. variance)  | Mean AND Variance               | Event Rate ($\lambda$)    | Success Probability ($p$) | Success Probability ($p$)      | Distribution shape, complex patterns        | Autocorrelation, dynamics                  |
+| **Robustness**           | Robust to outliers              | Sensitive to outliers            | Sensitive to outliers           | Model assumptions         | Model assumptions         | Model assumptions              | Moderate (depends on data/gamma)            | Sensitive to model misspecification        |
+| **Precomputation Cost**  | O(N²*D*logN) (approx)           | O(N*D) (fast)                    | O(N*D) (fast)                   | O(N*D) (fast)             | O(N*D) (fast)             | O(N) (fast)                    | O(N²*D) (slow)                              | O(1) (very fast)                           |
+| **Segment Cost**         | O(seg_len*D) (approx)           | O(D) (very fast)                 | O(D) (very fast)                | O(D) (very fast)          | O(D) (very fast)          | O(1) (very fast)               | O(D) (fast, after precomp)                  | ~O(seg_len*order²) (relatively slow)       |
+| **Data Assumptions**     | Outliers okay, non-Gaussian     | Approx. Normal, const. variance  | Approx. Normal                  | Poisson distribution      | Bernoulli trials          | Binomial distribution          | Non-linear patterns, distribution changes   | Stationarity within segment (for AR model) |
+| **Dimensionality**       | Multi                           | Multi                            | Multi                           | Multi                     | Multi                     | Specific 2D (k/n)              | Multi                                       | Univariate ONLY                            |
+| **Typical Use Case**     | Noisy signals, financial spikes | Clean signals, mean level shifts | Signals with varying volatility | Event counts, web traffic | Binary state changes      | Conversion rates, defect rates | Regime shifts, complex system state changes | Economic time series, process control data |
+| **Minimum Segment Size** | >= 1                            | >= 1                             | >= 1                            | >= 1                      | >= 1                      | >= 1                           | >= 1                                        | `max(p+1, 2p+k)` where `p`=order, `k`=0/1  |
 
 ### Practical Guide to Choosing a Cost Function
 
 Here's how to approach choosing the right cost function for your specific needs:
 
-**For everyday change detection**, start with L2. It's fast, intuitive, and works well on clean data with mean shifts. When in doubt, this is your go-to option. You'll get results quickly and can always try alternatives if needed.
+**Start with the data type**:
+*   If you have counts (website hits, error counts), use **Poisson Likelihood**.
+*   If you have binary data (success/failure, on/off), use **Bernoulli Likelihood**.
+*   If you have successes out of N trials (conversions/visitors), use **Binomial Likelihood**.
 
-**When your data is messy with outliers**, switch to L1. Those spikes in sensor data, network traffic anomalies, or financial flash crashes won't throw off your results. L1 focuses on the median, giving you more reliable change points in noisy real-world data.
+**For continuous data**:
+*   **For everyday change detection**, start with **L2**. It's fast, intuitive, and works well on clean data with mean shifts. When in doubt, this is your go-to option. You'll get results quickly and can always try alternatives if needed.
+*   **When your data is messy with outliers**, switch to **L1**. Those spikes in sensor data, network traffic anomalies, or financial flash crashes won't throw off your results. L1 focuses on the median, giving you more reliable change points in noisy real-world data.
+*   **For financial or environmental data** where both the level and volatility matter, use **Gaussian-Likelihood**. It captures those periods where not just the average changes, but also how wildly the values fluctuate – perfect for detecting market regime shifts or climate pattern changes.
+*   **Working with time series that show patterns or cycles?** If you're analyzing a *univariate* series where the relationship between consecutive values matters more than their absolute levels, **AR** is your best bet. Remember to choose an order that matches your data's memory.
+*   **When dealing with complex, non-linear changes** that you can't quite define, **RBF** offers flexibility. It's computationally heavier but can detect subtle pattern shifts that other functions might miss.
 
-**For financial or environmental data** where both the level and volatility matter, use Gaussian-Likelihood. It captures those periods where not just the average changes, but also how wildly the values fluctuate – perfect for detecting market regime shifts or climate pattern changes.
+**Don't be afraid to experiment**. The best approach often involves trying 2-3 candidate cost functions (appropriate for your data type) on a subset of your data and comparing the results. Remember that penalty values need adjusting for each cost function – what works for L2 won't necessarily work for a likelihood-based cost function due to different cost scales.
 
-**Working with time series that show patterns or cycles?** If you're analyzing a univariate series where the relationship between consecutive values matters more than their absolute levels, AR is your best bet. Just remember to choose an order that matches your data's memory – how many past points influence the current value.
-
-**When dealing with complex, non-linear changes** that you can't quite define, RBF offers the flexibility you need. It's computationally heavier but can detect subtle pattern shifts that other functions might miss.
-
-**Don't be afraid to experiment**. The best approach often involves trying 2-3 candidate cost functions on a subset of your data and comparing the results. Remember that penalty values need adjusting for each cost function – what works for L2 won't necessarily work for Gaussian-Likelihood.
-
-In my experience, I end up using L2 about 60% of the time for its speed and simplicity, Gaussian Likelihood 25% of the time (especially with financial data), and the others for specific cases. Let the characteristics of your data and what changes you care about guide your choice.
+In my experience, I end up using L2 about 60% of the time for its speed and simplicity, Gaussian Likelihood 25% of the
+time (especially with financial data), and the others for specific cases. Let the characteristics of your data and what
+changes you care about guide your choice.
 
 ## Usage Examples
 
@@ -300,7 +377,80 @@ Console.WriteLine("Change Points (Gaussian Likelihood Cost): " + string.Join(", 
 // Expected: Around index 5 where variance increases significantly
 ```
 
-### Example 4: Detecting Complex Patterns in Financial Data (RBF Cost Function)
+### Example 4: Detecting Changes in Event Rate (Poisson Likelihood Cost)
+
+Useful for count data like website hits or error logs.
+
+```csharp
+using SignalSharp.Detection.PELT;
+using SignalSharp.CostFunctions.Cost;
+using System;
+
+// Number of errors per hour
+double[] errorCounts = { 2, 1, 3, 2, 1, 0, 1, 8, 10, 9, 12, 7, 2, 1, 3 }; // Rate increases around index 7
+var options = new PELTOptions
+{
+    CostFunction = new PoissonLikelihoodCostFunction(),
+    MinSize = 3
+};
+var pelt = new PELTAlgorithm(options);
+
+int[] changePoints = pelt.FitAndDetect(errorCounts, penalty: 4.0); // Adjust penalty for likelihood scale
+Console.WriteLine("Change Points in Error Counts (Poisson Cost): " + string.Join(", ", changePoints));
+// Expected: Around index 7 where the average count increases, possibly another around index 12
+```
+
+### Example 5: Detecting Changes in Binary State Probability (Bernoulli Likelihood Cost)
+
+Suitable for 0/1 data like machine uptime/downtime.
+
+```csharp
+using SignalSharp.Detection.PELT;
+using SignalSharp.CostFunctions.Cost;
+using System;
+
+// Machine status (1=up, 0=down)
+double[] machineStatus = { 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0 }; // Change points around 4, 7, 12
+var options = new PELTOptions
+{
+    CostFunction = new BernoulliLikelihoodCostFunction(),
+    MinSize = 2
+};
+var pelt = new PELTAlgorithm(options);
+
+int[] changePoints = pelt.FitAndDetect(machineStatus, penalty: 1.5); // Adjust penalty
+Console.WriteLine("Change Points in Machine Status (Bernoulli Cost): " + string.Join(", ", changePoints));
+// Expected: Around indices 4, 7, 12
+```
+
+### Example 6: Detecting Changes in Conversion Rate (Binomial Likelihood Cost)
+
+When you have successes (k) out of trials (n) at each point.
+
+```csharp
+using SignalSharp.Detection.PELT;
+using SignalSharp.CostFunctions.Cost;
+using System;
+
+// Conversion data: Row 0 = conversions (k), Row 1 = visitors (n)
+double[,] conversionData = {
+    { 5, 6, 7, 6,   15, 18, 16, 17,   8, 9, 7, 8 }, // Conversions (k)
+    { 100, 105, 98, 102, 100, 95, 103, 101, 100, 105, 98, 102 } // Visitors (n)
+}; // Rate increases around index 4, decreases around index 8
+
+var options = new PELTOptions
+{
+    CostFunction = new BinomialLikelihoodCostFunction(),
+    MinSize = 3
+};
+var pelt = new PELTAlgorithm(options);
+
+int[] changePoints = pelt.FitAndDetect(conversionData, penalty: 10.0); // Adjust penalty
+Console.WriteLine("Change Points in Conversion Rate (Binomial Cost): " + string.Join(", ", changePoints));
+// Expected: Around indices 4, 8
+```
+
+### Example 7: Detecting Complex Patterns in Financial Data (RBF Cost Function)
 
 Financial data can have complex patterns. RBF might capture non-linear shifts.
 
@@ -323,7 +473,7 @@ Console.WriteLine("Change Points in Financial Data (RBF Cost): " + string.Join("
 // Expected (example): Possibly around index 3 or 7 depending on gamma and penalty
 ```
 
-### Example 5: Detecting Changes in Autocorrelation (AR Cost Function)
+### Example 8: Detecting Changes in Autocorrelation (AR Cost Function)
 
 The AR cost function is useful when the underlying dynamics (like autocorrelation) change.
 
@@ -349,7 +499,7 @@ var options = new PELTOptions
 {
     // Use AR(1) cost, assuming changes in first-order autocorrelation
     CostFunction = new ARCostFunction(order: 1, includeIntercept: true),
-    // AR(1)+intercept requires at least 2*1+1 = 3 points per segment
+    // AR(1)+intercept requires at least 2*1+1 = 3 points per segment (check ARCostFunction docs for exact min length)
     MinSize = 3,
     Jump = 1 // Use exact for better results, but can be > 1 for speed
 };
@@ -361,7 +511,7 @@ Console.WriteLine("Change Points in AR Signal (AR Cost): " + string.Join(", ", c
 // Expected: Around index 5 where the AR dynamics change
 ```
 
-### Example 6: Impact of Penalty on Sensor Data (L1 Cost)
+### Example 9: Impact of Penalty on Sensor Data (L1 Cost)
 
 Demonstrating how penalty changes sensitivity.
 
@@ -386,7 +536,7 @@ Console.WriteLine("Change Points with Low Penalty (L1): " + string.Join(", ", ch
 // Expected: Potentially more points like [3, 4, 6, 7] if small dips/rises are considered significant with low penalty
 ```
 
-### Example 7: Detecting Change Points in Multidimensional Time Series Data (Gaussian Cost)
+### Example 10: Detecting Change Points in Multidimensional Time Series Data (Gaussian Cost)
 
 PELT supports multidimensional data. Gaussian cost handles mean/variance changes in multiple dimensions simultaneously.
 
@@ -433,17 +583,7 @@ consideration of its parameters and assumptions.
 
 3. **Flexibility in Defining "Change" (Cost Functions)**:
     * The algorithm's behavior can be adapted to detect different types of statistical changes by selecting an
-      appropriate cost function:
-        * `L1CostFunction`: Robust to outliers and non-Gaussian noise, focusing on changes in the median. Useful when
-          data contains anomalies or heavy tails.
-        * `L2CostFunction`: Sensitive to changes in mean, assuming constant variance. Suitable for data segments
-          approximating normality. Fast.
-        * `GaussianLikelihoodCostFunction`: Sensitive to changes in *both* mean and variance, assuming normality. Fast.
-        * `ARCostFunction`: Sensitive to changes in the auto-correlation structure or dynamics of a uni-variate series.
-        * `RBFCostFunction`: Can potentially detect more complex changes in data distribution or structure beyond simple
-          level shifts, although potentially more computationally intensive and sensitive to parameterization (`gamma`).
-    * This allows tailoring the detection to the specific characteristics of the signal and the nature of the expected
-      changes.
+      appropriate cost function tailored to the data type and expected change pattern (see table above).
 
 4. **Simultaneous Analysis of Multiple Time Series (Multidimensional Support)**:
     * PELT can process multivariate time series (provided as `double[,]` where rows represent dimensions/channels and
@@ -487,22 +627,21 @@ consideration of its parameters and assumptions.
       between regimes.
 
 6. **Cost Function Computational Cost**:
-    * While PELT itself aims for linear time complexity via pruning, the overall runtime is also heavily influenced by
-      the cost of evaluating `ComputeCost` for a segment.
-        * @"SignalSharp.CostFunctions.Cost.L2CostFunction?text=L2" and @"SignalSharp.CostFunctions.Cost.GaussianLikelihoodCostFunction?text=GaussianLikelihood" achieve O(1) cost per segment after O(N) precomputation,
-          making them very fast overall.
-        * @"SignalSharp.CostFunctions.Cost.L1CostFunction?text=L1" (as implemented with precomputed medians) can be O(1) but involves O(N^2) precomputation.
-        * @"SignalSharp.CostFunctions.Cost.ARCostFunction?text=AR" involves solving a linear system for each segment evaluation, making it potentially much
-          slower (e.g., roughly O(segment_length * order^2) per segment).
-        * @"SignalSharp.CostFunctions.Cost.ARCostFunction?text=RBF" involves O(N^2) precomputation and O(1) segment cost evaluation.
-    * The choice of cost function thus impacts the practical runtime, especially for very long time series.
+    * Overall runtime depends on PELT's pruning and the segment cost calculation:
+        * O(1) or O(D) segment cost (fast): L2, Gaussian, Poisson, Bernoulli, Binomial, RBF (after precomputation)
+        * Slower segment cost: L1 (O(seg_len*D)), AR (O(seg_len*order²))
+        * Slow precomputation: L1 (O(N²*D*logN)), RBF (O(N²*D))
 
 ## API References
 
 - @"SignalSharp.Detection.PELT.PELTAlgorithm"
 - @"SignalSharp.Detection.PELT.PELTOptions"
+- @"SignalSharp.CostFunctions.Cost.IPELTCostFunction"
 - @"SignalSharp.CostFunctions.Cost.L1CostFunction"
 - @"SignalSharp.CostFunctions.Cost.L2CostFunction"
-- @"SignalSharp.CostFunctions.Cost.RBFCostFunction"
 - @"SignalSharp.CostFunctions.Cost.GaussianLikelihoodCostFunction"
+- @"SignalSharp.CostFunctions.Cost.PoissonLikelihoodCostFunction"
+- @"SignalSharp.CostFunctions.Cost.BernoulliLikelihoodCostFunction"
+- @"SignalSharp.CostFunctions.Cost.BinomialLikelihoodCostFunction"
+- @"SignalSharp.CostFunctions.Cost.RBFCostFunction"
 - @"SignalSharp.CostFunctions.Cost.ARCostFunction"
