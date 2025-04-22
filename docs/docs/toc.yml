@@ -6,10 +6,6 @@
     href: detection/pelt.md
   - name: CUSUM
     href: detection/cusum.md
-- name: Filtering
-  items:
-  - name: Kalman Filter
-    href: filters/kalman-filter.md
 - name: Smoothing
   items:
   - name: Moving Average

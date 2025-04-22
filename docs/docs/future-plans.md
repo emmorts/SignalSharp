@@ -6,6 +6,9 @@
     - [x] L1
     - [x] L2
     - [x] RBF
+    - [x] Gaussian Likelihood
+    - [x] AR
+    - [ ] Poisson Likelihood
     - [ ] Log Loss
     - [ ] Huber Loss
     - [ ] Total Variation Loss
@@ -17,7 +20,6 @@
     - [ ] Bayesian Online Changepoint Detection
     - [ ] Binary Segmentation
 - Prediction
-    - [/] Kalman Filter
     - [ ] Exponential Smoothing
     - [ ] ARIMA (AutoRegressive Integrated Moving Average)
     - [ ] Holt-Winters Exponential Smoothing

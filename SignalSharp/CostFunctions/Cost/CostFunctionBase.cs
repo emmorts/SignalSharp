@@ -21,6 +21,8 @@ public abstract class CostFunctionBase : IPELTCostFunction
     /// </remarks>
     public IPELTCostFunction Fit(double[] signal)
     {
+        ArgumentNullException.ThrowIfNull(signal, nameof(signal));
+        
         var signalMatrix = new double[1, signal.Length];
         for (var i = 0; i < signal.Length; i++)
         {

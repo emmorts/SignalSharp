@@ -22,13 +22,12 @@ Algorithms to identify points in time where the statistical properties of a sign
   *   Detects shifts in the mean of a signal.
   *   Works by accumulating deviations from an expected level and triggering when a threshold is exceeded. Useful for process monitoring.
 
-### Signal Smoothing & Filtering
+### Signal Smoothing
 
-Methods to reduce noise or estimate underlying states from measurements.
+Methods to reduce noise from measurements.
 
 *   **Savitzky-Golay Filter**: Smooths data by fitting successive sub-sets of adjacent data points with a low-degree polynomial using linear least squares. Helps preserve signal features better than a simple moving average.
 *   **Moving Average**: Basic smoothing technique that calculates the average of data points within a sliding window.
-*   **Kalman Filter**: Recursively estimates the internal state of a linear dynamic system from a series of noisy measurements.
 
 ### Utilities
 
