@@ -10,12 +10,13 @@ public class SegmentLengthException(string? message) : Exception(message)
     /// Throws an exception if the segment length is invalid.
     /// </summary>
     /// <param name="segmentLength">The segment length to validate.</param>
+    /// <param name="minSegmentLength">The minimum valid segment length (default is 1).</param>
     /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
-    public static void ThrowIfInvalid(int segmentLength)
+    public static void ThrowIfInvalid(int segmentLength, int minSegmentLength = 1)
     {
-        if (segmentLength < 1)
+        if (segmentLength < minSegmentLength)
         {
-            throw new SegmentLengthException("Segment length must be at least 1.");
+            throw new SegmentLengthException($"Segment length must be at least {minSegmentLength}.");
         }
     }
 }

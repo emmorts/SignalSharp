@@ -16,6 +16,7 @@ Algorithms to identify points in time where the statistical properties of a sign
     *   `L2CostFunction`: Sensitive to mean shifts, assumes constant variance (computationally efficient).
     *   `GaussianLikelihoodCostFunction`: Sensitive to changes in both mean and variance, assumes normality (computationally efficient).
     *   `RBFCostFunction`: Kernel-based, can detect changes in the underlying distribution shape.
+    *   `ARCostFunction`: Fits an Autoregressive model, sensitive to changes in signal dynamics/autocorrelation (univariate only).
 
 *   **CUSUM (Cumulative Sum)**:
   *   Detects shifts in the mean of a signal.

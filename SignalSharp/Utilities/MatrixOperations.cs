@@ -12,6 +12,8 @@ namespace SignalSharp.Utilities;
 /// </summary>
 public static class MatrixOperations
 {
+    private const double SingularityTolerance = 1e-12;
+    
     /// <summary>
     /// Transposes the given matrix.
     /// <para>
@@ -251,6 +253,46 @@ public static class MatrixOperations
         return BackSubstitution(R, QTy, n);
     }
 
+    public static bool TrySolveLinearSystemQR(double[,] A, double[] y, out double[]? solution)
+    {
+        var m = A.GetLength(0);
+        var n = A.GetLength(1);
+        var Q = new double[m, n];
+        var R = new double[n, n];
+
+        var simdLength = Vector<double>.Count;
+
+        // QR Factorization
+        for (var k = 0; k < n; k++)
+        {
+            var norm = CalculateNorm(A, k, m, simdLength);
+            R[k, k] = norm;
+
+            NormalizeColumn(A, Q, k, norm, m);
+
+            for (var j = k + 1; j < n; j++)
+            {
+                var dotProduct = CalculateDotProduct(Q, A, k, j, m, simdLength);
+                R[k, j] = dotProduct;
+                UpdateColumn(A, Q, k, j, dotProduct, m);
+            }
+        }
+
+        // Compute Q^T * y
+        var QTy = ComputeQTransposeY(Q, y, m, n, simdLength);
+
+        // Solve R * x = Q^T * y using back substitution
+        if (!TryBackSubstitution(R, QTy, n, out var result))
+        {
+            solution = null;
+            return false;
+        }
+        
+        solution = result;
+        
+        return true;
+    }
+
     /// <summary>
     /// Calculates the Euclidean norm of a specified column in a matrix using SIMD optimization.
     /// </summary>
@@ -424,6 +466,30 @@ public static class MatrixOperations
         }
 
         return solution;
+    }
+    
+    private static bool TryBackSubstitution(double[,] R, double[] QTy, int dimension, out double[] solution)
+    {
+        solution = new double[dimension];
+        
+        for (var rowIndex = dimension - 1; rowIndex >= 0; rowIndex--)
+        {
+            if (Math.Abs(R[rowIndex, rowIndex]) < SingularityTolerance)
+            {
+                return false;
+            }
+            
+            solution[rowIndex] = QTy[rowIndex];
+            
+            for (var columnIndex = rowIndex + 1; columnIndex < dimension; columnIndex++)
+            {
+                solution[rowIndex] -= R[rowIndex, columnIndex] * solution[columnIndex];
+            }
+
+            solution[rowIndex] /= R[rowIndex, rowIndex];
+        }
+
+        return true;
     }
 
     /// <summary>
