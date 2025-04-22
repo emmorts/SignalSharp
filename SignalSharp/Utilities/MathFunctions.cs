@@ -37,7 +37,7 @@ public static class MathFunctions
         
         var mid = n / 2;
         
-        return FactorialRecursive(mid) * FactorialRecursive(n - mid) * Combine(mid, n - mid);
+        return FactorialRecursive(mid) * FactorialRecursive(n - mid) * ProductRange(mid, n - mid);
     }
 
     private static int FactorialRecursive(int n)
@@ -46,10 +46,10 @@ public static class MathFunctions
         
         var mid = n / 2;
         
-        return FactorialRecursive(mid) * FactorialRecursive(n - mid) * Combine(mid, n - mid);
+        return FactorialRecursive(mid) * FactorialRecursive(n - mid) * ProductRange(mid, n - mid);
     }
 
-    private static BigInteger Combine(BigInteger a, BigInteger b)
+    private static BigInteger ProductRange(BigInteger a, BigInteger b)
     {
         BigInteger result = 1;
         
@@ -61,7 +61,7 @@ public static class MathFunctions
         return result;
     }
 
-    private static int Combine(int a, int b)
+    private static int ProductRange(int a, int b)
     {
         var result = 1;
         
