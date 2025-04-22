@@ -4,7 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>0.1.5</Version>
+        <Version>0.1.6</Version>
         <Title>SignalSharp</Title>
         <Authors>emmorts</Authors>
         <Description>SignalSharp is a library designed for signal processing and time series analysis.</Description>
@@ -25,7 +25,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="MathNet.Numerics" Version="5.0.0"/>
+        <PackageReference Include="MathNet.Numerics" Version="6.0.0-beta2" />
     </ItemGroup>
 
     <ItemGroup>

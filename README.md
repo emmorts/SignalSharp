@@ -1,39 +1,48 @@
 ## SignalSharp
 
-C# library designed for efficient signal processing and time series analysis. 
+SignalSharp is a .NET library focused on time series analysis, change point detection, and signal smoothing/filtering tasks. It provides implementations of common algorithms optimized for clarity and efficiency.
 
-## Features
+## Core Features
 
 ### Change Point Detection
 
-- **PELT (Pruned Exact Linear Time)**: Efficiently detects multiple change points in a signal using a pruning technique for improved speed without sacrificing accuracy.
-- **CUSUM (Cumulative Sum)**: Detects shifts in the mean value of a signal by accumulating deviations from a target value over time.
+Algorithms to identify points in time where the statistical properties of a signal change.
 
-### Signal Analysis
+*   **PELT (Pruned Exact Linear Time)**:
+  *   Detects multiple change points efficiently.
+  *   Supports exact (`Jump = 1`) and approximate (`Jump > 1`) modes for speed/accuracy trade-offs.
+  *   Configurable via cost functions to target specific types of changes:
+    *   `L1CostFunction`: Robust to outliers, sensitive to median shifts.
+    *   `L2CostFunction`: Sensitive to mean shifts, assumes constant variance (computationally efficient).
+    *   `GaussianLikelihoodCostFunction`: Sensitive to changes in both mean and variance, assumes normality (computationally efficient).
+    *   `RBFCostFunction`: Kernel-based, can detect changes in the underlying distribution shape.
 
-- **Cost Functions**:
-    - L1: Robust against outliers and non-Gaussian noise.
-    - L2: Ideal for normally distributed data.
-    - RBF (Radial Basis Function): Handles non-linear relationships between data points.
+*   **CUSUM (Cumulative Sum)**:
+  *   Detects shifts in the mean of a signal.
+  *   Works by accumulating deviations from an expected level and triggering when a threshold is exceeded. Useful for process monitoring.
 
-### Signal Processing
+### Signal Smoothing & Filtering
 
-- **Smoothing and Filtering**:
-    - Savitzky-Golay Filter: Smooths data while preserving signal shape.
-    - Moving Average: Simple smoothing using a moving window.
-    - Kalman Filter: Estimates the state of a linear dynamic system from noisy measurements.
+Methods to reduce noise or estimate underlying states from measurements.
 
-- **Resampling**:
-    - Downsampling: Reduces the number of samples in a signal.
-    - Segment Statistics: Computes statistics (mean, median, max, min) for signal segments.
+*   **Savitzky-Golay Filter**: Smooths data by fitting successive sub-sets of adjacent data points with a low-degree polynomial using linear least squares. Helps preserve signal features better than a simple moving average.
+*   **Moving Average**: Basic smoothing technique that calculates the average of data points within a sliding window.
+*   **Kalman Filter**: Recursively estimates the internal state of a linear dynamic system from a series of noisy measurements.
+
+### Utilities
+
+*   **Signal Padding**: Methods for common padding modes (`Constant`, `Mirror`, `Nearest`, `Periodic`).
+*   **Statistical Functions**: Basic statistics (`Mean`, `Variance`, `StdDev`, `Median`, `Normalization`, etc.).
 
 ## Installation
 
-To install SignalSharp, you can use NuGet Package Manager:
+Install the package via the `dotnet` CLI:
 
 ```sh
 dotnet add package SignalSharp
 ```
+
+Or use the NuGet Package Manager in your IDE.
 
 ## Usage
 
@@ -54,7 +63,6 @@ var algo = new PELTAlgorithm(options);
 // Detect change points
 var breakpoints = algo.FitAndDetect(signal, 2); // breakpoints = [3, 6]
 ```
-
 
 ## Contributing
 

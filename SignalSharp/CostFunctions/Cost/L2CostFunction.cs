@@ -31,8 +31,10 @@ namespace SignalSharp.CostFunctions.Cost;
 /// </remarks>
 public class L2CostFunction : CostFunctionBase
 {
-    private double[,] _data = null!;
-    private double[,,] _means = null!;
+    private int _numDimensions;
+    private int _numPoints;
+    private double[,] _prefixSum = null!;
+    private double[,] _prefixSumSq = null!;
     
     /// <summary>
     /// Fits the cost function to the provided data.
@@ -40,10 +42,10 @@ public class L2CostFunction : CostFunctionBase
     /// <param name="signalMatrix">The data array to fit.</param>
     /// <returns>The fitted <see cref="L2CostFunction"/> instance.</returns>
     /// <remarks>
-    /// This method initializes the internal data needed to compute the cost for segments of the data.
+    /// This method performs O(N*D) computation to calculate prefix sums of the signal and its squares,
+    /// enabling O(1) cost calculation per segment later via <see cref="ComputeCost"/>.
     ///
     /// <example>
-    /// For example, to fit the cost function to a data array:
     /// <code>
     /// double[,] data = { { 1.0, 2.0, 3.0, 4.0 } };
     /// var l2Cost = new L2CostFunction().Fit(data);
@@ -55,107 +57,83 @@ public class L2CostFunction : CostFunctionBase
     {
         ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
         
-        _data = signalMatrix;
-        _means = PrecomputeMeans(signalMatrix);
+        _numDimensions = signalMatrix.GetLength(0);
+        _numPoints = signalMatrix.GetLength(1);
+        
+        // initialize prefix sum arrays with size N+1 to handle segments starting at index 0
+        // _prefixSum[d, 0] and _prefixSumSq[d, 0] will remain 0.
+        _prefixSum = new double[_numDimensions, _numPoints + 1];
+        _prefixSumSq = new double[_numDimensions, _numPoints + 1];
+        
+        for (var dim = 0; dim < _numDimensions; dim++)
+        {
+            for (var i = 0; i < _numPoints; i++)
+            {
+                var value = signalMatrix[dim, i];
+                _prefixSum[dim, i + 1] = _prefixSum[dim, i] + value;
+                _prefixSumSq[dim, i + 1] = _prefixSumSq[dim, i] + value * value;
+            }
+        }
 
         return this;
     }
     
     /// <summary>
-    /// Computes the cost for a segment of the data using the L2 norm.
+    /// Computes the cost for a segment of the data using the L2 norm (sum of squared errors).
+    /// Cost(start, end) = Sum_{i=start}^{end-1} (signal[i] - mean(segment))^2
+    /// This is calculated efficiently in O(1) time using precomputed prefix sums as:
+    /// Sum(signal[i]^2) - (Sum(signal[i])^2 / segmentLength) for the segment [start, end).
     /// </summary>
-    /// <param name="start">The start index of the segment. If null, defaults to 0.</param>
-    /// <param name="end">The end index of the segment. If null, defaults to the length of the data.</param>
+    /// <param name="start">The start index of the segment (inclusive). If null, defaults to 0.</param>
+    /// <param name="end">The end index of the segment (exclusive). If null, defaults to the length of the data.</param>
     /// <returns>The computed cost for the segment.</returns>
     /// <remarks>
-    /// <para>The cost function measures the sum of squared deviations from the mean of the segment,
-    /// which is useful for detecting change points in time series analysis.</para>
-    ///
-    /// <para>This method must be called after the <see cref="Fit(double[,])"/> method has been used to 
-    /// initialize the data.</para>
-    ///
+    /// <para>This method must be called after the <see cref="Fit(double[,])"/> method has been used to
+    /// initialize the prefix sums.</para>
+    /// <para>The calculation relies on the identity: Sum((x_i - mu)^2) = Sum(x_i^2) - (Sum(x_i)^2 / n).</para>
     /// <example>
     /// For example, given a fitted L2CostFunction instance:
     /// <code>
     /// var l2Cost = new L2CostFunction().Fit(data);
-    /// double cost = l2Cost.ComputeCost(0, 10);
+    /// double cost = l2Cost.ComputeCost(0, 10); // Cost for segment from index 0 up to (but not including) 10
     /// </code>
-    /// This computes the cost for the segment of the data from index 0 to index 10.
     /// </example>
     /// </remarks>
-    /// <exception cref="UninitializedDataException">Thrown when data is not initialized.</exception>
+    /// <exception cref="UninitializedDataException">Thrown when prefix sums are not initialized (Fit not called).</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the segment indices are out of bounds.</exception>
     /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
     public override double ComputeCost(int? start = null, int? end = null)
     {
-        UninitializedDataException.ThrowIfUninitialized(_data, "Fit() must be called before ComputeCost().");
+        if (_numDimensions == 0 || _numPoints == 0) return 0;
         
-        if (_data.Length == 0) return 0;
-        
+        UninitializedDataException.ThrowIfUninitialized(_prefixSum, "Fit() must be called before ComputeCost().");
+        UninitializedDataException.ThrowIfUninitialized(_prefixSumSq, "Fit() must be called before ComputeCost().");
+
         var startIndex = start ?? 0;
-        var endIndex = end ?? _data.GetLength(1);
+        var endIndex = end ?? _numPoints;
+        
         var segmentLength = endIndex - startIndex;
         
-        SegmentLengthException.ThrowIfInvalid(segmentLength);
         ArgumentOutOfRangeException.ThrowIfNegative(startIndex, nameof(start));
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(endIndex, _data.GetLength(1), nameof(end));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(endIndex, _numPoints, nameof(end));
+        SegmentLengthException.ThrowIfInvalid(endIndex - startIndex);
 
-        double sum = 0;
-        for (var dimension = 0; dimension < _data.GetLength(0); dimension++)
-        {
-            var mean = _means[dimension, startIndex, endIndex - 1];
-        
-            for (var i = startIndex; i < endIndex; i++)
-            {
-                sum += Math.Pow(_data[dimension, i] - mean, 2);
-            }
-        }
-        
-        return sum;
-    }
+        double totalCost = 0;
 
-    /// <summary>
-    /// Calculates the mean of a segment of the data array.
-    /// </summary>
-    /// <param name="data">The data array.</param>
-    /// <param name="start">The start index of the segment.</param>
-    /// <param name="end">The end index of the segment.</param>
-    /// <param name="dimension">The dimension of the data array to calculate the mean for.</param>
-    /// <returns>The mean value of the segment.</returns>
-    private static double CalculateMean(double[,] data, int start, int end, int dimension)
-    {
-        double sum = 0;
-        
-        for (var i = start; i < end; i++)
+        for (var dim = 0; dim < _numDimensions; dim++)
         {
-            sum += data[dimension, i];
-        }
-        
-        return sum / (end - start);
-    }
-    
-    /// <summary>
-    /// Precomputes the means for all possible segments of the data array.
-    /// </summary>
-    /// <param name="data">The data array.</param>
-    /// <returns>A 2D array of precomputed means for all segments.</returns>
-    private static double[,,] PrecomputeMeans(double[,] data)
-    {
-        var numDimensions = data.GetLength(0);
-        var numPoints = data.GetLength(1);
-        var means = new double[numDimensions, numPoints, numPoints];
+            // Sum_{i=start}^{end-1} x[i] = prefix_sum[end] - prefix_sum[start]
+            var segmentSum = _prefixSum[dim, endIndex] - _prefixSum[dim, startIndex];
 
-        for (var dimension = 0; dimension < numDimensions; dimension++)
-        {
-            for (var i = 0; i < numPoints; i++)
-            {
-                for (var j = i; j < numPoints; j++)
-                {
-                    means[dimension, i, j] = CalculateMean(data, i, j + 1, dimension);
-                }
-            }
+            // Sum_{i=start}^{end-1} x[i]^2 = prefix_sum_sq[end] - prefix_sum_sq[start]
+            var segmentSumSq = _prefixSumSq[dim, endIndex] - _prefixSumSq[dim, startIndex];
+
+            // calculate cost for this dimension: Sum(x^2) - (Sum(x))^2 / n
+            var costDim = segmentSumSq - (segmentSum * segmentSum) / segmentLength;
+
+            totalCost += costDim;
         }
 
-        return means;
+        return totalCost;
     }
 }

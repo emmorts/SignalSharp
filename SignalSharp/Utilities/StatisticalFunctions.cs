@@ -197,32 +197,6 @@ public static class StatisticalFunctions
 
         return result;
     }
-
-    /// <summary>
-    /// Scales a set of values to the range [0, 1] using min-max scaling.
-    /// </summary>
-    /// <typeparam name="T">The numeric type of the values.</typeparam>
-    /// <param name="values">The set of values.</param>
-    /// <returns>The min-max scaled values.</returns>
-    /// <remarks>
-    /// Min-max scaling linearly transforms the data such that the minimum value becomes 0 and the maximum value becomes 1.
-    /// </remarks>
-    public static IEnumerable<T> MinMaxScaling<T>(ReadOnlySpan<T> values) 
-        where T : INumber<T>
-    {
-        var (min, max) = MinMax(values);
-        var range = max - min;
-        var count = values.Length;
-        
-        var result = new T[count];
-
-        for (var i = 0; i < count; i++)
-        {
-            result[i] = (values[i] - min) / range;
-        }
-
-        return result;
-    }
     
     /// <summary>
     /// Calculates the skewness of a set of values.

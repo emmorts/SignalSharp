@@ -64,7 +64,7 @@ public class StatisticalFunctionsTests
     public void MinMaxScaling_SimpleValues_ShouldReturnScaledValues()
     {
         double[] values = [1.0, 2.0, 3.0, 4.0, 5.0];
-        var scaled = StatisticalFunctions.MinMaxScaling<double>(values).ToArray();
+        var scaled = StatisticalFunctions.Normalize<double>(values).ToArray();
 
         double[] expected = [0.0, 0.25, 0.5, 0.75, 1.0];
 

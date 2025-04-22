@@ -59,6 +59,25 @@ public class PELTAlgorithmTests
     }
     
     [Test]
+    public void FitDetect_LargeSignal_RBFCost_Exact_Jump1_ShouldReturnNoBreakpoints()
+    {
+        var options = new PELTOptions { CostFunction = new RBFCostFunction(), Jump = 1 };
+        var algo = new PELTAlgorithm(options);
+        var pattern = new double[] { 1, 1, 1, 5, 5, 5, 1, 1, 1, 2, 2, 3, 4, 2, 1 };
+        var signal = Enumerable.Repeat(pattern, 100).SelectMany(x => x).ToArray();
+
+        var signalMatrix = new double[1, signal.Length];
+        for (var i = 0; i < signal.Length; i++)
+        {
+            signalMatrix[0, i] = signal[i];
+        }
+
+        var breakpoints = algo.FitAndDetect(signalMatrix, 10.0);
+
+        Assert.That(breakpoints, Is.Empty);
+    }
+    
+    [Test]
     public void FitDetect_LargeSignal_ShouldReturnExpectedBreakpoints()
     {
         var options = new PELTOptions { CostFunction = new RBFCostFunction() };
@@ -74,8 +93,10 @@ public class PELTAlgorithmTests
         }
 
         var breakpoints = algo.FitAndDetect(signalMatrix, 10);
+        
+        int[] expectedApproximateBreakpoints = [1496, 1498];
 
-        Assert.That(new List<double>(), Is.EqualTo(breakpoints));
+        Assert.That(expectedApproximateBreakpoints, Is.EqualTo(breakpoints));
     }
 
     [Test]

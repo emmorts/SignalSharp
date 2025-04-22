@@ -1,294 +1,357 @@
 using SignalSharp.Common.Exceptions;
+using SignalSharp.Detection.PELT.Exceptions;
 
-namespace SignalSharp.Detection.PELT;
-
-/// <summary>
-/// Implements the Piecewise Linear Trend Change (PELT) algorithm for segmenting time series data.
-/// </summary>
-/// <remarks>
-/// <para>
-/// The PELT algorithm is a dynamic programming approach for detecting multiple change points in time series data.
-/// It aims to partition the data into segments where the statistical properties are homogenous within each segment
-/// but differ between segments. This algorithm is efficient and scales well with the size of the data.
-/// </para>
-///
-/// <para>
-/// The PELT algorithm uses a cost function to measure the fit of the segments and a penalty term to control the 
-/// number of change points. The penalty term helps prevent overfitting by discouraging too many segments.
-/// </para>
-/// </remarks>
-public class PELTAlgorithm
+namespace SignalSharp.Detection.PELT
 {
-    private readonly PELTOptions _options;
-    private double[,] _signal = null!;
-
     /// <summary>
-    /// Initializes a new instance of the <see cref="PELTAlgorithm"/> class with optional configuration settings.
+    /// Implements the Piecewise Linear Trend Change (PELT) algorithm for segmenting time series data.
     /// </summary>
-    /// <param name="options">The configuration options for the PELT algorithm. If null, default options are used.</param>
-    public PELTAlgorithm(PELTOptions? options)
-    {
-        _options = options ?? new PELTOptions();
-    }
-    
-    /// <summary>
-    /// Fits the PELT algorithm to the provided one-dimensional time series data.
-    /// </summary>
-    /// <param name="signal">The one-dimensional time series data to fit.</param>
-    /// <returns>The fitted <see cref="PELTAlgorithm"/> instance.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when the signal data is null.</exception>
     /// <remarks>
-    /// This method initializes the internal structures and cost function needed to compute the change points.
-    ///
-    /// <example>
-    /// For example, to fit the algorithm to a signal:
-    /// <code>
-    /// double[] signal = {1.0, 2.0, 3.0, 4.0};
-    /// var pelt = new PELTAlgorithm().Fit(signal);
-    /// </code>
-    /// This initializes the algorithm with the provided signal data.
-    /// </example>
+    /// <para>
+    /// The PELT algorithm is an exact and efficient dynamic programming approach for detecting multiple change points
+    /// in time series data. It aims to partition the data into segments where the statistical properties are
+    /// homogeneous within each segment but differ between segments. This implementation uses pruning to achieve
+    /// near-linear time complexity under certain conditions.
+    /// </para>
+    /// <para>
+    /// The algorithm minimizes the sum of segment costs plus a penalty term for each changepoint.
+    /// The cost function measures the fit or homogeneity of segments, and the penalty controls the number
+    /// of change points, preventing overfitting.
+    /// </para>
+    /// <para>
+    /// When `Jump` > 1 in `PELTOptions`, the algorithm becomes approximate by only checking potential
+    /// previous changepoints at intervals defined by `Jump`, potentially increasing speed at the cost of guaranteed optimality.
+    /// </para>
     /// </remarks>
-    public PELTAlgorithm Fit(double[] signal)
+    public class PELTAlgorithm
     {
-        ArgumentNullException.ThrowIfNull(signal, nameof(signal));
-        
-        var signalMatrix = new double[1, signal.Length];
-        for (var i = 0; i < signal.Length; i++)
+        private readonly PELTOptions _options;
+        private double[,] _signal = null!;
+        private int _signalLength;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PELTAlgorithm"/> class with specified configuration options.
+        /// </summary>
+        /// <param name="options">The configuration options for the PELT algorithm. Must not be null.</param>
+        /// <exception cref="ArgumentNullException">Thrown when options are null.</exception>
+        public PELTAlgorithm(PELTOptions options)
         {
-            signalMatrix[0, i] = signal[i];
+            ArgumentNullException.ThrowIfNull(options, nameof(options));
+            ArgumentNullException.ThrowIfNull(options.CostFunction, $"{nameof(options.CostFunction)} cannot be null.");
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MinSize, nameof(options.MinSize));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Jump, nameof(options.Jump)); 
+
+            _options = options;
         }
 
-        return Fit(signalMatrix);
-    }
-
-    /// <summary>
-    /// Fits the PELT algorithm to the provided multi-dimensional time series data.
-    /// </summary>
-    /// <param name="signalMatrix">The multi-dimensional time series data to fit, where each row represents a different time series.</param>
-    /// <returns>The fitted <see cref="PELTAlgorithm"/> instance.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when the signal data is null.</exception>
-    /// <remarks>
-    /// This method initializes the internal structures and cost function needed to compute the change points.
-    ///
-    /// <example>
-    /// For example, to fit the algorithm to a signal:
-    /// <code>
-    /// double[,] signal = { { 1.0, 2.0, 3.0, 4.0 } };
-    /// var pelt = new PELTAlgorithm().Fit(signal);
-    /// </code>
-    /// This initializes the algorithm with the provided signal data.
-    /// </example>
-    /// </remarks>
-    public PELTAlgorithm Fit(double[,] signalMatrix)
-    {
-        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
-        
-        _signal = signalMatrix;
-        _options.CostFunction.Fit(signalMatrix);
-        
-        return this;
-    }
-
-    /// <summary>
-    /// Detects the change points in the fitted signal using the specified penalty value.
-    /// </summary>
-    /// <param name="penalty">The penalty value to control the number of change points.</param>
-    /// <returns>An array of indices representing the change points in the signal.</returns>
-    /// <exception cref="UninitializedDataException">Thrown when Fit method has not been called before Detect.</exception>
-    /// <remarks>
-    /// This method uses the PELT algorithm to identify the change points in the time series data.
-    ///
-    /// <example>
-    /// For example, given a fitted PELTAlgorithm instance:
-    /// <code>
-    /// var pelt = new PELTAlgorithm().Fit(signal);
-    /// int[] changePoints = pelt.Detect(10.0);
-    /// </code>
-    /// This computes the change points in the signal with a penalty value of 10.0.
-    /// </example>
-    /// </remarks>
-    public int[] Detect(double penalty)
-    {
-        UninitializedDataException.ThrowIfUninitialized(_signal, "Fit() must be called before Detect().");
-
-        var partition = Segment(penalty);
-        
-        return ExtractBreakpoints(partition);
-    }
-
-    /// <summary>
-    /// Fits the PELT algorithm to the provided signal data and detects the change points using the specified penalty value.
-    /// </summary>
-    /// <param name="signal">The one-dimensional time series data to to be segmented.</param>
-    /// <param name="pen">The penalty value to control the number of change points.</param>
-    /// <returns>An array of indices representing the change points in the signal.</returns>
-    /// <example>
-    /// For example, to fit and detect the change points in one step:
-    /// <code>
-    /// double[] signal = {1.0, 2.0, 3.0, 4.0};
-    /// var pelt = new PELTAlgorithm();
-    /// int[] changePoints = pelt.FitDetect(signal, 10.0);
-    /// </code>
-    /// This fits the algorithm to the signal and computes the change points with a penalty value of 10.0.
-    /// </example>
-    public int[] FitAndDetect(double[] signal, double pen)
-    {
-        return Fit(signal).Detect(pen);
-    }
-
-    /// <summary>
-    /// Fits the PELT algorithm to the provided signal data and detects the change points using the specified penalty value.
-    /// </summary>
-    /// <param name="signal">The multi-dimensional time series data to be segmented, where each row represents a different time series.</param>
-    /// <param name="pen">The penalty value to control the number of change points.</param>
-    /// <returns>An array of indices representing the change points in the signal.</returns>
-    /// <example>
-    /// For example, to fit and detect the change points in one step:
-    /// <code>
-    /// double[,] signal = { { 1.0, 2.0, 3.0, 4.0 } };
-    /// var pelt = new PELTAlgorithm();
-    /// int[] changePoints = pelt.FitDetect(signal, 10.0);
-    /// </code>
-    /// This fits the algorithm to the signal and computes the change points with a penalty value of 10.0.
-    /// </example>
-    public int[] FitAndDetect(double[,] signal, double pen)
-    {
-        return Fit(signal).Detect(pen);
-    }
-
-    /// <summary>
-    /// Segments the signal using the PELT algorithm with the given penalty.
-    /// </summary>
-    /// <param name="pen">The penalty value to control the number of change points.</param>
-    /// <returns>A dictionary representing the partitioned segments and their associated costs.</returns>
-    private Dictionary<(int, int), double> Segment(double pen)
-    {
-        var partitions = InitializePartitions();
-        var admissible = new List<int>();
-        var indices = GenerateIndices();
-
-        foreach (var bkp in indices)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PELTAlgorithm"/> class with default options (L2 Cost, MinSize=2, Jump=5).
+        /// </summary>
+        public PELTAlgorithm() : this(new PELTOptions())
         {
-            admissible = UpdateAdmissibleList(admissible, bkp);
-            var candidatePartitions = GenerateCandidatePartitions(admissible, bkp, pen, partitions);
-
-            partitions[bkp] = candidatePartitions.MinBy(d => d.Values.Sum())!;
-            admissible = FilterAdmissible(admissible, candidatePartitions, partitions, bkp, pen);
         }
-        
-        return CleanPartition(partitions[_signal.GetLength(1)]);
-    }
-    
-    /// <summary>
-    /// Initializes the partitions dictionary with the starting point.
-    /// </summary>
-    /// <returns>A dictionary with the initial partition at index 0.</returns>
-    private static Dictionary<int, Dictionary<(int, int), double>> InitializePartitions()
-    {
-        return new Dictionary<int, Dictionary<(int, int), double>>
-        {
-            { 0, new Dictionary<(int, int), double> { { (0, 0), 0 } } }
-        };
-    }
 
-    /// <summary>
-    /// Generates the indices to consider for potential change points.
-    /// </summary>
-    /// <returns>A list of indices to evaluate as change points.</returns>
-    private List<int> GenerateIndices()
-    {
-        var length = _signal.GetLength(1);
-        
-        return Enumerable.Range(0, length)
-            .Where(k => k % _options.Jump == 0 && k >= _options.MinSize)
-            .Concat(new[] { length })
-            .ToList();
-    }
-    
-    /// <summary>
-    /// Updates the admissible list with a new potential change point.
-    /// </summary>
-    /// <param name="admissible">The current list of admissible change points.</param>
-    /// <param name="breakpoint">The new breakpoint to be added.</param>
-    /// <returns>The updated list of admissible change points.</returns>
-    private List<int> UpdateAdmissibleList(List<int> admissible, int breakpoint)
-    {
-        var newAdmPt = (int)Math.Floor((breakpoint - _options.MinSize) / (double)_options.Jump) * _options.Jump;
-        admissible.Add(newAdmPt);
-        return admissible;
-    }
-    
-    /// <summary>
-    /// Generates candidate partitions for a given breakpoint and penalty.
-    /// </summary>
-    /// <param name="admissible">The list of admissible change points.</param>
-    /// <param name="breakpoint">The current breakpoint being evaluated.</param>
-    /// <param name="penalty">The penalty value to control the number of change points.</param>
-    /// <param name="partitions">The current partitions dictionary.</param>
-    /// <returns>A list of candidate partitions for the given breakpoint.</returns>
-    private List<Dictionary<(int, int), double>> GenerateCandidatePartitions(List<int> admissible, int breakpoint, 
-        double penalty, Dictionary<int, Dictionary<(int, int), double>> partitions)
-    {
-        var candidatePartitions = new List<Dictionary<(int, int), double>>();
-        
-        foreach (var t in admissible)
+        /// <summary>
+        /// Fits the PELT algorithm to the provided one-dimensional time series data.
+        /// </summary>
+        /// <param name="signal">The one-dimensional time series data to fit.</param>
+        /// <returns>The fitted <see cref="PELTAlgorithm"/> instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the signal data is null.</exception>
+        /// <remarks>
+        /// Prepares the algorithm by setting the internal signal representation and fitting the chosen cost function.
+        /// <example>
+        /// <code>
+        /// double[] signal = {1.0, 2.0, 3.0, 10.0, 11.0, 12.0};
+        /// var pelt = new PELTAlgorithm().Fit(signal);
+        /// </code>
+        /// </example>
+        /// </remarks>
+        public PELTAlgorithm Fit(double[] signal)
         {
-            if (!partitions.TryGetValue(t, out var tmpPartition)) continue;
+            ArgumentNullException.ThrowIfNull(signal, nameof(signal));
 
-            var newPartition = new Dictionary<(int, int), double>(tmpPartition)
+            var signalMatrix = new double[1, signal.Length];
+            for (var i = 0; i < signal.Length; i++)
             {
-                [(t, breakpoint)] = _options.CostFunction.ComputeCost(t, breakpoint) + penalty
-            };
+                signalMatrix[0, i] = signal[i];
+            }
 
-            candidatePartitions.Add(newPartition);
+            return Fit(signalMatrix);
         }
 
-        return candidatePartitions;
-    }
+        /// <summary>
+        /// Fits the PELT algorithm to the provided multi-dimensional time series data.
+        /// </summary>
+        /// <param name="signalMatrix">The multi-dimensional time series data to fit, where each row represents a dimension and each column a time point.</param>
+        /// <returns>The fitted <see cref="PELTAlgorithm"/> instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the signal data is null.</exception>
+        /// <remarks>
+        /// Prepares the algorithm by setting the internal signal representation and fitting the chosen cost function.
+        /// <example>
+        /// <code>
+        /// double[,] signal = { { 1.0, 2.0, 3.0 }, { 10.0, 11.0, 12.0 } };
+        /// var pelt = new PELTAlgorithm().Fit(signal);
+        /// </code>
+        /// </example>
+        /// </remarks>
+        public PELTAlgorithm Fit(double[,] signalMatrix)
+        {
+            ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+            ArgumentNullException.ThrowIfNull(_options.CostFunction, "Cost function must be initialized.");
 
-    /// <summary>
-    /// Filters the list of admissible change points based on the candidate partitions and current partitions.
-    /// </summary>
-    /// <param name="admissible">The current list of admissible change points.</param>
-    /// <param name="candidatePartitions">The list of candidate partitions for the current breakpoint.</param>
-    /// <param name="partitions">The current partitions dictionary.</param>
-    /// <param name="breakpoint">The current breakpoint being evaluated.</param>
-    /// <param name="penalty">The penalty value to control the number of change points.</param>
-    /// <returns>The filtered list of admissible change points.</returns>
-    private static List<int> FilterAdmissible(List<int> admissible, List<Dictionary<(int, int), double>> candidatePartitions, 
-        Dictionary<int, Dictionary<(int, int), double>> partitions, int breakpoint, double penalty)
-    {
-        return admissible
-            .Zip(candidatePartitions, (t, partition) => new { t, partition })
-            .Where(x => x.partition.Values.Sum() <= partitions[breakpoint].Values.Sum() + penalty)
-            .Select(x => x.t)
-            .ToList();
-    }
+            _signal = signalMatrix;
+            _signalLength = _signal.GetLength(1);
+            _options.CostFunction.Fit(signalMatrix);
 
-    /// <summary>
-    /// Cleans the final partition dictionary by removing the initial dummy partition.
-    /// </summary>
-    /// <param name="partition">The partition dictionary to clean.</param>
-    /// <returns>The cleaned partition dictionary.</returns>
-    private static Dictionary<(int, int), double> CleanPartition(Dictionary<(int, int), double> partition)
-    {
-        var bestPartition = new Dictionary<(int, int), double>(partition);
-        bestPartition.Remove((0, 0));
-        return bestPartition;
-    }
+            return this;
+        }
 
-    /// <summary>
-    /// Extracts the breakpoints from the final partition dictionary.
-    /// </summary>
-    /// <param name="partition">The final partition dictionary.</param>
-    /// <returns>An array of indices representing the breakpoints.</returns>
-    private int[] ExtractBreakpoints(Dictionary<(int, int), double> partition)
-    {
-        return partition.Keys
-            .Select(tuple => tuple.Item2)
-            .Where(x => x != _signal.Length)
-            .OrderBy(x => x)
-            .ToArray();
+        /// <summary>
+        /// Detects the change points in the fitted signal using the specified penalty value.
+        /// </summary>
+        /// <param name="penalty">The penalty value to control the number of change points. Must be non-negative.</param>
+        /// <returns>An array of indices representing the change points in the signal. The indices correspond to the first point *after* the change.</returns>
+        /// <exception cref="UninitializedDataException">Thrown when Fit method has not been called before Detect.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the penalty is negative.</exception>
+        /// <remarks>
+        /// This method executes the core PELT algorithm to find the optimal segmentation based on the fitted data, cost function, and penalty.
+        /// If `Jump > 1` was specified in options, this may return an approximate solution.
+        /// <example>
+        /// <code>
+        /// var pelt = new PELTAlgorithm().Fit(signal);
+        /// int[] changePoints = pelt.Detect(10.0);
+        /// </code>
+        /// </example>
+        /// </remarks>
+        public int[] Detect(double penalty)
+        {
+            UninitializedDataException.ThrowIfUninitialized(_signal, "Fit() must be called before Detect().");
+            ArgumentOutOfRangeException.ThrowIfNegative(penalty, nameof(penalty));
+
+            if (_signalLength < _options.MinSize * 2)
+            {
+                return []; // not enough data for a changepoint
+            }
+
+            var lastChangePoints = Segment(penalty);
+            return ExtractBreakpoints(lastChangePoints);
+        }
+
+        /// <summary>
+        /// Fits the PELT algorithm to the provided one-dimensional signal data and detects the change points using the specified penalty value.
+        /// </summary>
+        /// <param name="signal">The one-dimensional time series data to be segmented.</param>
+        /// <param name="penalty">The penalty value to control the number of change points. Must be non-negative.</param>
+        /// <returns>An array of indices representing the change points in the signal.</returns>
+        /// <example>
+        /// <code>
+        /// double[] signal = {1, 1, 1, 10, 10, 10, 1, 1, 1};
+        /// var pelt = new PELTAlgorithm(); // Uses default options
+        /// int[] changePoints = pelt.FitAndDetect(signal, 5.0); // Example penalty
+        /// // changePoints might be [3, 6] depending on cost function and penalty
+        /// </code>
+        /// </example>
+        public int[] FitAndDetect(double[] signal, double penalty)
+        {
+            return Fit(signal).Detect(penalty);
+        }
+
+        /// <summary>
+        /// Fits the PELT algorithm to the provided multi-dimensional signal data and detects the change points using the specified penalty value.
+        /// </summary>
+        /// <param name="signalMatrix">The multi-dimensional time series data to be segmented, where each row represents a dimension.</param>
+        /// <param name="penalty">The penalty value to control the number of change points. Must be non-negative.</param>
+        /// <returns>An array of indices representing the change points in the signal.</returns>
+        /// <example>
+        /// <code>
+        /// double[,] signal = { { 1, 1, 10, 10 }, { 5, 5, 20, 20 } };
+        /// var pelt = new PELTAlgorithm(); // Uses default options
+        /// int[] changePoints = pelt.FitAndDetect(signal, 8.0); // Example penalty
+        /// // changePoints might be [2]
+        /// </code>
+        /// </example>
+        public int[] FitAndDetect(double[,] signalMatrix, double penalty)
+        {
+            return Fit(signalMatrix).Detect(penalty);
+        }
+
+        /// <summary>
+        /// Performs the core PELT segmentation algorithm.
+        /// </summary>
+        /// <param name="penalty">The penalty value for adding a changepoint.</param>
+        /// <returns>An array where the value at index `t` indicates the optimal last changepoint before `t`.</returns>
+        private int[] Segment(double penalty)
+        {
+            // F[t] stores the minimum cost for the signal segment 0...t
+            var F = new double[_signalLength + 1];
+            // CP[t] stores the optimal last changepoint index for the minimum cost F[t]
+            var CP = new int[_signalLength + 1];
+
+            F[0] = -penalty; // offset penalty for the first segment
+            for (var i = 1; i <= _signalLength; i++)
+            {
+                F[i] = double.PositiveInfinity;
+            }
+
+            // R_t stores the set of admissible last changepoint candidates for endpoint t
+            var admissible = new HashSet<int> { 0 }; 
+
+            for (var currentEndPoint = _options.MinSize; currentEndPoint <= _signalLength; currentEndPoint++)
+            {
+                var currentMinCost = double.PositiveInfinity;
+                var currentOptimalLastCp = 0;
+
+                // --- Find the best cost partitioning ending at currentEndPoint ---
+                // iterate backwards from potential start points, stepping by Jump
+                // only consider points that are still in the admissible set
+                var startCheck = currentEndPoint - _options.MinSize;
+                for (var prevCpCandidate = startCheck; prevCpCandidate >= 0; prevCpCandidate -= _options.Jump)
+                {
+                    if (!admissible.Contains(prevCpCandidate))
+                    {
+                        // if Jump > 1, we might need to check points between the jumps
+                        // if the exact point wasn't admissible. A simpler approach for
+                        // approximate PELT is often to just check the points at the jump intervals
+                        // that ARE admissible. Let's stick to that for now.
+                        // if Jump = 1, this check ensures we only process admissible points efficiently.
+                        continue; 
+                    }
+
+                    try
+                    {
+                        var segmentCost = _options.CostFunction.ComputeCost(prevCpCandidate, currentEndPoint);
+                        var costWithCandidate = F[prevCpCandidate] + segmentCost + penalty;
+
+                        if (costWithCandidate < currentMinCost)
+                        {
+                            currentMinCost = costWithCandidate;
+                            currentOptimalLastCp = prevCpCandidate;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                         Console.Error.WriteLine($"Warning: Error computing cost for segment ({prevCpCandidate}, {currentEndPoint}): {ex.Message}");
+                        // todo: should we throw?
+                        // throw new PELTAlgorithmException($"Error computing cost for segment ({prevCpCandidate}, {currentEndPoint}): {ex.Message}", ex);
+                    }
+
+                    // if Jump=1, need to check the next point. If Jump>1, we jump.
+                    if (_options.Jump <= 1 || prevCpCandidate <= 0 || prevCpCandidate - _options.Jump >= 0) continue;
+                    
+                    // ensure we check index 0 if it's admissible and reachable by the jump logic
+                    if (admissible.Contains(0) && currentEndPoint - 0 >= _options.MinSize)
+                    {
+                        prevCpCandidate = _options.Jump;
+                    }
+                }
+                // --- End Cost Calculation Loop ---
+
+                if (double.IsPositiveInfinity(currentMinCost) && currentEndPoint >= _options.MinSize)
+                {
+                    // this might happen if the only admissible point is 0, and cost(0, currentEndPoint) failed or if no admissible point led to a valid segment.
+                    // indicate this segment is unreachable or problematic
+                    // assigning infinity ensures it won't be part of a valid path
+                    F[currentEndPoint] = double.PositiveInfinity;
+                    // CP[currentEndPoint] remains 0 (or its default) - might need careful backtracking later
+                    // let's default CP to -1 to indicate no valid predecessor found? Or stick with 0.
+                    CP[currentEndPoint] = -1;
+                }
+                else
+                {
+                    F[currentEndPoint] = currentMinCost;
+                    CP[currentEndPoint] = currentOptimalLastCp;
+                }
+                
+
+                // --- pruning step: update the admissible set for the next iteration ---
+                var nextAdmissible = new HashSet<int>(); // Use HashSet here too
+                foreach (var s in admissible)
+                {
+                    var segmentIsValidForCost = currentEndPoint - s >= _options.MinSize;
+                    if (segmentIsValidForCost)
+                    {
+                        try
+                        {
+                            var segmentCost = _options.CostFunction.ComputeCost(s, currentEndPoint);
+                            // standard PELT pruning condition: keep s if it's still competitive
+                            // use F[currentEndPoint] calculated above (might be approximate if Jump > 1)
+                            if (F[s] + segmentCost <= F[currentEndPoint])
+                            {
+                                nextAdmissible.Add(s);
+                            }
+                            // else: Prune s, do not add to nextAdmissible
+                        }
+                        catch (Exception)
+                        {
+                            // if cost calculation fails during pruning check, we stay conservative (as the main loop
+                            // handles optimal path errors) and keep 's' in the admissible set, but only
+                            // if F[s] was reachable.
+                             if (!double.IsPositiveInfinity(F[s]))
+                             {
+                                 nextAdmissible.Add(s); 
+                             }
+                             
+                             Console.Error.WriteLine($"Warning: Cost check failed during pruning for s={s}, t={currentEndPoint}. Keeping s.");
+                        }
+                    }
+                    else
+                    {
+                         // if segment s->currentEndPoint is not yet MinSize, 's' cannot be pruned based on cost yet.
+                         // it must remain admissible *if it was reachable* (F[s] is finite).
+                         if (!double.IsPositiveInfinity(F[s]))
+                         {
+                             nextAdmissible.Add(s);
+                         }
+                    }
+                }
+                // current endpoint becomes a potential starting point for the next segment
+                // only add if it was actually reachable (F is not infinity)
+                if (!double.IsPositiveInfinity(F[currentEndPoint]))
+                {
+                    nextAdmissible.Add(currentEndPoint);
+                }
+                admissible = nextAdmissible;
+            }
+
+            return CP;
+        }
+
+
+        /// <summary>
+        /// Extracts the breakpoints from the array of last changepoint indices.
+        /// </summary>
+        /// <param name="lastChangePoints">The CP array computed by the Segment method.</param>
+        /// <returns>An array of indices representing the breakpoints.</returns>
+        private int[] ExtractBreakpoints(int[] lastChangePoints)
+        {
+            var breakpoints = new List<int>();
+            var currentIndex = _signalLength;
+
+            while (currentIndex > 0)
+            {
+                var prevCp = lastChangePoints[currentIndex];
+                if (prevCp <= 0)
+                {
+                    // if prevCp is -1, it means F[currentIndex] was +inf, path is broken.
+                    if (prevCp == -1)
+                    {
+                        Console.Error.WriteLine($"Warning: Breakpoint reconstruction encountered an unreachable point at index {currentIndex}. Results may be incomplete.");
+                    }
+                    break;
+                }
+
+                // add the breakpoint (the start index of the segment ending at currentIndex)
+                breakpoints.Insert(0, prevCp);
+
+                currentIndex = prevCp;
+
+                // safety break for potential infinite loops
+                if (breakpoints.Count <= _signalLength) continue;
+                
+                throw new PELTAlgorithmException("Breakpoint reconstruction failed due to potential loop.");
+            }
+
+            return breakpoints.ToArray();
+        }
     }
 }
