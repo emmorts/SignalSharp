@@ -1,8 +1,8 @@
 using Moq;
 using SignalSharp.CostFunctions.Cost;
+using SignalSharp.CostFunctions.Exceptions;
 using SignalSharp.Detection.PELT;
 using SignalSharp.Detection.PELT.Exceptions;
-using SignalSharp.CostFunctions.Exceptions;
 using SignalSharp.Utilities;
 
 namespace SignalSharp.Tests.Detection;
@@ -26,14 +26,13 @@ public class PELTPenaltySelectorTests
 
         _mockLikelihoodCostFn.Setup(c => c.SupportsInformationCriteria).Returns(true);
         _mockLikelihoodCostFn.Setup(c => c.GetSegmentParameterCount(It.IsAny<int>())).Returns(2);
-        _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(It.IsAny<int>(), It.IsAny<int>()))
-            .Returns((int start, int end) => (end - start) * 1.0);
+        _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(It.IsAny<int>(), It.IsAny<int>())).Returns((int start, int end) => (end - start) * 1.0);
 
         _testOptions = new PELTOptions
         {
             CostFunction = _mockLikelihoodCostFn.Object,
             MinSize = 2,
-            Jump = 1
+            Jump = 1,
         };
 
         _mockPeltAlgorithm.Setup(a => a.Options).Returns(_testOptions);
@@ -43,7 +42,12 @@ public class PELTPenaltySelectorTests
 
     private PELTPenaltySelector CreateSelector(IPELTCostFunction costFunction)
     {
-        var options = new PELTOptions { CostFunction = costFunction, MinSize = 2, Jump = 1 };
+        var options = new PELTOptions
+        {
+            CostFunction = costFunction,
+            MinSize = 2,
+            Jump = 1,
+        };
         _mockPeltAlgorithm.Setup(a => a.Options).Returns(options);
         return new PELTPenaltySelector(_mockPeltAlgorithm.Object);
     }
@@ -64,7 +68,12 @@ public class PELTPenaltySelectorTests
     [Test]
     public void Constructor_AlgorithmWithNullCostFunction_ThrowsArgumentNullException()
     {
-        var options = new PELTOptions { CostFunction = null!, MinSize = 1, Jump = 1 };
+        var options = new PELTOptions
+        {
+            CostFunction = null!,
+            MinSize = 1,
+            Jump = 1,
+        };
         _mockPeltAlgorithm.Setup(a => a.Options).Returns(options);
         Assert.Throws<ArgumentNullException>(() => new PELTPenaltySelector(_mockPeltAlgorithm.Object));
     }
@@ -72,7 +81,12 @@ public class PELTPenaltySelectorTests
     [Test]
     public void Constructor_AlgorithmWithInvalidMinSize_ThrowsArgumentOutOfRangeException()
     {
-        var options = new PELTOptions { CostFunction = _mockLikelihoodCostFn.Object, MinSize = 0, Jump = 1 };
+        var options = new PELTOptions
+        {
+            CostFunction = _mockLikelihoodCostFn.Object,
+            MinSize = 0,
+            Jump = 1,
+        };
         _mockPeltAlgorithm.Setup(a => a.Options).Returns(options);
         Assert.Throws<ArgumentOutOfRangeException>(() => new PELTPenaltySelector(_mockPeltAlgorithm.Object));
     }
@@ -80,7 +94,12 @@ public class PELTPenaltySelectorTests
     [Test]
     public void Constructor_AlgorithmWithInvalidJump_ThrowsArgumentOutOfRangeException()
     {
-        var options = new PELTOptions { CostFunction = _mockLikelihoodCostFn.Object, MinSize = 1, Jump = 0 };
+        var options = new PELTOptions
+        {
+            CostFunction = _mockLikelihoodCostFn.Object,
+            MinSize = 1,
+            Jump = 0,
+        };
         _mockPeltAlgorithm.Setup(a => a.Options).Returns(options);
         Assert.Throws<ArgumentOutOfRangeException>(() => new PELTPenaltySelector(_mockPeltAlgorithm.Object));
     }
@@ -132,12 +151,14 @@ public class PELTPenaltySelectorTests
     {
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.BIC)
-            { MinPenalty = 10, MaxPenalty = 20, NumPenaltySteps = 2 };
+        {
+            MinPenalty = 10,
+            MaxPenalty = 20,
+            NumPenaltySteps = 2,
+        };
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0))))
-            .Returns([50]);
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0))))
-            .Returns([]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0)))).Returns([50]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0)))).Returns([]);
 
         _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(0, 50)).Returns(50 * 1.0);
         _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(50, 100)).Returns(50 * 1.0);
@@ -156,8 +177,7 @@ public class PELTPenaltySelectorTests
         Assert.That(result.Diagnostics, Is.Not.Null);
         Assert.That(result.Diagnostics!, Has.Count.EqualTo(2));
         Assert.That(result.Diagnostics[0].Penalty, Is.EqualTo(10.0).Within(NumericUtils.GetDefaultEpsilon<double>()));
-        Assert.That(result.Diagnostics[0].Score,
-            Is.EqualTo(expectedBIC10).Within(1e-4)); // Score comparison tolerance can be different
+        Assert.That(result.Diagnostics[0].Score, Is.EqualTo(expectedBIC10).Within(1e-4)); // Score comparison tolerance can be different
         Assert.That(result.Diagnostics[0].ChangePoints, Is.EqualTo(1));
         Assert.That(result.Diagnostics[1].Penalty, Is.EqualTo(20.0).Within(NumericUtils.GetDefaultEpsilon<double>()));
         Assert.That(result.Diagnostics[1].Score, Is.EqualTo(expectedBIC20).Within(1e-4));
@@ -169,15 +189,16 @@ public class PELTPenaltySelectorTests
     {
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.AIC)
-            { MinPenalty = 1, MaxPenalty = 5, NumPenaltySteps = 2 };
+        {
+            MinPenalty = 1,
+            MaxPenalty = 5,
+            NumPenaltySteps = 2,
+        };
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 1.0))))
-            .Returns([50]);
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 5.0))))
-            .Returns([]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 1.0)))).Returns([50]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 5.0)))).Returns([]);
 
-        _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(It.IsAny<int>(), It.IsAny<int>()))
-            .Returns((int start, int end) => (end - start) * 0.5);
+        _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(It.IsAny<int>(), It.IsAny<int>())).Returns((int start, int end) => (end - start) * 0.5);
         _mockLikelihoodCostFn.Setup(c => c.GetSegmentParameterCount(It.IsAny<int>())).Returns(2);
 
         var result = selector.FitAndSelect(TestSignal, selectionOptions);
@@ -194,15 +215,16 @@ public class PELTPenaltySelectorTests
         var shortSignal = Enumerable.Range(0, shortSignalLength).Select(i => (double)i).ToArray();
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.AICc)
-            { MinPenalty = 1, MaxPenalty = 5, NumPenaltySteps = 2 };
+        {
+            MinPenalty = 1,
+            MaxPenalty = 5,
+            NumPenaltySteps = 2,
+        };
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 1.0))))
-            .Returns([8]);
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 5.0))))
-            .Returns([]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 1.0)))).Returns([8]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 5.0)))).Returns([]);
 
-        _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(It.IsAny<int>(), It.IsAny<int>()))
-            .Returns((int start, int end) => (end - start) * 0.5);
+        _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(It.IsAny<int>(), It.IsAny<int>())).Returns((int start, int end) => (end - start) * 0.5);
         _mockLikelihoodCostFn.Setup(c => c.GetSegmentParameterCount(It.IsAny<int>())).Returns(2);
 
         const double expectedAICc1 = (4.0 + 3.5) + 2.0 * (2 + 2 + 1) + (2.0 * 5 * 6) / (15.0 - 5 - 1); // ~24.1667
@@ -225,7 +247,12 @@ public class PELTPenaltySelectorTests
         _mockPeltAlgorithm.Reset();
         _mockLikelihoodCostFn.Reset();
 
-        var options = new PELTOptions { CostFunction = _mockLikelihoodCostFn.Object, MinSize = 2, Jump = 1 };
+        var options = new PELTOptions
+        {
+            CostFunction = _mockLikelihoodCostFn.Object,
+            MinSize = 2,
+            Jump = 1,
+        };
         _mockPeltAlgorithm.Setup(a => a.Options).Returns(options);
         _mockPeltAlgorithm.Setup(a => a.Fit(It.IsAny<double[]>())).Returns(_mockPeltAlgorithm.Object);
 
@@ -240,24 +267,24 @@ public class PELTPenaltySelectorTests
 
         // This will generate penalties [1.0, 2.0] after internal range adjustment
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.AICc)
-            { MinPenalty = 1, MaxPenalty = 1, NumPenaltySteps = 1 };
+        {
+            MinPenalty = 1,
+            MaxPenalty = 1,
+            NumPenaltySteps = 1,
+        };
 
         // Penalty 1.0: Detect -> [3]. Params = P(0,3)+P(3,5)+K = 2+2+1 = 5. N=5. N <= Params+1. AICc -> Inf.
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 1.0))))
-            .Returns([3]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 1.0)))).Returns([3]);
         // Penalty 2.0: Detect -> [2,4]. Params = P(0,2)+P(2,4)+P(4,5)+K = 2+2+2+2 = 8. N=5. N <= Params+1. AICc -> Inf.
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 2.0))))
-            .Returns([2, 4]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 2.0)))).Returns([2, 4]);
 
         var ex = Assert.Throws<PELTAlgorithmException>(() => selector.FitAndSelect(veryShortSignal, selectionOptions));
 
         Assert.That(ex?.Message, Does.Contain("Could not find a suitable penalty"));
         Assert.That(ex?.Message, Does.Contain("infinite/NaN scores"));
 
-        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 1.0))),
-            Times.Once);
-        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 2.0))),
-            Times.Once);
+        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 1.0))), Times.Once);
+        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 2.0))), Times.Once);
     }
 
     [Test]
@@ -265,18 +292,21 @@ public class PELTPenaltySelectorTests
     {
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.BIC)
-            { MinPenalty = 10, MaxPenalty = 30, NumPenaltySteps = 3 }; // Test ~10, ~17.32, ~30
+        {
+            MinPenalty = 10,
+            MaxPenalty = 30,
+            NumPenaltySteps = 3,
+        }; // Test ~10, ~17.32, ~30
 
         var penalty1 = 10.0;
         var penalty2 = Math.Sqrt(10.0 * 30.0); // ~17.32
         var penalty3 = 30.0;
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty1))))
-            .Returns([]);
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty2))))
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty1)))).Returns([]);
+        _mockPeltAlgorithm
+            .Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty2))))
             .Throws(new CostFunctionException("Cost failed"));
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty3))))
-            .Returns([]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty3)))).Returns([]);
 
         _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(0, 100)).Returns(100);
         _mockLikelihoodCostFn.Setup(c => c.GetSegmentParameterCount(100)).Returns(2);
@@ -287,8 +317,7 @@ public class PELTPenaltySelectorTests
         Assert.That(result.OptimalBreakpoints, Is.Empty);
         Assert.That(result.Diagnostics, Is.Not.Null);
         Assert.That(result.Diagnostics!, Has.Count.EqualTo(3));
-        Assert.That(result.Diagnostics[1].Penalty,
-            Is.EqualTo(penalty2).Within(NumericUtils.GetDefaultEpsilon<double>()));
+        Assert.That(result.Diagnostics[1].Penalty, Is.EqualTo(penalty2).Within(NumericUtils.GetDefaultEpsilon<double>()));
         Assert.That(result.Diagnostics[1].Score, Is.NaN);
         Assert.That(result.Diagnostics[1].ChangePoints, Is.EqualTo(-1));
     }
@@ -298,16 +327,17 @@ public class PELTPenaltySelectorTests
     {
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.BIC)
-            { MinPenalty = 10, MaxPenalty = 20, NumPenaltySteps = 2 };
+        {
+            MinPenalty = 10,
+            MaxPenalty = 20,
+            NumPenaltySteps = 2,
+        };
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0))))
-            .Returns([50]);
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0))))
-            .Returns([]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0)))).Returns([50]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0)))).Returns([]);
 
         _mockLikelihoodCostFn.Setup(c => c.GetSegmentParameterCount(It.IsAny<int>())).Returns(2);
-        _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(0, 50))
-            .Throws(new CostFunctionException("Likelihood failed"));
+        _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(0, 50)).Throws(new CostFunctionException("Likelihood failed"));
         _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(50, 100)).Returns(50);
         _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(0, 100)).Returns(100);
 
@@ -325,12 +355,14 @@ public class PELTPenaltySelectorTests
     {
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.BIC)
-            { MinPenalty = 10, MaxPenalty = 20, NumPenaltySteps = 2 };
+        {
+            MinPenalty = 10,
+            MaxPenalty = 20,
+            NumPenaltySteps = 2,
+        };
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0))))
-            .Returns([50]);
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0))))
-            .Returns([]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0)))).Returns([50]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0)))).Returns([]);
 
         _mockLikelihoodCostFn.Setup(c => c.GetSegmentParameterCount(It.IsAny<int>())).Returns(2);
         _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(0, 50)).Returns(double.NaN);
@@ -351,10 +383,13 @@ public class PELTPenaltySelectorTests
     {
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.BIC)
-            { MinPenalty = 10, MaxPenalty = 20, NumPenaltySteps = 2 };
+        {
+            MinPenalty = 10,
+            MaxPenalty = 20,
+            NumPenaltySteps = 2,
+        };
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.IsAny<double>()))
-            .Throws(new CostFunctionException("Cost failed"));
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.IsAny<double>())).Throws(new CostFunctionException("Cost failed"));
 
         Assert.Throws<PELTAlgorithmException>(() => selector.FitAndSelect(TestSignal, selectionOptions));
     }
@@ -362,17 +397,24 @@ public class PELTPenaltySelectorTests
     [Test]
     public void FitAndSelect_InvalidSegmentLengthFromDetect_AssignsInfiniteScore()
     {
-        _testOptions = new PELTOptions { CostFunction = _mockLikelihoodCostFn.Object, MinSize = 10, Jump = 1 };
+        _testOptions = new PELTOptions
+        {
+            CostFunction = _mockLikelihoodCostFn.Object,
+            MinSize = 10,
+            Jump = 1,
+        };
         _mockPeltAlgorithm.Setup(a => a.Options).Returns(_testOptions);
         var selector = new PELTPenaltySelector(_mockPeltAlgorithm.Object);
 
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.BIC)
-            { MinPenalty = 10, MaxPenalty = 20, NumPenaltySteps = 2 };
+        {
+            MinPenalty = 10,
+            MaxPenalty = 20,
+            NumPenaltySteps = 2,
+        };
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0))))
-            .Returns([5]);
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0))))
-            .Returns([]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0)))).Returns([5]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0)))).Returns([]);
 
         _mockLikelihoodCostFn.Setup(c => c.ComputeLikelihoodMetric(0, 100)).Returns(100);
         _mockLikelihoodCostFn.Setup(c => c.GetSegmentParameterCount(100)).Returns(2);
@@ -392,7 +434,11 @@ public class PELTPenaltySelectorTests
     {
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.BIC)
-            { MinPenalty = 5.0, MaxPenalty = 15.0, NumPenaltySteps = 3 }; // Test 5, ~8.66, 15
+        {
+            MinPenalty = 5.0,
+            MaxPenalty = 15.0,
+            NumPenaltySteps = 3,
+        }; // Test 5, ~8.66, 15
 
         var penalty1 = 5.0;
         var penalty2 = Math.Sqrt(5.0 * 15.0); // ~8.66
@@ -404,17 +450,21 @@ public class PELTPenaltySelectorTests
 
         selector.FitAndSelect(TestSignal, selectionOptions);
 
-        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty1))),
-            Times.Once);
-        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty2))),
-            Times.Once);
-        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty3))),
-            Times.Once);
+        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty1))), Times.Once);
+        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty2))), Times.Once);
+        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, penalty3))), Times.Once);
         // Verify Detect was *not* called with penalties outside the expected generated range
-        _mockPeltAlgorithm.Verify(a => a.Detect(It.Is<double>(p => !NumericUtils.AreApproximatelyEqual(p, penalty1) &&
-                                                                   !NumericUtils.AreApproximatelyEqual(p, penalty2) &&
-                                                                   !NumericUtils.AreApproximatelyEqual(p, penalty3))),
-            Times.Never);
+        _mockPeltAlgorithm.Verify(
+            a =>
+                a.Detect(
+                    It.Is<double>(p =>
+                        !NumericUtils.AreApproximatelyEqual(p, penalty1)
+                        && !NumericUtils.AreApproximatelyEqual(p, penalty2)
+                        && !NumericUtils.AreApproximatelyEqual(p, penalty3)
+                    )
+                ),
+            Times.Never
+        );
     }
 
     [Test]
@@ -422,12 +472,14 @@ public class PELTPenaltySelectorTests
     {
         var selector = CreateSelector(_mockLikelihoodCostFn.Object);
         var selectionOptions = new PELTPenaltySelectionOptions(PELTPenaltySelectionMethod.BIC)
-            { MinPenalty = 10, MaxPenalty = 20, NumPenaltySteps = 2 };
+        {
+            MinPenalty = 10,
+            MaxPenalty = 20,
+            NumPenaltySteps = 2,
+        };
 
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0))))
-            .Returns([50]);
-        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0))))
-            .Returns([]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 10.0)))).Returns([50]);
+        _mockPeltAlgorithm.Setup(a => a.Detect(It.Is<double>(p => NumericUtils.AreApproximatelyEqual(p, 20.0)))).Returns([]);
 
         var likelihood1Cp = 100.0;
         var likelihood0Cp = likelihood1Cp + 3 * Math.Log(100); // Make BICs equal

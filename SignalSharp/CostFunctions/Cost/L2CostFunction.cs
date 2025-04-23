@@ -8,15 +8,15 @@ namespace SignalSharp.CostFunctions.Cost;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The L2 norm, also known as the Euclidean distance, is a measure of the straight-line distance 
-/// between points in a multi-dimensional space. It is calculated as the square root of the sum of the 
+/// The L2 norm, also known as the Euclidean distance, is a measure of the straight-line distance
+/// between points in a multi-dimensional space. It is calculated as the square root of the sum of the
 /// squared differences between the coordinates of the points.
 /// </para>
 ///
 /// <para>
-/// In the context of the Piecewise Linear Trend Change (PELT) method, the L2 cost function is used to 
-/// compute the cost of segmenting a time series or sequential data into different segments where the 
-/// statistical properties change. The L2 norm is sensitive to outliers, making it a good choice when the 
+/// In the context of the Piecewise Linear Trend Change (PELT) method, the L2 cost function is used to
+/// compute the cost of segmenting a time series or sequential data into different segments where the
+/// statistical properties change. The L2 norm is sensitive to outliers, making it a good choice when the
 /// data is relatively clean and normally distributed.
 /// </para>
 ///
@@ -35,7 +35,7 @@ public class L2CostFunction : CostFunctionBase
     private int _numPoints;
     private double[,] _prefixSum = null!;
     private double[,] _prefixSumSq = null!;
-    
+
     /// <summary>
     /// Fits the cost function to the provided data.
     /// </summary>
@@ -56,15 +56,15 @@ public class L2CostFunction : CostFunctionBase
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
         ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
-        
+
         _numDimensions = signalMatrix.GetLength(0);
         _numPoints = signalMatrix.GetLength(1);
-        
+
         // initialize prefix sum arrays with size N+1 to handle segments starting at index 0
         // _prefixSum[d, 0] and _prefixSumSq[d, 0] will remain 0.
         _prefixSum = new double[_numDimensions, _numPoints + 1];
         _prefixSumSq = new double[_numDimensions, _numPoints + 1];
-        
+
         for (var dim = 0; dim < _numDimensions; dim++)
         {
             for (var i = 0; i < _numPoints; i++)
@@ -77,7 +77,7 @@ public class L2CostFunction : CostFunctionBase
 
         return this;
     }
-    
+
     /// <summary>
     /// Computes the cost for a segment of the data using the L2 norm (sum of squared errors).
     /// Cost(start, end) = Sum_{i=start}^{end-1} (signal[i] - mean(segment))^2
@@ -104,16 +104,17 @@ public class L2CostFunction : CostFunctionBase
     /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
     public override double ComputeCost(int? start = null, int? end = null)
     {
-        if (_numDimensions == 0 || _numPoints == 0) return 0;
-        
+        if (_numDimensions == 0 || _numPoints == 0)
+            return 0;
+
         UninitializedDataException.ThrowIfUninitialized(_prefixSum, "Fit() must be called before ComputeCost().");
         UninitializedDataException.ThrowIfUninitialized(_prefixSumSq, "Fit() must be called before ComputeCost().");
 
         var startIndex = start ?? 0;
         var endIndex = end ?? _numPoints;
-        
+
         var segmentLength = endIndex - startIndex;
-        
+
         ArgumentOutOfRangeException.ThrowIfNegative(startIndex, nameof(start));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(endIndex, _numPoints, nameof(end));
         SegmentLengthException.ThrowIfInvalid(endIndex - startIndex);

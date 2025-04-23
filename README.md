@@ -9,22 +9,22 @@ SignalSharp is a .NET library focused on time series analysis, change point dete
 Algorithms to identify points in time where the statistical properties of a signal change.
 
 *   **PELT (Pruned Exact Linear Time)**:
-  *   Detects multiple change points efficiently.
-  *   Supports exact (`Jump = 1`) and approximate (`Jump > 1`) modes for speed/accuracy trade-offs.
-  *   Configurable via cost functions to target specific types of changes:
-      *   `L1CostFunction`: Robust to outliers, sensitive to median shifts.
-      *   `L2CostFunction`: Sensitive to mean shifts, assumes constant variance (computationally efficient).
-      *   `GaussianLikelihoodCostFunction`: Sensitive to changes in both mean and variance, assumes normality (computationally efficient, supports BIC/AIC).
-      *   `PoissonLikelihoodCostFunction`: For count data, sensitive to changes in event rate (supports BIC/AIC).
-      *   `BernoulliLikelihoodCostFunction`: For binary (0/1) data, sensitive to changes in success probability (supports BIC/AIC).
-      *   `BinomialLikelihoodCostFunction`: For success/trial data, sensitive to changes in success probability (supports BIC/AIC).
-      *   `RBFCostFunction`: Kernel-based, can detect complex changes in the underlying distribution shape.
-      *   `ARCostFunction`: Fits an Autoregressive model, sensitive to changes in signal dynamics/autocorrelation (univariate only, supports BIC/AIC).
-  *   Includes `PELTPenaltySelector` for automatic penalty selection using BIC, AIC, or AICc for supported likelihood-based cost functions.
+    *   Detects multiple change points efficiently.
+    *   Supports exact (`Jump = 1`) and approximate (`Jump > 1`) modes for speed/accuracy trade-offs.
+    *   Configurable via cost functions to target specific types of changes:
+        *   `L1CostFunction`: Robust to outliers, sensitive to median shifts.
+        *   `L2CostFunction`: Sensitive to mean shifts, assumes constant variance (computationally efficient).
+        *   `GaussianLikelihoodCostFunction`: Sensitive to changes in both mean and variance, assumes normality (computationally efficient, supports BIC/AIC).
+        *   `PoissonLikelihoodCostFunction`: For count data, sensitive to changes in event rate (supports BIC/AIC).
+        *   `BernoulliLikelihoodCostFunction`: For binary (0/1) data, sensitive to changes in success probability (supports BIC/AIC).
+        *   `BinomialLikelihoodCostFunction`: For success/trial data, sensitive to changes in success probability (supports BIC/AIC).
+        *   `RBFCostFunction`: Kernel-based, can detect complex changes in the underlying distribution shape.
+        *   `ARCostFunction`: Fits an Autoregressive model, sensitive to changes in signal dynamics/autocorrelation (univariate only, supports BIC/AIC).
+    *   Includes `PELTPenaltySelector` for automatic penalty selection using BIC, AIC, or AICc for supported likelihood-based cost functions.
 
 *   **CUSUM (Cumulative Sum)**:
-  *   Detects shifts in the mean of a signal.
-  *   Works by accumulating deviations from an expected level and triggering when a threshold is exceeded. Useful for process monitoring.
+    *   Detects shifts in the mean of a signal.
+    *   Works by accumulating deviations from an expected level and triggering when a threshold is exceeded. Useful for process monitoring.
 
 ### Signal Smoothing
 

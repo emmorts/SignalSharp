@@ -10,6 +10,7 @@ public class GaussianLikelihoodCostFunctionTests
 {
     // Use a tolerance appropriate for double comparisons
     private const double Tolerance = 1e-9;
+
     // Use the library's variance epsilon for testing zero-variance cases
     private static readonly double VarianceEpsilon = NumericUtils.GetVarianceEpsilon<double>();
 
@@ -31,7 +32,10 @@ public class GaussianLikelihoodCostFunctionTests
     public void Fit_ValidData_Success()
     {
         var costFunction = new GaussianLikelihoodCostFunction();
-        double[,] data2D = { { 1.0, 2.0, 3.0 } };
+        double[,] data2D =
+        {
+            { 1.0, 2.0, 3.0 },
+        };
         double[] data1D = [1.0, 2.0, 3.0];
 
         Assert.DoesNotThrow(() => costFunction.Fit(data2D), "Fitting with valid 2D data should succeed.");
@@ -52,14 +56,20 @@ public class GaussianLikelihoodCostFunctionTests
     {
         var costFunction = new GaussianLikelihoodCostFunction();
         // Assuming start and end are valid, the check for initialization should happen first
-        Assert.Throws<UninitializedDataException>(() => costFunction.ComputeLikelihoodMetric(0, 1), "ComputeLikelihoodMetric before Fit should throw UninitializedDataException.");
+        Assert.Throws<UninitializedDataException>(
+            () => costFunction.ComputeLikelihoodMetric(0, 1),
+            "ComputeLikelihoodMetric before Fit should throw UninitializedDataException."
+        );
     }
 
     [Test]
     public void GetSegmentParameterCount_BeforeFit_ThrowsUninitializedDataException()
     {
         var costFunction = new GaussianLikelihoodCostFunction();
-        Assert.Throws<UninitializedDataException>(() => costFunction.GetSegmentParameterCount(1), "GetSegmentParameterCount before Fit should throw UninitializedDataException.");
+        Assert.Throws<UninitializedDataException>(
+            () => costFunction.GetSegmentParameterCount(1),
+            "GetSegmentParameterCount before Fit should throw UninitializedDataException."
+        );
     }
 
     [Test]
@@ -73,8 +83,15 @@ public class GaussianLikelihoodCostFunctionTests
     public void GetSegmentParameterCount_ReturnsCorrectValue()
     {
         var costFunction = new GaussianLikelihoodCostFunction();
-        double[,] data1D = { { 1.0, 2.0, 3.0 } }; // 1 dimension
-        double[,] data2D = { { 1.0, 2.0 }, { 3.0, 4.0 } }; // 2 dimensions
+        double[,] data1D =
+        {
+            { 1.0, 2.0, 3.0 },
+        }; // 1 dimension
+        double[,] data2D =
+        {
+            { 1.0, 2.0 },
+            { 3.0, 4.0 },
+        }; // 2 dimensions
 
         costFunction.Fit(data1D);
         Assert.That(costFunction.GetSegmentParameterCount(3), Is.EqualTo(2), "Parameter count for 1D signal should be 2."); // 1 dim * 2 params (mean, var)
@@ -87,7 +104,10 @@ public class GaussianLikelihoodCostFunctionTests
     public void ComputeCostAndLikelihood_MeanChangeOnly()
     {
         // Segments have same variance (0), different means
-        double[,] data = { { 1.0, 1.0, 1.0, 5.0, 5.0, 5.0 } };
+        double[,] data =
+        {
+            { 1.0, 1.0, 1.0, 5.0, 5.0, 5.0 },
+        };
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
 
         // Cost for segment [0, 3): Var=0 -> clamped. Cost ~ 3 * log(VarianceEpsilon)
@@ -123,7 +143,10 @@ public class GaussianLikelihoodCostFunctionTests
     public void ComputeCostAndLikelihood_VarianceChangeOnly()
     {
         // Segments have same mean (0), different variance
-        double[,] data = { { -0.1, 0.0, 0.1, -2.0, 0.0, 2.0 } }; // Mean=0 for both halves
+        double[,] data =
+        {
+            { -0.1, 0.0, 0.1, -2.0, 0.0, 2.0 },
+        }; // Mean=0 for both halves
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
 
         // Cost for segment [0, 3): n=3, sum=0, sumSq=0.02
@@ -156,7 +179,10 @@ public class GaussianLikelihoodCostFunctionTests
     [Test]
     public void ComputeCostAndLikelihood_SegmentWithZeroVariance()
     {
-        double[,] data = { { 2.0, 2.0, 2.0, 2.0 } };
+        double[,] data =
+        {
+            { 2.0, 2.0, 2.0, 2.0 },
+        };
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
 
         // Cost for segment [0, 4): n=4, sum=8, sumSq=16
@@ -174,7 +200,10 @@ public class GaussianLikelihoodCostFunctionTests
     [Test]
     public void ComputeCostAndLikelihood_Subset()
     {
-        double[,] data = { { 1.0, 1.5, 2.0, 2.5, 3.0 } };
+        double[,] data =
+        {
+            { 1.0, 1.5, 2.0, 2.5, 3.0 },
+        };
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
 
         // Cost for segment [1, 4): n=3, values={1.5, 2.0, 2.5}, sum=6, sumSq=12.5
@@ -192,7 +221,10 @@ public class GaussianLikelihoodCostFunctionTests
     [Test]
     public void ComputeCostAndLikelihood_SinglePoint()
     {
-        double[,] data = { { 5.0 } };
+        double[,] data =
+        {
+            { 5.0 },
+        };
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
 
         // Cost for segment [0, 1): n=1, sum=5, sumSq=25
@@ -210,32 +242,36 @@ public class GaussianLikelihoodCostFunctionTests
     [Test]
     public void ComputeCostAndLikelihood_EmptyData()
     {
-        double[,] data = { { } }; // 0 dimensions, 0 points
+        double[,] data =
+        {
+            { },
+        }; // 0 dimensions, 0 points
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
         var cost = costFunction.ComputeCost();
         // Need valid indices for ComputeLikelihoodMetric, but Fit handles empty data.
         // Let's test ComputeCost which defaults to full range (0, 0).
         Assert.That(cost, Is.EqualTo(0), "Cost for empty data should be 0.");
         // Test ComputeLikelihoodMetric with explicit empty range
-         Assert.That(costFunction.ComputeLikelihoodMetric(0, 0), Is.EqualTo(0), "Likelihood for empty data segment should be 0.");
+        Assert.That(costFunction.ComputeLikelihoodMetric(0, 0), Is.EqualTo(0), "Likelihood for empty data segment should be 0.");
     }
 
-     [Test]
-     public void ComputeCostAndLikelihood_EmptyDataNonZeroDim()
-     {
-         var data = new double[2, 0]; // 2 dimensions, 0 points
-         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
-         var cost = costFunction.ComputeCost();
-         Assert.That(cost, Is.EqualTo(0), "Cost for empty data (non-zero dims) should be 0.");
-         Assert.That(costFunction.ComputeLikelihoodMetric(0, 0), Is.EqualTo(0), "Likelihood for empty data segment (non-zero dims) should be 0.");
-     }
+    [Test]
+    public void ComputeCostAndLikelihood_EmptyDataNonZeroDim()
+    {
+        var data = new double[2, 0]; // 2 dimensions, 0 points
+        var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
+        var cost = costFunction.ComputeCost();
+        Assert.That(cost, Is.EqualTo(0), "Cost for empty data (non-zero dims) should be 0.");
+        Assert.That(costFunction.ComputeLikelihoodMetric(0, 0), Is.EqualTo(0), "Likelihood for empty data segment (non-zero dims) should be 0.");
+    }
 
     [Test]
     public void ComputeCostAndLikelihood_MultiDimensional()
     {
-         double[,] data = {
-            { 1.0, 1.0, 5.0, 5.0 },     // Dim 0: Var=0 in halves
-            { -0.1, 0.1, -2.0, 2.0 },   // Dim 1: Var > 0 in halves
+        double[,] data =
+        {
+            { 1.0, 1.0, 5.0, 5.0 }, // Dim 0: Var=0 in halves
+            { -0.1, 0.1, -2.0, 2.0 }, // Dim 1: Var > 0 in halves
         };
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
 
@@ -258,8 +294,8 @@ public class GaussianLikelihoodCostFunctionTests
         Assert.That(likelihood2, Is.EqualTo(expectedCost2).Within(Tolerance), "Likelihood2 calculation (multi-dim)");
 
         // --- Full Segment [0, 4) ---
-         // Dim 0: n=4, sum=12, sumSq=52. sumSqDev = 52 - 144/4 = 52-36=16. varMLE=16/4=4. cost_dim0 = 4*log(4)
-         // Dim 1: n=4, sum=0, sumSq=8.02. sumSqDev=8.02. varMLE=8.02/4=2.005. cost_dim1 = 4*log(2.005)
+        // Dim 0: n=4, sum=12, sumSq=52. sumSqDev = 52 - 144/4 = 52-36=16. varMLE=16/4=4. cost_dim0 = 4*log(4)
+        // Dim 1: n=4, sum=0, sumSq=8.02. sumSqDev=8.02. varMLE=8.02/4=2.005. cost_dim1 = 4*log(2.005)
         var costTotal = costFunction.ComputeCost(0, 4);
         var likelihoodTotal = costFunction.ComputeLikelihoodMetric(0, 4);
         var expectedCostTotal = (4.0 * Math.Log(4.0)) + (4.0 * Math.Log(2.005));
@@ -272,7 +308,10 @@ public class GaussianLikelihoodCostFunctionTests
     [Test]
     public void ComputeCost_InvalidSegment_Throws()
     {
-        double[,] data = { { 1, 2, 3, 4, 5 } };
+        double[,] data =
+        {
+            { 1, 2, 3, 4, 5 },
+        };
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunction.ComputeCost(-1, 3), "Negative start index should throw.");
@@ -284,7 +323,10 @@ public class GaussianLikelihoodCostFunctionTests
     [Test]
     public void ComputeLikelihoodMetric_InvalidSegment_Throws()
     {
-        double[,] data = { { 1, 2, 3, 4, 5 } };
+        double[,] data =
+        {
+            { 1, 2, 3, 4, 5 },
+        };
         var costFunction = (ILikelihoodCostFunction)new GaussianLikelihoodCostFunction().Fit(data);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunction.ComputeLikelihoodMetric(-1, 3), "Negative start index should throw.");

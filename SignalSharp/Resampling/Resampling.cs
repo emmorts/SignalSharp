@@ -7,17 +7,17 @@ namespace SignalSharp.Resampling;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Resampling is a critical process in signal processing and data analysis. It involves altering the sampling rate of a signal 
-/// to either reduce (downsample) or increase (upsample) the number of samples. This is particularly useful when dealing with 
+/// Resampling is a critical process in signal processing and data analysis. It involves altering the sampling rate of a signal
+/// to either reduce (downsample) or increase (upsample) the number of samples. This is particularly useful when dealing with
 /// signals of different sampling rates, reducing data size, or preparing data for further analysis.
 /// </para>
-/// 
+///
 /// <para>
-/// The <see cref="Resampling"/> class includes methods for downsampling, computing segment-based statistics (mean, median, max, min), 
-/// applying a moving average, and approximating a signal using Chebyshev polynomials. Each method is designed to handle common 
+/// The <see cref="Resampling"/> class includes methods for downsampling, computing segment-based statistics (mean, median, max, min),
+/// applying a moving average, and approximating a signal using Chebyshev polynomials. Each method is designed to handle common
 /// tasks in signal processing with efficiency and accuracy.
 /// </para>
-/// 
+///
 /// <para>
 /// Consider using the resampling methods in scenarios where:
 /// <list type="bullet">
@@ -65,19 +65,19 @@ public static class Resampling
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the factor is less than or equal to zero.</exception>
     /// <remarks>
     /// <para>
-    /// The <see cref="SegmentMedian"/> method divides the input signal into segments of size defined by the factor parameter 
-    /// and computes the median of each segment. The median is a robust measure of central tendency, less affected by outliers 
+    /// The <see cref="SegmentMedian"/> method divides the input signal into segments of size defined by the factor parameter
+    /// and computes the median of each segment. The median is a robust measure of central tendency, less affected by outliers
     /// compared to the mean.
     /// </para>
-    /// 
+    ///
     /// <para>
     /// The <paramref name="useQuickSelect"/> parameter determines the algorithm used for median computation:
     /// <list type="bullet">
-    ///     <item><c>true</c> - Uses the QuickSelect algorithm, which has an average-case time complexity of O(n), making it 
-    ///     efficient for larger datasets. QuickSelect is a selection algorithm to find the k-th smallest element in an unordered list, 
+    ///     <item><c>true</c> - Uses the QuickSelect algorithm, which has an average-case time complexity of O(n), making it
+    ///     efficient for larger datasets. QuickSelect is a selection algorithm to find the k-th smallest element in an unordered list,
     ///     and it can be adapted to find the median by selecting the middle element.</item>
-    ///     <item><c>false</c> - Uses a straightforward sort-and-select method, which has a time complexity of O(n log n). This method 
-    ///     sorts the segment and then selects the middle element (or the average of the two middle elements for even-sized segments). 
+    ///     <item><c>false</c> - Uses a straightforward sort-and-select method, which has a time complexity of O(n log n). This method
+    ///     sorts the segment and then selects the middle element (or the average of the two middle elements for even-sized segments).
     ///     It is simpler but may be slower for large segments.</item>
     /// </list>
     /// </para>

@@ -107,7 +107,8 @@ public class BernoulliLikelihoodCostFunction : CostFunctionBase, ILikelihoodCost
 
                 if (!isNearZero && !isNearOne)
                 {
-                    var message = $"Input data must be effectively 0 or 1 (within epsilon={epsilon}) for Bernoulli Likelihood cost. Found value at [{dim}, {i}]: {value}";
+                    var message =
+                        $"Input data must be effectively 0 or 1 (within epsilon={epsilon}) for Bernoulli Likelihood cost. Found value at [{dim}, {i}]: {value}";
                     _logger.LogError(message);
                     throw new ArgumentException(message, nameof(signalMatrix));
                 }
@@ -184,8 +185,12 @@ public class BernoulliLikelihoodCostFunction : CostFunctionBase, ILikelihoodCost
     /// <returns>Number of parameters: Number of dimensions * 1.</returns>
     public int GetSegmentParameterCount(int segmentLength)
     {
-         UninitializedDataException.ThrowIfUninitialized(_prefixSumSuccesses, "Fit() must be called before GetSegmentParameterCount().");
-        _logger.LogTrace("Parameter count for Bernoulli is 1 per dimension, total {ParameterCount} for {NumDimensions} dimensions.", _numDimensions, _numDimensions);
+        UninitializedDataException.ThrowIfUninitialized(_prefixSumSuccesses, "Fit() must be called before GetSegmentParameterCount().");
+        _logger.LogTrace(
+            "Parameter count for Bernoulli is 1 per dimension, total {ParameterCount} for {NumDimensions} dimensions.",
+            _numDimensions,
+            _numDimensions
+        );
         // 1 parameter (p) per dimension
         return _numDimensions;
     }
@@ -199,7 +204,8 @@ public class BernoulliLikelihoodCostFunction : CostFunctionBase, ILikelihoodCost
     {
         UninitializedDataException.ThrowIfUninitialized(_prefixSumSuccesses, $"Fit() must be called before {callerName}().");
 
-        if (_numDimensions == 0 || _numPoints == 0) return 0;
+        if (_numDimensions == 0 || _numPoints == 0)
+            return 0;
 
         var startIndex = start ?? 0;
         var endIndex = end ?? _numPoints;
@@ -211,7 +217,12 @@ public class BernoulliLikelihoodCostFunction : CostFunctionBase, ILikelihoodCost
         var segmentLength = endIndex - startIndex;
         SegmentLengthException.ThrowIfInvalid(segmentLength, 1);
 
-        _logger.LogTrace("Calculating Bernoulli likelihood metric for segment [{StartIndex}, {EndIndex}) (Length: {SegmentLength}).", startIndex, endIndex, segmentLength);
+        _logger.LogTrace(
+            "Calculating Bernoulli likelihood metric for segment [{StartIndex}, {EndIndex}) (Length: {SegmentLength}).",
+            startIndex,
+            endIndex,
+            segmentLength
+        );
 
         double totalMetric = 0;
         var epsilon = NumericUtils.GetDefaultEpsilon<double>();
@@ -237,17 +248,31 @@ public class BernoulliLikelihoodCostFunction : CostFunctionBase, ILikelihoodCost
                 // general case: 0 < S < n
                 var logN = Math.Log(segmentLength);
                 var logS = Math.Log(segmentSumSuccesses); // S > epsilon, log is safe
-                var logF = Math.Log(numFailures);       // n-S > epsilon, log is safe
+                var logF = Math.Log(numFailures); // n-S > epsilon, log is safe
 
                 // Metric = -2 * [ S*log(S) + (n-S)*log(n-S) - n*log(n) ]
                 metricDim = MinusTwo * (segmentSumSuccesses * logS + numFailures * logF - segmentLength * logN);
-                _logger.LogTrace("Segment [{StartIndex}, {EndIndex}), Dim {Dimension}: S={S}, n-S={F}, n={N}. Metric = {MetricValue}", startIndex, endIndex, dim, segmentSumSuccesses, numFailures, segmentLength, metricDim);
+                _logger.LogTrace(
+                    "Segment [{StartIndex}, {EndIndex}), Dim {Dimension}: S={S}, n-S={F}, n={N}. Metric = {MetricValue}",
+                    startIndex,
+                    endIndex,
+                    dim,
+                    segmentSumSuccesses,
+                    numFailures,
+                    segmentLength,
+                    metricDim
+                );
             }
 
             if (double.IsNaN(metricDim) || double.IsInfinity(metricDim))
             {
-                 _logger.LogWarning("Metric calculation resulted in NaN or Infinity for dimension {Dimension} in segment [{StartIndex}, {EndIndex}). Returning PositiveInfinity.", dim, startIndex, endIndex);
-                 return double.PositiveInfinity;
+                _logger.LogWarning(
+                    "Metric calculation resulted in NaN or Infinity for dimension {Dimension} in segment [{StartIndex}, {EndIndex}). Returning PositiveInfinity.",
+                    dim,
+                    startIndex,
+                    endIndex
+                );
+                return double.PositiveInfinity;
             }
 
             totalMetric += metricDim;

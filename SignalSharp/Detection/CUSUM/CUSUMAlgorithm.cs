@@ -19,7 +19,7 @@ public class CUSUMAlgorithm
     private readonly CUSUMOptions _options;
     private readonly double _threshold;
     private readonly double _slack;
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="CUSUMAlgorithm"/> class with optional configuration settings.
     /// </summary>
@@ -27,11 +27,11 @@ public class CUSUMAlgorithm
     public CUSUMAlgorithm(CUSUMOptions? options = null)
     {
         _options = options ?? new CUSUMOptions();
-        
+
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(_options.ExpectedStandardDeviation, nameof(_options.ExpectedStandardDeviation));
         ArgumentOutOfRangeException.ThrowIfNegative(_options.SlackFactor, nameof(_options.SlackFactor));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(_options.ThresholdFactor, nameof(_options.ThresholdFactor));
-        
+
         _threshold = _options.ThresholdFactor * _options.ExpectedStandardDeviation;
         _slack = _options.SlackFactor * _options.ExpectedStandardDeviation;
     }
@@ -60,9 +60,10 @@ public class CUSUMAlgorithm
     public int[] Detect(double[] signal)
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
-        
-        if (signal.Length < 2) return [];
-        
+
+        if (signal.Length < 2)
+            return [];
+
         var highSum = 0.0;
         var lowSum = 0.0;
         var changePoints = new List<int>();

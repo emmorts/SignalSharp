@@ -129,9 +129,9 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
 
             if (double.IsNaN(k) || double.IsNaN(n) || double.IsInfinity(k) || double.IsInfinity(n))
             {
-                 var message = $"Invalid data at index {i}: k={k}, n={n}. Values cannot be NaN or Infinity.";
-                 _logger.LogError(message);
-                 throw new ArgumentException(message, nameof(signalMatrix));
+                var message = $"Invalid data at index {i}: k={k}, n={n}. Values cannot be NaN or Infinity.";
+                _logger.LogError(message);
+                throw new ArgumentException(message, nameof(signalMatrix));
             }
 
             // Check if k and n are effectively integers
@@ -142,7 +142,8 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
 
             if (!kIsInteger || !nIsInteger || intK < 0 || intN < 1 || intK > intN)
             {
-                var message = $"Invalid data at index {i}: k={k}, n={n}. Requirements: k and n must be non-negative integers (within tolerance {tolerance}), 0 <= k <= n, n >= 1.";
+                var message =
+                    $"Invalid data at index {i}: k={k}, n={n}. Requirements: k and n must be non-negative integers (within tolerance {tolerance}), 0 <= k <= n, n >= 1.";
                 _logger.LogError(message);
                 throw new ArgumentException(message, nameof(signalMatrix));
             }
@@ -212,7 +213,7 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
     /// <returns>Number of parameters: 1.</returns>
     public int GetSegmentParameterCount(int segmentLength)
     {
-         UninitializedDataException.ThrowIfUninitialized(_prefixSumK, "Fit() must be called before GetSegmentParameterCount().");
+        UninitializedDataException.ThrowIfUninitialized(_prefixSumK, "Fit() must be called before GetSegmentParameterCount().");
         _logger.LogTrace("Parameter count for Binomial is 1.");
         // 1 parameter (p) estimated for the segment
         return 1;
@@ -232,7 +233,8 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
     /// <exception cref="NotSupportedException">Always thrown, explaining the need for 2D input with specific row definitions.</exception>
     public new IPELTCostFunction Fit(double[] signal)
     {
-        var message = $"{nameof(BinomialLikelihoodCostFunction)} requires 2D input data (successes 'k' in row 0, trials 'n' in row 1). Use the Fit(double[,]) overload instead.";
+        var message =
+            $"{nameof(BinomialLikelihoodCostFunction)} requires 2D input data (successes 'k' in row 0, trials 'n' in row 1). Use the Fit(double[,]) overload instead.";
         _logger.LogError(message);
         throw new NotSupportedException(message);
     }
@@ -242,7 +244,8 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
         UninitializedDataException.ThrowIfUninitialized(_prefixSumK, $"Fit() must be called before {callerName}().");
         UninitializedDataException.ThrowIfUninitialized(_prefixSumN, $"Fit() must be called before {callerName}().");
 
-        if (_numPoints == 0) return 0;
+        if (_numPoints == 0)
+            return 0;
 
         var startIndex = start ?? 0;
         var endIndex = end ?? _numPoints;
@@ -254,7 +257,12 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
         var segmentLength = endIndex - startIndex;
         SegmentLengthException.ThrowIfInvalid(segmentLength, 1);
 
-        _logger.LogTrace("Calculating Binomial likelihood metric for segment [{StartIndex}, {EndIndex}) (Length: {SegmentLength}).", startIndex, endIndex, segmentLength);
+        _logger.LogTrace(
+            "Calculating Binomial likelihood metric for segment [{StartIndex}, {EndIndex}) (Length: {SegmentLength}).",
+            startIndex,
+            endIndex,
+            segmentLength
+        );
 
         var K = _prefixSumK[endIndex] - _prefixSumK[startIndex]; // Total successes
         var N = _prefixSumN[endIndex] - _prefixSumN[startIndex]; // Total trials
@@ -265,7 +273,7 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
         if (NumericUtils.IsEffectivelyZero(N, tolerance))
         {
             // if N is effectively 0, K must also be 0 (due to fit validation), so treat as zero cost/metric
-             _logger.LogTrace("Segment [{StartIndex}, {EndIndex}) has N ~= 0. Metric = 0.", startIndex, endIndex);
+            _logger.LogTrace("Segment [{StartIndex}, {EndIndex}) has N ~= 0. Metric = 0.", startIndex, endIndex);
             return 0.0;
         }
 
@@ -273,14 +281,14 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
         if (NumericUtils.IsEffectivelyZero(K, tolerance)) // p_hat approx 0 (K=0)
         {
             // metric formula simplifies to -[ 0 + N*log(N) - N*log(N) ] = 0
-             _logger.LogTrace("Segment [{StartIndex}, {EndIndex}) has K ~= 0 (N={NValue}). Metric = 0.", startIndex, endIndex, N);
+            _logger.LogTrace("Segment [{StartIndex}, {EndIndex}) has K ~= 0 (N={NValue}). Metric = 0.", startIndex, endIndex, N);
             return 0.0;
         }
         if (NumericUtils.AreApproximatelyEqual(K, N, tolerance)) // p_hat approx 1 (K=N)
         {
             // metric formula simplifies to -[ N*log(N) + 0 - N*log(N) ] = 0
             _logger.LogTrace("Segment [{StartIndex}, {EndIndex}) has K ~= N (K={KValue}, N={NValue}). Metric = 0.", startIndex, endIndex, K, N);
-             return 0.0;
+            return 0.0;
         }
 
         // general case: 0 < K < N
@@ -290,8 +298,12 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
 
         if (double.IsNaN(metric) || double.IsInfinity(metric))
         {
-             _logger.LogWarning("Metric calculation resulted in NaN or Infinity for segment [{StartIndex}, {EndIndex}). Returning PositiveInfinity.", startIndex, endIndex);
-             return double.PositiveInfinity;
+            _logger.LogWarning(
+                "Metric calculation resulted in NaN or Infinity for segment [{StartIndex}, {EndIndex}). Returning PositiveInfinity.",
+                startIndex,
+                endIndex
+            );
+            return double.PositiveInfinity;
         }
 
         // Ensure metric is non-negative (can sometimes be slightly negative due to float precision)

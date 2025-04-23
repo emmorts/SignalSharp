@@ -10,7 +10,7 @@ public class SavitzkyGolayFilterTests
     {
         const int windowSize = 3;
         const int polynomialOrder = 1;
-        
+
         double[] x = [1, 2, 3, 4, 5];
         double[] expected = [1, 2, 3, 4, 5];
 
@@ -24,7 +24,7 @@ public class SavitzkyGolayFilterTests
     {
         const int windowSize = 3;
         const int polynomialOrder = 1;
-        
+
         decimal[] input = [1.0m, 2.0m, 3.0m, 4.0m, 5.0m];
         decimal[] expected = [1.0m, 2.0m, 3.0m, 4.0m, 5.0m];
 
@@ -38,7 +38,7 @@ public class SavitzkyGolayFilterTests
     {
         const int windowSize = 3;
         const int polynomialOrder = 1;
-        
+
         int[] input = [1, 2, 3, 4, 5];
         int[] expected = [1, 2, 3, 4, 5];
 
@@ -52,7 +52,7 @@ public class SavitzkyGolayFilterTests
     {
         const int windowSize = 5;
         const int polynomialOrder = 2;
-        
+
         double[] x = [2, 2.5, 3.4, 2.7, 2.6, 5.4, 6.2, 7.2, 4.2, 3.5, 3.25, 2];
         double[] expected = [1.96, 2.7, 3.4, 2.7, 2.6, 5.4, 6.2, 7.2, 4.2, 3.5, 2.61, 2.32];
 
@@ -83,20 +83,20 @@ public class SavitzkyGolayFilterTests
     {
         const int windowSize = 5;
         const int polynomialOrder = 2;
-        
+
         double[] x = [1, 2, 3];
 
         var result = SavitzkyGolayFilter.Apply(x, windowSize, polynomialOrder);
 
         Assert.That(x, Is.EqualTo(result));
     }
-    
+
     [Test]
     public void SavitzkyGolayFilter_NegativeInputValues_ReturnsFilteredOutput()
     {
         const int windowSize = 3;
         const int polynomialOrder = 1;
-        
+
         double[] x = [-1, -2, -3, -4, -5, -6, -7, -8];
         double[] expected = [-1, -2, -3, -4, -5, -6, -7, -8];
 
@@ -110,7 +110,7 @@ public class SavitzkyGolayFilterTests
     {
         const int windowSize = 5;
         const int polynomialOrder = 2;
-        
+
         double[] x = [3, 3, 3, 3, 3, 3, 3, 3, 3];
         double[] expected = [3, 3, 3, 3, 3, 3, 3, 3, 3];
 
@@ -124,7 +124,7 @@ public class SavitzkyGolayFilterTests
     {
         const int windowSize = 3;
         const int polynomialOrder = 1;
-        
+
         double[] x = [1, 2, 3, 4, 5, 6, 7];
         double[] expected = [1, 2, 3, 4, 5, 6, 7];
 

@@ -29,17 +29,24 @@ public class ARCostFunctionTests
     {
         var costFunc = new ARCostFunction(2); // Requires length >= 3
         double[] shortSignal1D = [1.0, 2.0];
-        double[,] shortSignal2D = { { 1.0, 2.0 } };
+        double[,] shortSignal2D =
+        {
+            { 1.0, 2.0 },
+        };
 
         Assert.Throws<ArgumentException>(() => costFunc.Fit(shortSignal1D));
         Assert.Throws<ArgumentException>(() => costFunc.Fit(shortSignal2D));
     }
 
-     [Test]
+    [Test]
     public void Fit_MultidimensionalSignal_ThrowsNotSupportedException()
     {
         var costFunc = new ARCostFunction(1);
-        double[,] multiSignal = { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } };
+        double[,] multiSignal =
+        {
+            { 1.0, 2.0, 3.0 },
+            { 4.0, 5.0, 6.0 },
+        };
         Assert.Throws<NotSupportedException>(() => costFunc.Fit(multiSignal));
     }
 
@@ -137,7 +144,7 @@ public class ARCostFunctionTests
         // Residuals: (0.5 - 0.5*1.0) = 0, (0.25 - 0.5*0.5) = 0
         // RSS = 0
         var cost2 = costFunc.ComputeCost(0, 3);
-         Assert.That(cost2, Is.EqualTo(0.0).Within(Tolerance));
+        Assert.That(cost2, Is.EqualTo(0.0).Within(Tolerance));
     }
 
     [Test]
@@ -148,12 +155,16 @@ public class ARCostFunctionTests
         double[] signal =
         [
             // Segment 1 (approx y[t] = 0.8 * y[t-1])
-            1.0, 0.8, 0.64, 0.512, 0.4096,
+            1.0,
+            0.8,
+            0.64,
+            0.512,
+            0.4096,
             // Segment 2 (approx y[t] = 0.2 * y[t-1], starting from last value)
-            0.4096 * 0.2,         // 0.08192
-            0.08192 * 0.2,        // 0.016384
-            0.016384 * 0.2,       // 0.0032768
-            0.0032768 * 0.2,      // 0.00065536
+            0.4096 * 0.2, // 0.08192
+            0.08192 * 0.2, // 0.016384
+            0.016384 * 0.2, // 0.0032768
+            0.0032768 * 0.2, // 0.00065536
             0.00065536 * 0.2, // 0.000131072
         ];
         var costFunc = new ARCostFunction(order: 1, includeIntercept: false);

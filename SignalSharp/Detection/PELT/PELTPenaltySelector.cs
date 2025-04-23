@@ -44,12 +44,9 @@ public class PELTPenaltySelector
     {
         ArgumentNullException.ThrowIfNull(peltAlgorithm, nameof(peltAlgorithm));
         ArgumentNullException.ThrowIfNull(peltAlgorithm.Options, $"{nameof(peltAlgorithm.Options)} cannot be null.");
-        ArgumentNullException.ThrowIfNull(peltAlgorithm.Options.CostFunction,
-            $"{nameof(peltAlgorithm.Options.CostFunction)} cannot be null.");
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(peltAlgorithm.Options.MinSize,
-            nameof(peltAlgorithm.Options.MinSize));
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(peltAlgorithm.Options.Jump,
-            nameof(peltAlgorithm.Options.Jump));
+        ArgumentNullException.ThrowIfNull(peltAlgorithm.Options.CostFunction, $"{nameof(peltAlgorithm.Options.CostFunction)} cannot be null.");
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(peltAlgorithm.Options.MinSize, nameof(peltAlgorithm.Options.MinSize));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(peltAlgorithm.Options.Jump, nameof(peltAlgorithm.Options.Jump));
 
         PELTAlgorithm = peltAlgorithm;
         _peltOptions = peltAlgorithm.Options;
@@ -68,8 +65,7 @@ public class PELTPenaltySelector
     public PELTPenaltySelectionResult FitAndSelect(double[] signal, PELTPenaltySelectionOptions selectionOptions)
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
-        _logger.LogInformation("Fitting PELT algorithm to 1D signal of length {Length} for penalty selection.",
-            signal.Length);
+        _logger.LogInformation("Fitting PELT algorithm to 1D signal of length {Length} for penalty selection.", signal.Length);
         PELTAlgorithm.Fit(signal);
         return SelectPenaltyInternal(signal.Length, selectionOptions);
     }
@@ -86,8 +82,11 @@ public class PELTPenaltySelector
     public PELTPenaltySelectionResult FitAndSelect(double[,] signalMatrix, PELTPenaltySelectionOptions selectionOptions)
     {
         ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
-        _logger.LogInformation("Fitting PELT algorithm to {Rows}D signal of length {Length} for penalty selection.",
-            signalMatrix.GetLength(0), signalMatrix.GetLength(1));
+        _logger.LogInformation(
+            "Fitting PELT algorithm to {Rows}D signal of length {Length} for penalty selection.",
+            signalMatrix.GetLength(0),
+            signalMatrix.GetLength(1)
+        );
         PELTAlgorithm.Fit(signalMatrix);
         return SelectPenaltyInternal(signalMatrix.GetLength(1), selectionOptions);
     }
@@ -107,20 +106,21 @@ public class PELTPenaltySelector
         ArgumentNullException.ThrowIfNull(selectionOptions, nameof(selectionOptions));
         _logger.LogInformation("Starting penalty selection using method: {Method}.", selectionOptions.Method);
 
-        var likelihoodNeeded = selectionOptions.Method is PELTPenaltySelectionMethod.AIC or PELTPenaltySelectionMethod.BIC
-            or PELTPenaltySelectionMethod.AICc;
-        ILikelihoodCostFunction? likelihoodCostFn =
-            ValidateAndGetLikelihoodFunction(likelihoodNeeded, selectionOptions.Method);
+        var likelihoodNeeded = selectionOptions.Method is PELTPenaltySelectionMethod.AIC or PELTPenaltySelectionMethod.BIC or PELTPenaltySelectionMethod.AICc;
+        ILikelihoodCostFunction? likelihoodCostFn = ValidateAndGetLikelihoodFunction(likelihoodNeeded, selectionOptions.Method);
 
         var penaltiesToTest = DeterminePenaltiesToTest(signalLength, selectionOptions).ToList();
         if (!penaltiesToTest.Any())
         {
-            throw new PELTAlgorithmException(
-                "Penalty range resulted in zero penalties to test. Adjust PenaltySelectionOptions.");
+            throw new PELTAlgorithmException("Penalty range resulted in zero penalties to test. Adjust PenaltySelectionOptions.");
         }
 
-        _logger.LogDebug("Testing {Count} penalties in range [{MinPenalty:F2} - {MaxPenalty:F2}].",
-            penaltiesToTest.Count, penaltiesToTest.First(), penaltiesToTest.Last());
+        _logger.LogDebug(
+            "Testing {Count} penalties in range [{MinPenalty:F2} - {MaxPenalty:F2}].",
+            penaltiesToTest.Count,
+            penaltiesToTest.First(),
+            penaltiesToTest.Last()
+        );
 
         var bestScore = double.PositiveInfinity;
         var bestPenalty = -1.0;
@@ -129,8 +129,7 @@ public class PELTPenaltySelector
 
         foreach (var penalty in penaltiesToTest)
         {
-            var (success, score, breakpoints) =
-                TestSinglePenalty(penalty, signalLength, selectionOptions.Method, likelihoodCostFn);
+            var (success, score, breakpoints) = TestSinglePenalty(penalty, signalLength, selectionOptions.Method, likelihoodCostFn);
 
             diagnostics.Add((penalty, success ? score : double.NaN, success ? breakpoints.Length : -1));
 
@@ -138,9 +137,7 @@ public class PELTPenaltySelector
             {
                 if (success)
                 {
-                    _logger.LogDebug(
-                        "Penalty {Penalty:F4} resulted in unusable score ({Score}). Skipping as candidate.", penalty,
-                        score);
+                    _logger.LogDebug("Penalty {Penalty:F4} resulted in unusable score ({Score}). Skipping as candidate.", penalty, score);
                 }
 
                 continue;
@@ -151,7 +148,11 @@ public class PELTPenaltySelector
             {
                 _logger.LogDebug(
                     "New best: Penalty={Penalty:F4}, Score={Score:F4}, ChangePoints={NumChangePoints} (Prev Score: {PrevScore:F4})",
-                    penalty, score, numChangePoints, bestScore);
+                    penalty,
+                    score,
+                    numChangePoints,
+                    bestScore
+                );
                 bestScore = score;
                 bestPenalty = penalty;
                 bestBreakpoints = breakpoints;
@@ -160,7 +161,11 @@ public class PELTPenaltySelector
             {
                 _logger.LogDebug(
                     "Tie-break: Preferring simpler model. Penalty={Penalty:F4}, Score={Score:F4}, ChangePoints={NumChangePoints} (Prev CPs: {PrevCPs})",
-                    penalty, score, numChangePoints, bestBreakpoints.Length);
+                    penalty,
+                    score,
+                    numChangePoints,
+                    bestBreakpoints.Length
+                );
                 bestPenalty = penalty;
                 bestBreakpoints = breakpoints;
             }
@@ -168,28 +173,33 @@ public class PELTPenaltySelector
 
         if (bestPenalty < 0)
         {
-            const string message = "Could not find a suitable penalty. All tested penalties resulted in errors, invalid segmentations, or infinite/NaN scores. " +
-                                   "Consider adjusting the penalty range (Min/MaxPenalty, NumSteps), checking the cost function, data validity, and PELT MinSize.";
+            const string message =
+                "Could not find a suitable penalty. All tested penalties resulted in errors, invalid segmentations, or infinite/NaN scores. "
+                + "Consider adjusting the penalty range (Min/MaxPenalty, NumSteps), checking the cost function, data validity, and PELT MinSize.";
             _logger.LogError(message);
             _logger.LogError(
                 "Final Diagnostics Summary: {NumInvalid} penalties resulted in unusable scores or failures out of {TotalTested}.",
-                diagnostics.Count(d =>
-                    double.IsNaN(d.Score) || double.IsPositiveInfinity(d.Score) || d.ChangePoints == -1),
-                diagnostics.Count);
+                diagnostics.Count(d => double.IsNaN(d.Score) || double.IsPositiveInfinity(d.Score) || d.ChangePoints == -1),
+                diagnostics.Count
+            );
 
             throw new PELTAlgorithmException(message);
         }
 
         _logger.LogInformation(
             "Penalty selection complete. Selected Penalty: {SelectedPenalty:F4}, Optimal Score: {OptimalScore:F4}, Optimal Change Points: {NumChangePoints} at [{Breakpoints}]",
-            bestPenalty, bestScore, bestBreakpoints.Length, string.Join(",", bestBreakpoints));
+            bestPenalty,
+            bestScore,
+            bestBreakpoints.Length,
+            string.Join(",", bestBreakpoints)
+        );
 
         return new PELTPenaltySelectionResult
         {
             SelectedPenalty = bestPenalty,
             OptimalBreakpoints = bestBreakpoints,
             SelectionMethod = selectionOptions.Method,
-            Diagnostics = diagnostics.AsReadOnly()
+            Diagnostics = diagnostics.AsReadOnly(),
         };
     }
 
@@ -200,23 +210,22 @@ public class PELTPenaltySelector
     /// <param name="method">The penalty selection method being used (for logging/error messages).</param>
     /// <returns>The cast <see cref="ILikelihoodCostFunction"/> if valid and needed, otherwise null.</returns>
     /// <exception cref="InvalidOperationException">Thrown if likelihood is needed but not supported by the cost function.</exception>
-    private ILikelihoodCostFunction? ValidateAndGetLikelihoodFunction(bool likelihoodNeeded,
-        PELTPenaltySelectionMethod method)
+    private ILikelihoodCostFunction? ValidateAndGetLikelihoodFunction(bool likelihoodNeeded, PELTPenaltySelectionMethod method)
     {
-        if (!likelihoodNeeded) return null;
+        if (!likelihoodNeeded)
+            return null;
 
         if (_peltOptions.CostFunction is ILikelihoodCostFunction { SupportsInformationCriteria: true } castedLc)
         {
-            _logger.LogDebug(
-                "Likelihood cost function '{CostFunctionName}' available and supports information criteria.",
-                castedLc.GetType().Name);
+            _logger.LogDebug("Likelihood cost function '{CostFunctionName}' available and supports information criteria.", castedLc.GetType().Name);
             return castedLc;
         }
         else
         {
-            var message = $"Penalty selection method '{method}' requires the configured cost function " +
-                          $"to implement ILikelihoodCostFunction and have SupportsInformationCriteria=true. " +
-                          $"The provided cost function '{_peltOptions.CostFunction.GetType().Name}' does not meet these requirements.";
+            var message =
+                $"Penalty selection method '{method}' requires the configured cost function "
+                + $"to implement ILikelihoodCostFunction and have SupportsInformationCriteria=true. "
+                + $"The provided cost function '{_peltOptions.CostFunction.GetType().Name}' does not meet these requirements.";
             _logger.LogError(message);
             throw new InvalidOperationException(message);
         }
@@ -240,7 +249,8 @@ public class PELTPenaltySelector
         double penalty,
         int signalLength,
         PELTPenaltySelectionMethod method,
-        ILikelihoodCostFunction? likelihoodCostFn)
+        ILikelihoodCostFunction? likelihoodCostFn
+    )
     {
         if (penalty < 0)
         {
@@ -254,12 +264,15 @@ public class PELTPenaltySelector
         try
         {
             currentBreakpoints = PELTAlgorithm.Detect(penalty);
-            _logger.LogDebug("Penalty {Penalty:F4} -> {NumChangePoints} changepoints: [{Breakpoints}]",
-                penalty, currentBreakpoints.Length, string.Join(",", currentBreakpoints));
+            _logger.LogDebug(
+                "Penalty {Penalty:F4} -> {NumChangePoints} changepoints: [{Breakpoints}]",
+                penalty,
+                currentBreakpoints.Length,
+                string.Join(",", currentBreakpoints)
+            );
         }
-        catch (Exception ex) when (ex is SegmentLengthException or UninitializedDataException
-                                       or ArgumentOutOfRangeException or CostFunctionException
-                                       or PELTAlgorithmException)
+        catch (Exception ex)
+            when (ex is SegmentLengthException or UninitializedDataException or ArgumentOutOfRangeException or CostFunctionException or PELTAlgorithmException)
         {
             _logger.LogWarning(ex, "PELT detection failed for penalty {Penalty:F4}. Skipping.", penalty);
             return (false, double.NaN, []);
@@ -267,27 +280,29 @@ public class PELTPenaltySelector
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during PELT detection for penalty {Penalty:F4}.", penalty);
-            throw new PELTAlgorithmException(
-                $"Unexpected error during PELT detection for penalty {penalty}. See inner exception.", ex);
+            throw new PELTAlgorithmException($"Unexpected error during PELT detection for penalty {penalty}. See inner exception.", ex);
         }
 
         try
         {
             var currentScore = CalculateScore(method, penalty, currentBreakpoints, signalLength, likelihoodCostFn);
 
-            var scoreStr = double.IsNaN(currentScore) ? "NaN" :
-                double.IsPositiveInfinity(currentScore) ? "Infinity" :
-                currentScore.ToString("F4", CultureInfo.InvariantCulture);
-            _logger.LogDebug("Score calculation for Penalty {Penalty:F4} = {Score} (Method: {Method})",
-                penalty, scoreStr, method);
+            var scoreStr =
+                double.IsNaN(currentScore) ? "NaN"
+                : double.IsPositiveInfinity(currentScore) ? "Infinity"
+                : currentScore.ToString("F4", CultureInfo.InvariantCulture);
+            _logger.LogDebug("Score calculation for Penalty {Penalty:F4} = {Score} (Method: {Method})", penalty, scoreStr, method);
 
             return (true, currentScore, currentBreakpoints);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex,
+            _logger.LogWarning(
+                ex,
                 "Failed to calculate score for penalty {Penalty:F4} with {NumChangePoints} changepoints.",
-                penalty, currentBreakpoints.Length);
+                penalty,
+                currentBreakpoints.Length
+            );
             return (false, double.NaN, currentBreakpoints);
         }
     }
@@ -308,7 +323,8 @@ public class PELTPenaltySelector
         double penalty,
         int[] breakpoints,
         int signalLength,
-        ILikelihoodCostFunction? likelihoodCostFn)
+        ILikelihoodCostFunction? likelihoodCostFn
+    )
     {
         switch (method)
         {
@@ -317,12 +333,15 @@ public class PELTPenaltySelector
             case PELTPenaltySelectionMethod.AICc:
                 if (likelihoodCostFn == null)
                 {
-                    throw new InvalidOperationException(
-                        $"Internal Error: Likelihood function required for {method} but was null.");
+                    throw new InvalidOperationException($"Internal Error: Likelihood function required for {method} but was null.");
                 }
 
-                var (success, totalLikelihoodMetric, totalEffectiveParams) =
-                    CalculateLikelihoodScoreComponents(breakpoints, signalLength, likelihoodCostFn, penalty);
+                var (success, totalLikelihoodMetric, totalEffectiveParams) = CalculateLikelihoodScoreComponents(
+                    breakpoints,
+                    signalLength,
+                    likelihoodCostFn,
+                    penalty
+                );
 
                 if (!success)
                 {
@@ -332,8 +351,7 @@ public class PELTPenaltySelector
                 var n = (double)signalLength;
                 if (n <= 0)
                 {
-                    _logger.LogError("Signal length ({SignalLength}) is non-positive. Cannot calculate score.",
-                        signalLength);
+                    _logger.LogError("Signal length ({SignalLength}) is non-positive. Cannot calculate score.", signalLength);
                     return double.PositiveInfinity;
                 }
 
@@ -347,7 +365,7 @@ public class PELTPenaltySelector
                 {
                     return aicScore;
                 }
-                    
+
                 var correction = CalculateAiccCorrection(n, totalEffectiveParams, penalty);
                 if (double.IsNaN(correction))
                 {
@@ -357,8 +375,7 @@ public class PELTPenaltySelector
                 return aicScore + correction;
 
             default:
-                throw new ArgumentOutOfRangeException(nameof(method),
-                    $"Unsupported penalty selection method: {method}");
+                throw new ArgumentOutOfRangeException(nameof(method), $"Unsupported penalty selection method: {method}");
         }
     }
 
@@ -381,7 +398,8 @@ public class PELTPenaltySelector
         int[] breakpoints,
         int signalLength,
         ILikelihoodCostFunction likelihoodCostFn,
-        double penaltyForLogging)
+        double penaltyForLogging
+    )
     {
         double totalLikelihoodMetric = 0;
         double totalSegmentParams = 0;
@@ -398,7 +416,12 @@ public class PELTPenaltySelector
             {
                 _logger.LogWarning(
                     "Penalty {Penalty:F4} resulted in segment [{StartCp}, {EndCp}) with length {SegmentLength} < MinSize {MinSize}. Invalid segmentation.",
-                    penaltyForLogging, lastCp, currentCp, segmentLength, _peltOptions.MinSize);
+                    penaltyForLogging,
+                    lastCp,
+                    currentCp,
+                    segmentLength,
+                    _peltOptions.MinSize
+                );
                 return (false, double.PositiveInfinity, double.PositiveInfinity);
             }
 
@@ -409,7 +432,10 @@ public class PELTPenaltySelector
                 {
                     _logger.LogWarning(
                         "Likelihood metric is NaN/Infinity for segment [{StartCp}, {EndCp}) with penalty {Penalty:F4}. Invalid.",
-                        lastCp, currentCp, penaltyForLogging);
+                        lastCp,
+                        currentCp,
+                        penaltyForLogging
+                    );
                     return (false, double.PositiveInfinity, double.PositiveInfinity);
                 }
 
@@ -417,23 +443,24 @@ public class PELTPenaltySelector
 
                 totalSegmentParams += likelihoodCostFn.GetSegmentParameterCount(segmentLength);
             }
-            catch (Exception ex) when (ex is SegmentLengthException
-                                           or CostFunctionException
-                                           or ArgumentOutOfRangeException
-                                           or UninitializedDataException)
+            catch (Exception ex) when (ex is SegmentLengthException or CostFunctionException or ArgumentOutOfRangeException or UninitializedDataException)
             {
-                _logger.LogWarning(ex,
+                _logger.LogWarning(
+                    ex,
                     "Failed to compute likelihood/params for segment [{StartCp}, {EndCp}) with penalty {Penalty:F4}. Invalid.",
-                    lastCp, currentCp, penaltyForLogging);
+                    lastCp,
+                    currentCp,
+                    penaltyForLogging
+                );
                 return (false, double.PositiveInfinity, double.PositiveInfinity);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error calculating score components for segment [{StartCp}, {EndCp})",
-                    lastCp, currentCp);
+                _logger.LogError(ex, "Unexpected error calculating score components for segment [{StartCp}, {EndCp})", lastCp, currentCp);
                 throw new PELTAlgorithmException(
                     $"Unexpected error calculating score components for segment [{lastCp}, {currentCp}). See inner exception.",
-                    ex);
+                    ex
+                );
             }
 
             lastCp = currentCp;
@@ -443,15 +470,19 @@ public class PELTPenaltySelector
 
         _logger.LogDebug(
             "Likelihood components for Penalty {Penalty:F4}: TotalLikelihoodMetric={Metric:F4}, TotalEffectiveParams={Params} (SegmentParams={SegParams}, K={K})",
-            penaltyForLogging, totalLikelihoodMetric, totalEffectiveParams, totalSegmentParams, K);
+            penaltyForLogging,
+            totalLikelihoodMetric,
+            totalEffectiveParams,
+            totalSegmentParams,
+            K
+        );
 
         if (!double.IsNaN(totalLikelihoodMetric) && !double.IsPositiveInfinity(totalLikelihoodMetric))
         {
             return (true, totalLikelihoodMetric, totalEffectiveParams);
         }
 
-        _logger.LogWarning("Accumulated likelihood metric is NaN/Infinity for penalty {Penalty:F4}. Invalid.",
-            penaltyForLogging);
+        _logger.LogWarning("Accumulated likelihood metric is NaN/Infinity for penalty {Penalty:F4}. Invalid.", penaltyForLogging);
 
         return (false, double.PositiveInfinity, double.PositiveInfinity);
     }
@@ -467,20 +498,26 @@ public class PELTPenaltySelector
     {
         if (n > totalEffectiveParams + 1.0)
         {
-            var correction = (2.0 * totalEffectiveParams * (totalEffectiveParams + 1.0)) /
-                             (n - totalEffectiveParams - 1.0);
+            var correction = (2.0 * totalEffectiveParams * (totalEffectiveParams + 1.0)) / (n - totalEffectiveParams - 1.0);
 
-            if (!double.IsNaN(correction) && !double.IsInfinity(correction)) return correction;
+            if (!double.IsNaN(correction) && !double.IsInfinity(correction))
+                return correction;
 
             _logger.LogWarning(
                 "AICc correction calculation resulted in NaN/Infinity for penalty {Penalty:F4} (N={N}, P={P}). AICc undefined.",
-                penaltyForLogging, n, totalEffectiveParams);
+                penaltyForLogging,
+                n,
+                totalEffectiveParams
+            );
         }
         else
         {
             _logger.LogWarning(
                 "AICc correction not applicable for penalty {Penalty:F4} because N <= TotalParams + 1 ({N} <= {NumParams} + 1). AICc undefined.",
-                penaltyForLogging, n, totalEffectiveParams);
+                penaltyForLogging,
+                n,
+                totalEffectiveParams
+            );
         }
 
         return double.NaN;
@@ -497,19 +534,17 @@ public class PELTPenaltySelector
         var minP = options.MinPenalty ?? EstimateMinPenaltyHeuristic(signalLength);
         var maxP = options.MaxPenalty ?? EstimateMaxPenaltyHeuristic(signalLength, minP);
 
-        if (minP < 0) minP = 0;
+        if (minP < 0)
+            minP = 0;
         if (maxP <= minP)
         {
-            _logger.LogWarning(
-                "MaxPenalty ({MaxP:F2}) must be greater than MinPenalty ({MinP:F2}). Adjusting MaxPenalty slightly.",
-                maxP, minP);
+            _logger.LogWarning("MaxPenalty ({MaxP:F2}) must be greater than MinPenalty ({MinP:F2}). Adjusting MaxPenalty slightly.", maxP, minP);
             maxP = minP + Math.Max(1.0, Math.Abs(minP * 0.1) + 0.1);
         }
 
         var steps = Math.Max(2, options.NumPenaltySteps);
 
-        _logger.LogDebug("Generating {NumSteps} penalties in range [{MinPenalty:F2}, {MaxPenalty:F2}]", steps, minP,
-            maxP);
+        _logger.LogDebug("Generating {NumSteps} penalties in range [{MinPenalty:F2}, {MaxPenalty:F2}]", steps, minP, maxP);
 
         return GenerateLogSpacedPenalties(minP, maxP, steps);
     }
@@ -524,7 +559,8 @@ public class PELTPenaltySelector
     /// <returns>An enumerable sequence of log-spaced penalty values.</returns>
     private static IEnumerable<double> GenerateLogSpacedPenalties(double minPenalty, double maxPenalty, int count)
     {
-        if (count <= 0) yield break;
+        if (count <= 0)
+            yield break;
         if (count == 1)
         {
             yield return minPenalty;
@@ -540,12 +576,14 @@ public class PELTPenaltySelector
         if (NumericUtils.IsEffectivelyZero(minPenalty))
         {
             yield return 0.0;
-            if (count == 1) yield break;
+            if (count == 1)
+                yield break;
 
             var effectiveMin = Math.Max(1e-9, maxPenalty * 1e-6);
             if (effectiveMin >= maxPenalty)
             {
-                if (!NumericUtils.IsEffectivelyZero(maxPenalty)) yield return maxPenalty;
+                if (!NumericUtils.IsEffectivelyZero(maxPenalty))
+                    yield return maxPenalty;
                 yield break;
             }
 
@@ -618,9 +656,11 @@ public class PELTPenaltySelector
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex,
+                _logger.LogWarning(
+                    ex,
                     "Failed to get parameter count from cost function for min penalty heuristic. Using default {DefaultParams}.",
-                    typicalParams);
+                    typicalParams
+                );
             }
         }
 

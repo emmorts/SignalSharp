@@ -20,7 +20,7 @@ public class PoissonLikelihoodCostFunctionTests
     public void Fit_NullSignalArray_ThrowsArgumentNullException()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        
+
         Assert.Throws<ArgumentNullException>(() => costFunc.Fit((double[])null!));
     }
 
@@ -28,8 +28,14 @@ public class PoissonLikelihoodCostFunctionTests
     public void Fit_InvalidValues_NegativeOutsideTolerance_ThrowsArgumentException()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] invalidData1 = { { 5.0, 8.0, -1.0 } }; // Contains -1.0
-        double[,] invalidData2 = { { 5.0, 8.0, -Tolerance * 2 } }; // Negative, outside tolerance
+        double[,] invalidData1 =
+        {
+            { 5.0, 8.0, -1.0 },
+        }; // Contains -1.0
+        double[,] invalidData2 =
+        {
+            { 5.0, 8.0, -Tolerance * 2 },
+        }; // Negative, outside tolerance
 
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidData1));
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidData2));
@@ -39,7 +45,10 @@ public class PoissonLikelihoodCostFunctionTests
     public void Fit_NearZeroNegativeValues_InsideTolerance_Success()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] nearZeroData = { { 5.0, 8.0, -Tolerance / 2.0, 0.0 } };
+        double[,] nearZeroData =
+        {
+            { 5.0, 8.0, -Tolerance / 2.0, 0.0 },
+        };
 
         Assert.DoesNotThrow(() => costFunc.Fit(nearZeroData));
     }
@@ -48,10 +57,16 @@ public class PoissonLikelihoodCostFunctionTests
     public void Fit_NonNegativeValues_Success()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] validData = { { 0.0, 5.0, 10.0, 0.0, 3.0 } };
+        double[,] validData =
+        {
+            { 0.0, 5.0, 10.0, 0.0, 3.0 },
+        };
         Assert.DoesNotThrow(() => costFunc.Fit(validData));
 
-        double[,] validFloatData = { { 0.0, 5.0000000001, 9.9999999999 } };
+        double[,] validFloatData =
+        {
+            { 0.0, 5.0000000001, 9.9999999999 },
+        };
         Assert.DoesNotThrow(() => costFunc.Fit(validFloatData));
     }
 
@@ -73,7 +88,8 @@ public class PoissonLikelihoodCostFunctionTests
     public void Fit_MultidimensionalData_Success()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] validMultiData = {
+        double[,] validMultiData =
+        {
             { 0.0, 10.0, 5.0 },
             { 2.0, 1.0, 0.0 },
         };
@@ -112,7 +128,10 @@ public class PoissonLikelihoodCostFunctionTests
     public void ComputeCost_FullSegment_AllZeros_ReturnsZero()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] data = { { 0.0, 0.0, 0.0, 0.0 } };
+        double[,] data =
+        {
+            { 0.0, 0.0, 0.0, 0.0 },
+        };
         costFunc.Fit(data);
         var cost = costFunc.ComputeCost(); // S=0, n=4
         Assert.That(cost, Is.EqualTo(0.0).Within(Tolerance));
@@ -122,7 +141,10 @@ public class PoissonLikelihoodCostFunctionTests
     public void ComputeCost_FullSegment_ConstantNonZero_CalculatesCorrectCost()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] data = { { 5.0, 5.0, 5.0 } }; // n=3, S=15
+        double[,] data =
+        {
+            { 5.0, 5.0, 5.0 },
+        }; // n=3, S=15
         costFunc.Fit(data);
         var cost = costFunc.ComputeCost();
 
@@ -139,7 +161,10 @@ public class PoissonLikelihoodCostFunctionTests
     public void ComputeCost_FullSegment_Mixed_CalculatesCorrectCost()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] data = { { 2.0, 3.0, 4.0, 1.0 } }; // n=4, S=10
+        double[,] data =
+        {
+            { 2.0, 3.0, 4.0, 1.0 },
+        }; // n=4, S=10
         costFunc.Fit(data);
         var cost = costFunc.ComputeCost();
 
@@ -156,7 +181,10 @@ public class PoissonLikelihoodCostFunctionTests
     public void ComputeCost_SubsetSegment_Mixed_CalculatesCorrectCost()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] data = { { 2.0, 3.0, 4.0, 1.0, 5.0 } };
+        double[,] data =
+        {
+            { 2.0, 3.0, 4.0, 1.0, 5.0 },
+        };
         costFunc.Fit(data);
         var cost = costFunc.ComputeCost(1, 4); // Segment [1, 4): {3, 4, 1} => n=3, S=8
 
@@ -173,7 +201,10 @@ public class PoissonLikelihoodCostFunctionTests
     public void ComputeCost_SinglePointSegment_CalculatesCorrectCost()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] data = { { 0.0, 5.0, 0.0 } };
+        double[,] data =
+        {
+            { 0.0, 5.0, 0.0 },
+        };
         costFunc.Fit(data);
 
         // Single point segment [0, 1): {0} => n=1, S=0. Cost = 0
@@ -187,30 +218,34 @@ public class PoissonLikelihoodCostFunctionTests
         Assert.That(cost1, Is.EqualTo(expectedCost1).Within(Tolerance));
     }
 
-     [Test]
-     public void ComputeCost_NearZeroValues_TreatedAsZero()
-     {
-         var costFunc = new PoissonLikelihoodCostFunction();
-         // These values should be clamped to 0 internally by Fit
-         double[,] nearData = { { 5.0, Tolerance / 2.0, 2.0, -Tolerance / 2.0 } };
-         costFunc.Fit(nearData); // Should result in effective data {5, 0, 2, 0}
+    [Test]
+    public void ComputeCost_NearZeroValues_TreatedAsZero()
+    {
+        var costFunc = new PoissonLikelihoodCostFunction();
+        // These values should be clamped to 0 internally by Fit
+        double[,] nearData =
+        {
+            { 5.0, Tolerance / 2.0, 2.0, -Tolerance / 2.0 },
+        };
+        costFunc.Fit(nearData); // Should result in effective data {5, 0, 2, 0}
 
-         // Cost for segment [0, 4): n=4, S=7
-         // Cost = 2 * [ 7 - 7*log(7) + 7*log(4) ] = 14 * [ 1 - log(7/4) ] = 14 * [ 1 - log(1.75) ]
-         var cost = costFunc.ComputeCost();
-         var expectedCost = 14.0 * (1.0 - Math.Log(1.75));
-         Assert.That(cost, Is.EqualTo(expectedCost).Within(Tolerance));
+        // Cost for segment [0, 4): n=4, S=7
+        // Cost = 2 * [ 7 - 7*log(7) + 7*log(4) ] = 14 * [ 1 - log(7/4) ] = 14 * [ 1 - log(1.75) ]
+        var cost = costFunc.ComputeCost();
+        var expectedCost = 14.0 * (1.0 - Math.Log(1.75));
+        Assert.That(cost, Is.EqualTo(expectedCost).Within(Tolerance));
 
-         // Cost for segment [1, 2): { ~0 } => n=1, S=0. Cost = 0
-         var costNearZeroSeg = costFunc.ComputeCost(1, 2);
-         Assert.That(costNearZeroSeg, Is.EqualTo(0.0).Within(Tolerance));
-     }
+        // Cost for segment [1, 2): { ~0 } => n=1, S=0. Cost = 0
+        var costNearZeroSeg = costFunc.ComputeCost(1, 2);
+        Assert.That(costNearZeroSeg, Is.EqualTo(0.0).Within(Tolerance));
+    }
 
     [Test]
     public void ComputeCost_Multidimensional_CalculatesCorrectCost()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] data = {
+        double[,] data =
+        {
             { 2.0, 3.0 }, // Dim 0: n=2, S=5 => Cost0 = 10*[1-log(5/2)] = 10*[1-log(2.5)]
             { 4.0, 1.0 }, // Dim 1: n=2, S=5 => Cost1 = 10*[1-log(5/2)] = 10*[1-log(2.5)]
         };
@@ -228,7 +263,19 @@ public class PoissonLikelihoodCostFunctionTests
         var costFunc = new PoissonLikelihoodCostFunction();
         // Segment 1: low rate (mean approx 2)
         // Segment 2: high rate (mean approx 8)
-        double[,] data = { { 1.0, 3.0, 2.0, 2.0,   /* Change -> */   7.0, 9.0, 8.0, 8.0 } };
+        double[,] data =
+        {
+            {
+                1.0,
+                3.0,
+                2.0,
+                2.0, /* Change -> */
+                7.0,
+                9.0,
+                8.0,
+                8.0,
+            },
+        };
         costFunc.Fit(data);
 
         // Cost segment 1 [0, 4): n=4, S=8
@@ -259,14 +306,21 @@ public class PoissonLikelihoodCostFunctionTests
         // 208*log(2) vs 80*log(5)  (Multiply by -1, flip inequality)
         // 208*0.693 vs 80*1.609
         // 144.1 vs 128.7 -> Splitting IS cheaper. Good.
-        Assert.That(cost1 + cost2, Is.LessThan(costTotal), "Sum of costs for homogeneous segments should be less than the cost of the combined inhomogeneous segment.");
+        Assert.That(
+            cost1 + cost2,
+            Is.LessThan(costTotal),
+            "Sum of costs for homogeneous segments should be less than the cost of the combined inhomogeneous segment."
+        );
     }
 
     [Test]
     public void ComputeCost_InvalidIndices_ThrowsArgumentOutOfRangeException()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] data = { { 0.0, 1.0 } };
+        double[,] data =
+        {
+            { 0.0, 1.0 },
+        };
         costFunc.Fit(data);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(-1, 1));
@@ -278,7 +332,10 @@ public class PoissonLikelihoodCostFunctionTests
     public void ComputeCost_InvalidSegmentLength_ThrowsSegmentLengthException()
     {
         var costFunc = new PoissonLikelihoodCostFunction();
-        double[,] data = { { 0.0, 1.0 } };
+        double[,] data =
+        {
+            { 0.0, 1.0 },
+        };
         costFunc.Fit(data);
 
         Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(0, 0)); // Length 0

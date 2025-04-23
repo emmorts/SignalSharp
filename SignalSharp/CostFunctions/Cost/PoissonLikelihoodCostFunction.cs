@@ -190,7 +190,11 @@ public class PoissonLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostFu
     public int GetSegmentParameterCount(int segmentLength)
     {
         UninitializedDataException.ThrowIfUninitialized(_prefixSum, "Fit() must be called before GetSegmentParameterCount().");
-        _logger.LogTrace("Parameter count for Poisson is 1 per dimension, total {ParameterCount} for {NumDimensions} dimensions.", _numDimensions, _numDimensions);
+        _logger.LogTrace(
+            "Parameter count for Poisson is 1 per dimension, total {ParameterCount} for {NumDimensions} dimensions.",
+            _numDimensions,
+            _numDimensions
+        );
         // 1 parameter (lambda) per dimension
         return _numDimensions;
     }
@@ -204,7 +208,8 @@ public class PoissonLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostFu
     {
         UninitializedDataException.ThrowIfUninitialized(_prefixSum, $"Fit() must be called before {callerName}().");
 
-        if (_numDimensions == 0 || _numPoints == 0) return 0;
+        if (_numDimensions == 0 || _numPoints == 0)
+            return 0;
 
         var startIndex = start ?? 0;
         var endIndex = end ?? _numPoints;
@@ -216,7 +221,12 @@ public class PoissonLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostFu
         var segmentLength = endIndex - startIndex;
         SegmentLengthException.ThrowIfInvalid(segmentLength, 1);
 
-        _logger.LogTrace("Calculating Poisson likelihood metric for segment [{StartIndex}, {EndIndex}) (Length: {SegmentLength}).", startIndex, endIndex, segmentLength);
+        _logger.LogTrace(
+            "Calculating Poisson likelihood metric for segment [{StartIndex}, {EndIndex}) (Length: {SegmentLength}).",
+            startIndex,
+            endIndex,
+            segmentLength
+        );
 
         double totalMetric = 0;
         var logSegmentLength = Math.Log(segmentLength); // Calculate once
@@ -231,26 +241,39 @@ public class PoissonLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostFu
             if (NumericUtils.IsEffectivelyZero(segmentSum, sumTolerance))
             {
                 metricDim = 0.0;
-                 _logger.LogTrace("Segment [{StartIndex}, {EndIndex}), Dim {Dimension} has Sum ~= 0. Metric Contribution = 0.", startIndex, endIndex, dim);
+                _logger.LogTrace("Segment [{StartIndex}, {EndIndex}), Dim {Dimension} has Sum ~= 0. Metric Contribution = 0.", startIndex, endIndex, dim);
             }
             else
             {
                 // Metric = 2 * [ S - S * log(S) + S * log(n) ]
                 var logSegmentSum = Math.Log(segmentSum); // S > sumTolerance, so log is safe
                 metricDim = Two * (segmentSum - segmentSum * logSegmentSum + segmentSum * logSegmentLength);
-                 _logger.LogTrace("Segment [{StartIndex}, {EndIndex}), Dim {Dimension}: S={S}, n={N}. Metric Contribution = {MetricValue}", startIndex, endIndex, dim, segmentSum, segmentLength, metricDim);
+                _logger.LogTrace(
+                    "Segment [{StartIndex}, {EndIndex}), Dim {Dimension}: S={S}, n={N}. Metric Contribution = {MetricValue}",
+                    startIndex,
+                    endIndex,
+                    dim,
+                    segmentSum,
+                    segmentLength,
+                    metricDim
+                );
             }
 
             if (double.IsNaN(metricDim) || double.IsInfinity(metricDim))
             {
-                 _logger.LogWarning("Metric calculation resulted in NaN or Infinity for dimension {Dimension} in segment [{StartIndex}, {EndIndex}). Returning PositiveInfinity.", dim, startIndex, endIndex);
-                 return double.PositiveInfinity;
+                _logger.LogWarning(
+                    "Metric calculation resulted in NaN or Infinity for dimension {Dimension} in segment [{StartIndex}, {EndIndex}). Returning PositiveInfinity.",
+                    dim,
+                    startIndex,
+                    endIndex
+                );
+                return double.PositiveInfinity;
             }
 
             totalMetric += metricDim;
         }
 
-         _logger.LogTrace("Total Poisson likelihood metric for segment [{StartIndex}, {EndIndex}): {TotalMetric}", startIndex, endIndex, totalMetric);
+        _logger.LogTrace("Total Poisson likelihood metric for segment [{StartIndex}, {EndIndex}): {TotalMetric}", startIndex, endIndex, totalMetric);
         return totalMetric;
     }
 }

@@ -30,6 +30,15 @@ public static class Constants
     public const double StrictEpsilon = 1e-12;
 
     /// <summary>
+    /// Default relative tolerance for double-precision floating-point comparisons.
+    /// </summary>
+    /// <remarks>
+    /// Used in relative comparison checks: `abs(a - b) <= absoluteTolerance + relativeTolerance * abs(b)`.
+    /// A typical value balances precision needs without being overly strict.
+    /// </remarks>
+    public const double DefaultRelativeEpsilon = 1e-7;
+
+    /// <summary>
     /// Tolerance for variance checks in statistical calculations.
     /// </summary>
     /// <remarks>
@@ -37,7 +46,7 @@ public static class Constants
     /// This value helps avoid numerical instability when dealing with very small variances.
     /// </remarks>
     public const double VarianceEpsilon = 1e-10;
-    
+
     /// <summary>
     /// Default tolerance for single-precision floating-point comparisons.
     /// </summary>
@@ -55,7 +64,15 @@ public static class Constants
     /// Still accounts for the lower precision of float compared to double.
     /// </remarks>
     public const float FloatStrictEpsilon = 1e-7f;
-    
+
+    /// <summary>
+    /// Default relative tolerance for single-precision floating-point comparisons.
+    /// </summary>
+    /// <remarks>
+    /// Used in relative comparison checks for float types. Adjusted for lower precision.
+    /// </remarks>
+    public const float FloatDefaultRelativeEpsilon = 1e-5f;
+
     /// <summary>
     /// Default tolerance for decimal comparisons.
     /// </summary>
@@ -74,4 +91,12 @@ public static class Constants
     /// maximum precision is required.
     /// </remarks>
     public const decimal DecimalStrictEpsilon = 1e-12m;
+
+    /// <summary>
+    /// Default relative tolerance for decimal comparisons.
+    /// </summary>
+    /// <remarks>
+    /// Used in relative comparison checks for decimal types.
+    /// </remarks>
+    public const decimal DecimalDefaultRelativeEpsilon = 1e-8m;
 }

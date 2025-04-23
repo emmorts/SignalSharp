@@ -1,6 +1,5 @@
 namespace SignalSharp.Detection.PELT;
 
-
 /// <summary>
 /// Specifies the method used for automatic penalty selection in PELT.
 /// </summary>

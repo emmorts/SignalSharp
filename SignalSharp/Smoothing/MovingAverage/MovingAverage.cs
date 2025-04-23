@@ -47,8 +47,7 @@ public static class MovingAverage
     /// <exception cref="ArgumentNullException">Thrown when the signal is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the window size is less than or equal to zero.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="padding"/> is <see cref="Padding.None"/> and <paramref name="windowSize"/> is greater than the signal length.</exception>
-    public static double[] SimpleMovingAverage(double[] signal, int windowSize, Padding padding = Padding.None,
-        double paddedValue = 0)
+    public static double[] SimpleMovingAverage(double[] signal, int windowSize, Padding padding = Padding.None, double paddedValue = 0)
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(windowSize, nameof(windowSize));
@@ -58,7 +57,8 @@ public static class MovingAverage
             // if no padding, window cannot be larger than the signal
             ArgumentOutOfRangeException.ThrowIfGreaterThan(windowSize, signal.Length, nameof(windowSize));
 
-            if (signal.Length == 0 || windowSize > signal.Length) return [];
+            if (signal.Length == 0 || windowSize > signal.Length)
+                return [];
 
             var outputLength = signal.Length - windowSize + 1;
             var result = new double[outputLength];
@@ -77,13 +77,14 @@ public static class MovingAverage
                 currentSum = currentSum - signal[i - 1] + signal[i + windowSize - 1];
                 result[i] = currentSum / windowSize;
             }
-            
+
             return result;
         }
         else
         {
             // using padding
-            if (signal.Length == 0) return [];
+            if (signal.Length == 0)
+                return [];
 
             var extendedSignal = SignalPadding.ApplyPadding(signal, windowSize, padding, paddedValue);
 
@@ -91,7 +92,8 @@ public static class MovingAverage
             var result = new double[outputLength];
 
             var extendedOutputLength = extendedSignal.Length - windowSize + 1;
-            if (extendedOutputLength <= 0) return []; // should not happen if windowSize > 0 and ApplyPadding works
+            if (extendedOutputLength <= 0)
+                return []; // should not happen if windowSize > 0 and ApplyPadding works
 
             // calculate the sum of the first window
             double currentSum = 0;
@@ -109,7 +111,7 @@ public static class MovingAverage
 
                 if (enteringIndex >= extendedSignal.Length)
                 {
-                      break;
+                    break;
                 }
 
                 var elementLeaving = extendedSignal[leavingIndex];
@@ -157,7 +159,8 @@ public static class MovingAverage
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(alpha, 0, nameof(alpha));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(alpha, 1, nameof(alpha));
 
-        if (signal.Length == 0) return [];
+        if (signal.Length == 0)
+            return [];
 
         var result = new double[signal.Length];
         result[0] = signal[0];
@@ -229,8 +232,7 @@ public static class MovingAverage
     /// <exception cref="ArgumentNullException">Thrown when the signal or weights are null.</exception>
     /// <exception cref="ArgumentException">Thrown when the weights array is empty or the sum of weights is zero.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="padding"/> is <see cref="Padding.None"/> and the weights length (window size) is greater than the signal length.</exception>
-    public static double[] WeightedMovingAverage(double[] signal, double[] weights, Padding padding = Padding.None,
-        double paddedValue = 0)
+    public static double[] WeightedMovingAverage(double[] signal, double[] weights, Padding padding = Padding.None, double paddedValue = 0)
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
         ArgumentNullException.ThrowIfNull(weights, nameof(weights));
@@ -238,18 +240,21 @@ public static class MovingAverage
 
         var windowSize = weights.Length;
         var weightsSum = weights.Sum();
-        
-        if (Math.Abs(weightsSum) < 1e-10) throw new ArgumentException("Sum of weights cannot be zero.", nameof(weights));
+
+        if (Math.Abs(weightsSum) < 1e-10)
+            throw new ArgumentException("Sum of weights cannot be zero.", nameof(weights));
 
         if (padding == Padding.None)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(windowSize, signal.Length, nameof(weights));
-            
-            if (signal.Length == 0 || windowSize > signal.Length) return [];
+
+            if (signal.Length == 0 || windowSize > signal.Length)
+                return [];
 
             var outputLength = signal.Length - windowSize + 1;
             var result = new double[outputLength];
-            if (outputLength == 0) return result;
+            if (outputLength == 0)
+                return result;
 
             for (var i = 0; i < outputLength; i++)
             {
@@ -260,23 +265,26 @@ public static class MovingAverage
                 }
                 result[i] = weightedSum / weightsSum;
             }
-            
+
             return result;
         }
         else
         {
-            if (signal.Length == 0) return [];
+            if (signal.Length == 0)
+                return [];
 
             var extendedSignal = SignalPadding.ApplyPadding(signal, windowSize, padding, paddedValue);
             var outputLength = signal.Length;
             var result = new double[outputLength];
             var extendedOutputLength = extendedSignal.Length - windowSize + 1;
 
-            if (extendedOutputLength <= 0) return [];
+            if (extendedOutputLength <= 0)
+                return [];
 
             for (var i = 0; i < outputLength; i++)
             {
-                if (i + windowSize > extendedSignal.Length) break; // stop if window goes out of bounds
+                if (i + windowSize > extendedSignal.Length)
+                    break; // stop if window goes out of bounds
 
                 double weightedSum = 0;
                 for (var j = 0; j < windowSize; j++)

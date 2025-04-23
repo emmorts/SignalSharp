@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using SignalSharp.Common.Exceptions;
 using SignalSharp.CostFunctions.Exceptions;
+using SignalSharp.Utilities;
 
 namespace SignalSharp.CostFunctions.Cost;
 
@@ -9,23 +11,23 @@ namespace SignalSharp.CostFunctions.Cost;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The Radial Basis Function (RBF) kernel is commonly used in various machine learning algorithms, 
-/// such as support vector machines and Gaussian processes, due to its ability to handle non-linear relationships 
-/// between data points. It transforms the input data into a higher-dimensional space where it becomes easier 
+/// The Radial Basis Function (RBF) kernel is commonly used in various machine learning algorithms,
+/// such as support vector machines and Gaussian processes, due to its ability to handle non-linear relationships
+/// between data points. It transforms the input data into a higher-dimensional space where it becomes easier
 /// to separate or cluster the data using linear methods.
 /// </para>
 ///
 /// <para>
-/// In the context of the Piecewise Linear Trend Change (PELT) method, the RBF kernel is utilized to compute 
-/// the cost of segmenting a time series or sequential data into different segments where the statistical properties 
-/// change. This approach is beneficial when the underlying data relationships are complex and non-linear, 
+/// In the context of the Piecewise Linear Trend Change (PELT) method, the RBF kernel is utilized to compute
+/// the cost of segmenting a time series or sequential data into different segments where the statistical properties
+/// change. This approach is beneficial when the underlying data relationships are complex and non-linear,
 /// making simple linear models insufficient.
 /// </para>
 ///
 /// <para>
-/// The gamma parameter in the RBF kernel controls the influence of individual data points. A small gamma value 
-/// means that the influence of a single training example reaches far, while a large gamma value means that 
-/// the influence is close. The algorithm can automatically compute an appropriate gamma if not provided, 
+/// The gamma parameter in the RBF kernel controls the influence of individual data points. A small gamma value
+/// means that the influence of a single training example reaches far, while a large gamma value means that
+/// the influence is close. The algorithm can automatically compute an appropriate gamma if not provided,
 /// using the median heuristic from the pairwise distances.
 /// </para>
 ///
@@ -42,24 +44,24 @@ public class RBFCostFunction : CostFunctionBase
 {
     private double[,] _data = null!;
     private double[,,] _prefixSum = null!;
-    
+
     private readonly double? _gamma;
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="RBFCostFunction"/> class with an optional gamma parameter.
     /// </summary>
     /// <param name="gamma">The gamma parameter for the RBF kernel. If null, it will be calculated automatically based on the data.</param>
     /// <remarks>
-    /// The gamma parameter defines the influence of individual data points in the RBF kernel. 
-    /// A smaller gamma value means a broader influence, while a larger gamma value means a more localized influence. 
-    /// If not provided, the gamma parameter is estimated using the median heuristic based on pairwise distances 
+    /// The gamma parameter defines the influence of individual data points in the RBF kernel.
+    /// A smaller gamma value means a broader influence, while a larger gamma value means a more localized influence.
+    /// If not provided, the gamma parameter is estimated using the median heuristic based on pairwise distances
     /// between data points.
     /// </remarks>
     public RBFCostFunction(double? gamma = null)
     {
         _gamma = gamma;
     }
-    
+
     /// <summary>
     /// Fits the cost function to the provided data.
     /// </summary>
@@ -67,8 +69,8 @@ public class RBFCostFunction : CostFunctionBase
     /// <returns>The fitted <see cref="RBFCostFunction"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when data is null.</exception>
     /// <remarks>
-    /// This method initializes the internal structures needed to compute the cost for segments of the data. 
-    /// It calculates the pairwise distances between data points, applies the RBF kernel to these distances, 
+    /// This method initializes the internal structures needed to compute the cost for segments of the data.
+    /// It calculates the pairwise distances between data points, applies the RBF kernel to these distances,
     /// and precomputes the prefix sum matrix for efficient cost computation later.
     ///
     /// <example>
@@ -102,7 +104,7 @@ public class RBFCostFunction : CostFunctionBase
     /// <para>The cost function measures the dissimilarity of the segment compared to the rest of the data,
     /// which is useful for detecting change points in time series analysis.</para>
     ///
-    /// <para>This method must be called after the <see cref="Fit(double[,])"/> method has been used to 
+    /// <para>This method must be called after the <see cref="Fit(double[,])"/> method has been used to
     /// initialize the data and compute the necessary matrices.</para>
     ///
     /// <example>
@@ -124,11 +126,11 @@ public class RBFCostFunction : CostFunctionBase
         var startIndex = start ?? 0;
         var endIndex = end ?? _data.GetLength(1);
         var segmentLength = endIndex - startIndex;
-        
+
         SegmentLengthException.ThrowIfInvalid(segmentLength);
         ArgumentOutOfRangeException.ThrowIfNegative(startIndex, nameof(start));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(endIndex, _data.GetLength(1), nameof(end));
-        
+
         double sum = 0;
         for (var dim = 0; dim < _data.GetLength(0); dim++)
         {
@@ -138,7 +140,7 @@ public class RBFCostFunction : CostFunctionBase
 
         return sum;
     }
-    
+
     /// <summary>
     /// Precomputes the prefix sum matrix from the distances matrix.
     /// </summary>
@@ -230,15 +232,19 @@ public class RBFCostFunction : CostFunctionBase
         var numPoints = data.GetLength(1);
         var distances = new double[numPoints, numPoints];
 
-        Parallel.For(0, numPoints, i =>
-        {
-            for (var j = i; j < numPoints; j++)
+        Parallel.For(
+            0,
+            numPoints,
+            i =>
             {
-                var distance = SquaredDistance(data[dimension, i], data[dimension, j]);
-                distances[i, j] = distance;
-                distances[j, i] = distance;
+                for (var j = i; j < numPoints; j++)
+                {
+                    var distance = SquaredDistance(data[dimension, i], data[dimension, j]);
+                    distances[i, j] = distance;
+                    distances[j, i] = distance;
+                }
             }
-        });
+        );
 
         return distances;
     }
@@ -254,22 +260,26 @@ public class RBFCostFunction : CostFunctionBase
         var numPoints = distances.GetLength(0);
         var gramMatrix = new double[numPoints, numPoints];
 
-        Parallel.For(0, numPoints, i =>
-        {
-            for (var j = 0; j < numPoints; j++)
+        Parallel.For(
+            0,
+            numPoints,
+            i =>
             {
-                if (distances[i, j] == 0)
+                for (var j = 0; j < numPoints; j++)
                 {
-                    gramMatrix[i, j] = 1;
-                }
-                else
-                {
-                    var value = distances[i, j] * gamma;
-                    value = Math.Clamp(value, 1e-2, 1e2);
-                    gramMatrix[i, j] = Math.Exp(-value);
+                    if (distances[i, j] == 0)
+                    {
+                        gramMatrix[i, j] = 1;
+                    }
+                    else
+                    {
+                        var value = distances[i, j] * gamma;
+                        value = Math.Clamp(value, 1e-2, 1e2);
+                        gramMatrix[i, j] = Math.Exp(-value);
+                    }
                 }
             }
-        });
+        );
 
         return gramMatrix;
     }
@@ -282,12 +292,11 @@ public class RBFCostFunction : CostFunctionBase
     private static double CalculateGamma(double[,] distances)
     {
         var upperTriangleValues = GetUpperTriangleValues(distances);
-    
-        var median = upperTriangleValues.Count > 0 ? Median(upperTriangleValues) : 1.0;
-    
-        return median != 0.0
-            ? 1.0 / median
-            : 1.0;
+        var upperTriangleValuesSpan = CollectionsMarshal.AsSpan(upperTriangleValues);
+
+        var median = upperTriangleValues.Count > 0 ? StatisticalFunctions.Median<double>(upperTriangleValuesSpan) : 1.0;
+
+        return median != 0.0 ? 1.0 / median : 1.0;
     }
 
     /// <summary>
@@ -301,40 +310,21 @@ public class RBFCostFunction : CostFunctionBase
         var cols = matrix.GetLength(1);
         var values = new List<double>(rows * (rows - 1) / 2);
 
-        Parallel.For(0, rows, i =>
-        {
-            for (var j = i + 1; j < cols; j++)
+        Parallel.For(
+            0,
+            rows,
+            i =>
             {
-                values.Add(matrix[i, j]);
+                for (var j = i + 1; j < cols; j++)
+                {
+                    values.Add(matrix[i, j]);
+                }
             }
-        });
+        );
 
         return values;
     }
-    
-    /// <summary>
-    /// Computes the median value of an array of doubles.
-    /// </summary>
-    /// <param name="data">The array of doubles.</param>
-    /// <returns>The median value.</returns>
-    private static double Median(List<double> data)
-    {
-        var n = data.Count;
-        if (n == 0)
-        {
-            return 0;
-        }
-        
-        data.Sort();
-    
-        if (n % 2 == 0)
-        {
-            return (data[n / 2 - 1] + data[n / 2]) / 2.0;
-        }
-    
-        return data[n / 2];
-    }
-    
+
     /// <summary>
     /// Computes the squared distance between two values.
     /// </summary>
@@ -345,7 +335,7 @@ public class RBFCostFunction : CostFunctionBase
     private static double SquaredDistance(double a, double b)
     {
         var diff = a - b;
-        
+
         return diff * diff;
     }
 }

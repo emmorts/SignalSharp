@@ -20,8 +20,16 @@ public class BinomialLikelihoodCostFunctionTests
     public void Fit_IncorrectNumberOfRows_ThrowsArgumentException()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] signal1Row = { { 1.0, 2.0, 3.0 } };
-        double[,] signal3Rows = { { 1.0, 2.0 }, { 10.0, 10.0 }, { 0.0, 0.0 } };
+        double[,] signal1Row =
+        {
+            { 1.0, 2.0, 3.0 },
+        };
+        double[,] signal3Rows =
+        {
+            { 1.0, 2.0 },
+            { 10.0, 10.0 },
+            { 0.0, 0.0 },
+        };
 
         Assert.Throws<ArgumentException>(() => costFunc.Fit(signal1Row));
         Assert.Throws<ArgumentException>(() => costFunc.Fit(signal3Rows));
@@ -31,30 +39,37 @@ public class BinomialLikelihoodCostFunctionTests
     public void Fit_ValidData_Success()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] validData = {
+        double[,] validData =
+        {
             { 1.0, 5.0, 10.0 }, // k
             { 10.0, 10.0, 10.0 }, // n
         };
         Assert.DoesNotThrow(() => costFunc.Fit(validData));
 
-        double[,] validDataVaryingN = {
-            { 1.0, 5.0, 8.0 },  // k
+        double[,] validDataVaryingN =
+        {
+            { 1.0, 5.0, 8.0 }, // k
             { 5.0, 10.0, 15.0 }, // n
         };
-         Assert.DoesNotThrow(() => costFunc.Fit(validDataVaryingN));
+        Assert.DoesNotThrow(() => costFunc.Fit(validDataVaryingN));
 
-        double[,] validDataBoundary = {
+        double[,] validDataBoundary =
+        {
             { 0.0, 10.0 }, // k = 0, k = n
             { 10.0, 10.0 }, // n
         };
-         Assert.DoesNotThrow(() => costFunc.Fit(validDataBoundary));
+        Assert.DoesNotThrow(() => costFunc.Fit(validDataBoundary));
     }
 
     [Test]
     public void Fit_InvalidData_KLessThanZero_ThrowsArgumentException()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] invalidData = { { -1.0 }, { 10.0 } };
+        double[,] invalidData =
+        {
+            { -1.0 },
+            { 10.0 },
+        };
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidData));
     }
 
@@ -62,8 +77,16 @@ public class BinomialLikelihoodCostFunctionTests
     public void Fit_InvalidData_NLessThanOne_ThrowsArgumentException()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] invalidDataNZero = { { 0.0 }, { 0.0 } };
-        double[,] invalidDataNNeg = { { 0.0 }, { -5.0 } };
+        double[,] invalidDataNZero =
+        {
+            { 0.0 },
+            { 0.0 },
+        };
+        double[,] invalidDataNNeg =
+        {
+            { 0.0 },
+            { -5.0 },
+        };
 
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidDataNZero));
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidDataNNeg));
@@ -73,7 +96,11 @@ public class BinomialLikelihoodCostFunctionTests
     public void Fit_InvalidData_KGreaterThanN_ThrowsArgumentException()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] invalidData = { { 11.0 }, { 10.0 } };
+        double[,] invalidData =
+        {
+            { 11.0 },
+            { 10.0 },
+        };
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidData));
     }
 
@@ -81,12 +108,24 @@ public class BinomialLikelihoodCostFunctionTests
     public void Fit_InvalidData_NonIntegerValues_ThrowsArgumentException()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] invalidDataK = { { 5.5 }, { 10.0 } };
-        double[,] invalidDataN = { { 5.0 }, { 10.5 } };
+        double[,] invalidDataK =
+        {
+            { 5.5 },
+            { 10.0 },
+        };
+        double[,] invalidDataN =
+        {
+            { 5.0 },
+            { 10.5 },
+        };
 
         // Values slightly off integer should still work due to tolerance
-        double[,] nearIntData = { { 5.0000000001 }, { 10.00000000004 } };
-         Assert.DoesNotThrow(() => costFunc.Fit(nearIntData));
+        double[,] nearIntData =
+        {
+            { 5.0000000001 },
+            { 10.00000000004 },
+        };
+        Assert.DoesNotThrow(() => costFunc.Fit(nearIntData));
 
         // Values far from integer should throw
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidDataK));
@@ -97,10 +136,26 @@ public class BinomialLikelihoodCostFunctionTests
     public void Fit_InvalidData_NaNOrInfinity_ThrowsArgumentException()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] nanDataK = { { double.NaN }, { 10.0 } };
-        double[,] nanDataN = { { 5.0 }, { double.NaN } };
-        double[,] infDataK = { { double.PositiveInfinity }, { 10.0 } };
-        double[,] infDataN = { { 5.0 }, { double.PositiveInfinity } };
+        double[,] nanDataK =
+        {
+            { double.NaN },
+            { 10.0 },
+        };
+        double[,] nanDataN =
+        {
+            { 5.0 },
+            { double.NaN },
+        };
+        double[,] infDataK =
+        {
+            { double.PositiveInfinity },
+            { 10.0 },
+        };
+        double[,] infDataN =
+        {
+            { 5.0 },
+            { double.PositiveInfinity },
+        };
 
         Assert.Throws<ArgumentException>(() => costFunc.Fit(nanDataK));
         Assert.Throws<ArgumentException>(() => costFunc.Fit(nanDataN));
@@ -137,7 +192,8 @@ public class BinomialLikelihoodCostFunctionTests
     public void ComputeCost_FullSegment_ValidData()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] data = {
+        double[,] data =
+        {
             { 1.0, 2.0, 8.0, 9.0 }, // k: Sum K = 20
             { 10.0, 10.0, 10.0, 10.0 }, // n: Sum N = 40
         };
@@ -153,11 +209,12 @@ public class BinomialLikelihoodCostFunctionTests
         Assert.That(cost, Is.EqualTo(expectedCost).Within(Tolerance));
     }
 
-     [Test]
+    [Test]
     public void ComputeCost_SubsetSegment_ValidData()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] data = {
+        double[,] data =
+        {
             { 1.0, 2.0, 8.0, 9.0 }, // k
             { 10.0, 10.0, 10.0, 10.0 }, // n
         };
@@ -173,11 +230,12 @@ public class BinomialLikelihoodCostFunctionTests
         Assert.That(cost, Is.EqualTo(expectedCost).Within(Tolerance));
     }
 
-     [Test]
+    [Test]
     public void ComputeCost_SinglePointSegment()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] data = {
+        double[,] data =
+        {
             { 3.0 }, // k = 3
             { 10.0 }, // n = 10
         };
@@ -195,7 +253,8 @@ public class BinomialLikelihoodCostFunctionTests
     public void ComputeCost_Segment_AllSuccesses_ReturnsZero()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] data = {
+        double[,] data =
+        {
             { 10.0, 10.0, 5.0 }, // k
             { 10.0, 10.0, 5.0 }, // n
         };
@@ -212,7 +271,8 @@ public class BinomialLikelihoodCostFunctionTests
     public void ComputeCost_Segment_AllFailures_ReturnsZero()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] data = {
+        double[,] data =
+        {
             { 0.0, 0.0, 0.0 }, // k
             { 10.0, 15.0, 5.0 }, // n
         };
@@ -225,15 +285,38 @@ public class BinomialLikelihoodCostFunctionTests
         Assert.That(costPartial, Is.EqualTo(0.0).Within(Tolerance));
     }
 
-     [Test]
-     public void ComputeCost_ChangePointDetection()
-     {
+    [Test]
+    public void ComputeCost_ChangePointDetection()
+    {
         var costFunc = new BinomialLikelihoodCostFunction();
         // Segment 1: low success rate (p approx 0.1)
         // Segment 2: high success rate (p approx 0.9)
-        double[,] data = {
-            { 1.0, 1.0, 2.0, 1.0, 1.0,   /* Change -> */   9.0, 8.0, 9.0, 10.0, 9.0 }, // k
-            { 10.0, 10.0, 10.0, 10.0, 10.0, /*        */   10.0, 10.0, 10.0, 10.0, 10.0 }, // n
+        double[,] data =
+        {
+            {
+                1.0,
+                1.0,
+                2.0,
+                1.0,
+                1.0, /* Change -> */
+                9.0,
+                8.0,
+                9.0,
+                10.0,
+                9.0,
+            }, // k
+            {
+                10.0,
+                10.0,
+                10.0,
+                10.0,
+                10.0, /*        */
+                10.0,
+                10.0,
+                10.0,
+                10.0,
+                10.0,
+            }, // n
         };
         costFunc.Fit(data);
 
@@ -254,14 +337,22 @@ public class BinomialLikelihoodCostFunctionTests
 
         // Check if splitting is cheaper (Cost1 + Cost2 < CostTotal)
         // This is fundamental for change point detection algorithms like PELT
-        Assert.That(cost1 + cost2, Is.LessThan(costTotal), "Sum of costs for homogeneous segments should be less than the cost of the combined inhomogeneous segment.");
-     }
+        Assert.That(
+            cost1 + cost2,
+            Is.LessThan(costTotal),
+            "Sum of costs for homogeneous segments should be less than the cost of the combined inhomogeneous segment."
+        );
+    }
 
     [Test]
     public void ComputeCost_InvalidIndices_ThrowsArgumentOutOfRangeException()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] data = { { 1.0 }, { 10.0 } };
+        double[,] data =
+        {
+            { 1.0 },
+            { 10.0 },
+        };
         costFunc.Fit(data);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(-1, 1));
@@ -273,7 +364,11 @@ public class BinomialLikelihoodCostFunctionTests
     public void ComputeCost_InvalidSegmentLength_ThrowsSegmentLengthException()
     {
         var costFunc = new BinomialLikelihoodCostFunction();
-        double[,] data = { { 1.0, 2.0 }, { 10.0, 10.0 } };
+        double[,] data =
+        {
+            { 1.0, 2.0 },
+            { 10.0, 10.0 },
+        };
         costFunc.Fit(data);
 
         Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(0, 0)); // Length 0

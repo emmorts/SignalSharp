@@ -167,7 +167,11 @@ public class GaussianLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
     {
         UninitializedDataException.ThrowIfUninitialized(_prefixSum, "Fit() must be called before GetSegmentParameterCount().");
         var paramCount = _numDimensions * 2;
-        _logger.LogTrace("Parameter count for Gaussian is 2 per dimension (mean, variance), total {ParameterCount} for {NumDimensions} dimensions.", paramCount, _numDimensions);
+        _logger.LogTrace(
+            "Parameter count for Gaussian is 2 per dimension (mean, variance), total {ParameterCount} for {NumDimensions} dimensions.",
+            paramCount,
+            _numDimensions
+        );
         return paramCount;
     }
 
@@ -181,7 +185,8 @@ public class GaussianLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
         UninitializedDataException.ThrowIfUninitialized(_prefixSum, $"Fit() must be called before {callerName}().");
         UninitializedDataException.ThrowIfUninitialized(_prefixSumSq, $"Fit() must be called before {callerName}().");
 
-        if (_numDimensions == 0 || _numPoints == 0) return 0;
+        if (_numDimensions == 0 || _numPoints == 0)
+            return 0;
 
         var startIndex = start ?? 0;
         var endIndex = end ?? _numPoints;
@@ -193,7 +198,12 @@ public class GaussianLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
         var segmentLength = endIndex - startIndex;
         SegmentLengthException.ThrowIfInvalid(segmentLength, 1);
 
-        _logger.LogTrace("Calculating Gaussian likelihood metric for segment [{StartIndex}, {EndIndex}) (Length: {SegmentLength}).", startIndex, endIndex, segmentLength);
+        _logger.LogTrace(
+            "Calculating Gaussian likelihood metric for segment [{StartIndex}, {EndIndex}) (Length: {SegmentLength}).",
+            startIndex,
+            endIndex,
+            segmentLength
+        );
 
         double totalMetric = 0;
         var varianceEpsilon = NumericUtils.GetVarianceEpsilon<double>(); // Use specific epsilon for variance
@@ -216,8 +226,15 @@ public class GaussianLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
 
                 if (varianceMle < varianceEpsilon)
                 {
-                    _logger.LogTrace("Segment [{StartIndex}, {EndIndex}), Dim {Dimension}: Raw variance {RawVariance} is near zero. Clamped to {ClampedVariance} using VarianceEpsilon {VarianceEpsilon}.",
-                                     startIndex, endIndex, dim, varianceMle, clampedVarianceMle, varianceEpsilon);
+                    _logger.LogTrace(
+                        "Segment [{StartIndex}, {EndIndex}), Dim {Dimension}: Raw variance {RawVariance} is near zero. Clamped to {ClampedVariance} using VarianceEpsilon {VarianceEpsilon}.",
+                        startIndex,
+                        endIndex,
+                        dim,
+                        varianceMle,
+                        clampedVarianceMle,
+                        varianceEpsilon
+                    );
                 }
 
                 // Metric for this dimension is n * log(variance_mle)
@@ -227,26 +244,46 @@ public class GaussianLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
 
                 if (double.IsNaN(metricDim) || double.IsInfinity(metricDim))
                 {
-                    _logger.LogWarning("Metric calculation resulted in NaN or Infinity for dimension {Dimension} in segment [{StartIndex}, {EndIndex}). Clamped Variance: {ClampedVariance}. Returning PositiveInfinity.",
-                                       dim, startIndex, endIndex, clampedVarianceMle);
+                    _logger.LogWarning(
+                        "Metric calculation resulted in NaN or Infinity for dimension {Dimension} in segment [{StartIndex}, {EndIndex}). Clamped Variance: {ClampedVariance}. Returning PositiveInfinity.",
+                        dim,
+                        startIndex,
+                        endIndex,
+                        clampedVarianceMle
+                    );
                     return double.PositiveInfinity;
                 }
-                _logger.LogTrace("Segment [{StartIndex}, {EndIndex}), Dim {Dimension}: Sum={Sum}, SumSq={SumSq}, SumSqDev={SumSqDev}, VarMLE={VarMLE}, ClampedVarMLE={ClampedVar}, Metric={MetricValue}",
-                                 startIndex, endIndex, dim, segmentSum, segmentSumSq, sumSqDev, varianceMle, clampedVarianceMle, metricDim);
+                _logger.LogTrace(
+                    "Segment [{StartIndex}, {EndIndex}), Dim {Dimension}: Sum={Sum}, SumSq={SumSq}, SumSqDev={SumSqDev}, VarMLE={VarMLE}, ClampedVarMLE={ClampedVar}, Metric={MetricValue}",
+                    startIndex,
+                    endIndex,
+                    dim,
+                    segmentSum,
+                    segmentSumSq,
+                    sumSqDev,
+                    varianceMle,
+                    clampedVarianceMle,
+                    metricDim
+                );
 
                 totalMetric += metricDim;
             }
 
             if (double.IsNaN(totalMetric) || double.IsInfinity(totalMetric))
             {
-                _logger.LogWarning("Total Gaussian likelihood metric calculation resulted in NaN or Infinity for segment [{StartIndex}, {EndIndex}). Returning PositiveInfinity.", startIndex, endIndex);
+                _logger.LogWarning(
+                    "Total Gaussian likelihood metric calculation resulted in NaN or Infinity for segment [{StartIndex}, {EndIndex}). Returning PositiveInfinity.",
+                    startIndex,
+                    endIndex
+                );
                 return double.PositiveInfinity;
             }
 
             _logger.LogTrace("Total Gaussian likelihood metric for segment [{StartIndex}, {EndIndex}): {TotalMetric}", startIndex, endIndex, totalMetric);
             return totalMetric;
         }
-        catch (Exception ex) when (ex is not SegmentLengthException and not ArgumentOutOfRangeException and not UninitializedDataException and not CostFunctionException)
+        catch (Exception ex)
+            when (ex is not SegmentLengthException and not ArgumentOutOfRangeException and not UninitializedDataException and not CostFunctionException)
         {
             var message = $"Unexpected error during Gaussian likelihood calculation for segment [{startIndex}, {endIndex}). Reason: {ex.Message}";
             _logger.LogError(ex, message);

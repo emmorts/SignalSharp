@@ -16,7 +16,7 @@ public record CUSUMOptions
     /// The default is 0.
     /// </summary>
     public double ExpectedMean { get; init; } = 0;
-    
+
     /// <summary>
     /// The expected standard deviation (σ) of the process. This represents the expected variability in the data.
     /// The default is 1.

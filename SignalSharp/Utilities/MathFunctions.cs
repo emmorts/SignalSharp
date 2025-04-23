@@ -15,10 +15,10 @@ public static class MathFunctions
     public static BigInteger Factorial(BigInteger n)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(n, nameof(n));
-        
+
         return FactorialRecursive(n);
     }
-    
+
     /// <summary>
     /// Calculates the factorial of a non-negative integer.
     /// </summary>
@@ -27,49 +27,51 @@ public static class MathFunctions
     public static int Factorial(int n)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(n, nameof(n));
-        
+
         return FactorialRecursive(n);
     }
 
     private static BigInteger FactorialRecursive(BigInteger n)
     {
-        if (n == BigInteger.Zero || n == BigInteger.One) return BigInteger.One;
-        
+        if (n == BigInteger.Zero || n == BigInteger.One)
+            return BigInteger.One;
+
         var mid = n / 2;
-        
+
         return FactorialRecursive(mid) * FactorialRecursive(n - mid) * ProductRange(mid, n - mid);
     }
 
     private static int FactorialRecursive(int n)
     {
-        if (n is 0 or 1) return 1;
-        
+        if (n is 0 or 1)
+            return 1;
+
         var mid = n / 2;
-        
+
         return FactorialRecursive(mid) * FactorialRecursive(n - mid) * ProductRange(mid, n - mid);
     }
 
     private static BigInteger ProductRange(BigInteger a, BigInteger b)
     {
         BigInteger result = 1;
-        
+
         for (var i = a + 1; i <= a + b; i++)
         {
             result *= i;
         }
-        
+
         return result;
     }
 
     private static int ProductRange(int a, int b)
     {
         var result = 1;
-        
+
         for (var i = a + 1; i <= a + b; i++)
         {
             result *= i;
         }
-        
+
         return result;
     }
 }

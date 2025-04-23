@@ -26,13 +26,13 @@ namespace SignalSharp.Detection.PELT;
 /// at the cost of guaranteed optimality. For exact results, use `Jump = 1`.
 /// </para>
 /// </remarks>
-public class PELTAlgorithm : IPELTAlgorithm 
+public class PELTAlgorithm : IPELTAlgorithm
 {
     public PELTOptions Options { get; }
-    
+
     private double[,] _signal = null!;
     private int _signalLength;
-    
+
     private readonly ILogger _logger;
 
     /// <summary>
@@ -45,7 +45,7 @@ public class PELTAlgorithm : IPELTAlgorithm
         ArgumentNullException.ThrowIfNull(options, nameof(options));
         ArgumentNullException.ThrowIfNull(options.CostFunction, $"{nameof(options.CostFunction)} cannot be null.");
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.MinSize, nameof(options.MinSize));
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Jump, nameof(options.Jump)); 
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Jump, nameof(options.Jump));
 
         Options = options;
         _logger = LoggerProvider.CreateLogger<PELTAlgorithm>();
@@ -54,9 +54,8 @@ public class PELTAlgorithm : IPELTAlgorithm
     /// <summary>
     /// Initializes a new instance of the <see cref="PELTAlgorithm"/> class with default options (L2 Cost, MinSize=2, Jump=5).
     /// </summary>
-    public PELTAlgorithm() : this(new PELTOptions())
-    {
-    }
+    public PELTAlgorithm()
+        : this(new PELTOptions()) { }
 
     /// <summary>
     /// Fits the PELT algorithm to the provided one-dimensional time series data.
@@ -142,7 +141,11 @@ public class PELTAlgorithm : IPELTAlgorithm
         }
         if (_signalLength < Options.MinSize * 2)
         {
-            _logger.LogInformation("Signal length ({SignalLength}) is less than MinSize*2 ({MinSizeX2}). Cannot have any changepoints.", _signalLength, Options.MinSize*2);
+            _logger.LogInformation(
+                "Signal length ({SignalLength}) is less than MinSize*2 ({MinSizeX2}). Cannot have any changepoints.",
+                _signalLength,
+                Options.MinSize * 2
+            );
             return []; // not enough data for a changepoint
         }
 
@@ -207,7 +210,7 @@ public class PELTAlgorithm : IPELTAlgorithm
         }
 
         // R_t stores the set of admissible last changepoint candidates for endpoint t
-        var admissible = new HashSet<int> { 0 }; 
+        var admissible = new HashSet<int> { 0 };
 
         for (var currentEndPoint = Options.MinSize; currentEndPoint <= _signalLength; currentEndPoint++)
         {
@@ -227,7 +230,7 @@ public class PELTAlgorithm : IPELTAlgorithm
                     // approximate PELT is often to just check the points at the jump intervals
                     // that ARE admissible. Let's stick to that for now.
                     // if Jump = 1, this check ensures we only process admissible points efficiently.
-                    continue; 
+                    continue;
                 }
 
                 try
@@ -243,14 +246,20 @@ public class PELTAlgorithm : IPELTAlgorithm
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning("Error computing cost for segment ({prevCpCandidate}, {currentEndPoint}): {Message}", prevCpCandidate, currentEndPoint, ex.Message);
+                    _logger.LogWarning(
+                        "Error computing cost for segment ({prevCpCandidate}, {currentEndPoint}): {Message}",
+                        prevCpCandidate,
+                        currentEndPoint,
+                        ex.Message
+                    );
                     // todo: should we throw?
                     // throw new PELTAlgorithmException($"Error computing cost for segment ({prevCpCandidate}, {currentEndPoint}): {ex.Message}", ex);
                 }
 
                 // if Jump=1, need to check the next point. If Jump>1, we jump.
-                if (Options.Jump <= 1 || prevCpCandidate <= 0 || prevCpCandidate - Options.Jump >= 0) continue;
-                    
+                if (Options.Jump <= 1 || prevCpCandidate <= 0 || prevCpCandidate - Options.Jump >= 0)
+                    continue;
+
                 // ensure we check index 0 if it's admissible and reachable by the jump logic
                 if (admissible.Contains(0) && currentEndPoint - 0 >= Options.MinSize)
                 {
@@ -274,7 +283,6 @@ public class PELTAlgorithm : IPELTAlgorithm
                 F[currentEndPoint] = currentMinCost;
                 CP[currentEndPoint] = currentOptimalLastCp;
             }
-                
 
             // --- pruning step: update the admissible set for the next iteration ---
             var nextAdmissible = new HashSet<int>(); // Use HashSet here too
@@ -301,10 +309,14 @@ public class PELTAlgorithm : IPELTAlgorithm
                         // if F[s] was reachable.
                         if (!double.IsPositiveInfinity(F[s]))
                         {
-                            nextAdmissible.Add(s); 
+                            nextAdmissible.Add(s);
                         }
-                        
-                        _logger.LogWarning("Cost calculation failed during pruning check for segment ({s}, {currentEndPoint}). Keeping s in admissible set.", s, currentEndPoint);
+
+                        _logger.LogWarning(
+                            "Cost calculation failed during pruning check for segment ({s}, {currentEndPoint}). Keeping s in admissible set.",
+                            s,
+                            currentEndPoint
+                        );
                     }
                 }
                 else
@@ -329,7 +341,6 @@ public class PELTAlgorithm : IPELTAlgorithm
         return CP;
     }
 
-
     /// <summary>
     /// Extracts the breakpoints from the array of last changepoint indices.
     /// </summary>
@@ -348,7 +359,10 @@ public class PELTAlgorithm : IPELTAlgorithm
                 // if prevCp is -1, it means F[currentIndex] was +inf, path is broken.
                 if (prevCp == -1)
                 {
-                    _logger.LogWarning("Breakpoint reconstruction encountered an unreachable point at index {currentIndex}. Results may be incomplete.", currentIndex);
+                    _logger.LogWarning(
+                        "Breakpoint reconstruction encountered an unreachable point at index {currentIndex}. Results may be incomplete.",
+                        currentIndex
+                    );
                 }
                 break;
             }
@@ -359,8 +373,9 @@ public class PELTAlgorithm : IPELTAlgorithm
             currentIndex = prevCp;
 
             // safety break for potential infinite loops
-            if (breakpoints.Count <= _signalLength) continue;
-                
+            if (breakpoints.Count <= _signalLength)
+                continue;
+
             throw new PELTAlgorithmException("Breakpoint reconstruction failed due to potential loop.");
         }
 

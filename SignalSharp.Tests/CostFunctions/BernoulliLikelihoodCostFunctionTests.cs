@@ -16,21 +16,30 @@ public class BernoulliLikelihoodCostFunctionTests
         Assert.Throws<ArgumentNullException>(() => costFunc.Fit((double[,])null!));
     }
 
-     [Test]
-     public void Fit_NullSignalArray_ThrowsArgumentNullException()
-     {
-         var costFunc = new BernoulliLikelihoodCostFunction();
-         // CostFunctionBase handles null check for 1D Fit before converting
-         Assert.Throws<ArgumentNullException>(() => costFunc.Fit((double[])null!));
-     }
+    [Test]
+    public void Fit_NullSignalArray_ThrowsArgumentNullException()
+    {
+        var costFunc = new BernoulliLikelihoodCostFunction();
+        // CostFunctionBase handles null check for 1D Fit before converting
+        Assert.Throws<ArgumentNullException>(() => costFunc.Fit((double[])null!));
+    }
 
     [Test]
     public void Fit_InvalidValues_ThrowsArgumentException()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] invalidData1 = { { 0.0, 1.0, 0.5 } }; // Contains 0.5
-        double[,] invalidData2 = { { 0.0, -1.0, 1.0 } }; // Contains -1.0
-        double[,] invalidData3 = { { 0.0, 1.0, 2.0 } }; // Contains 2.0
+        double[,] invalidData1 =
+        {
+            { 0.0, 1.0, 0.5 },
+        }; // Contains 0.5
+        double[,] invalidData2 =
+        {
+            { 0.0, -1.0, 1.0 },
+        }; // Contains -1.0
+        double[,] invalidData3 =
+        {
+            { 0.0, 1.0, 2.0 },
+        }; // Contains 2.0
 
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidData1));
         Assert.Throws<ArgumentException>(() => costFunc.Fit(invalidData2));
@@ -41,7 +50,8 @@ public class BernoulliLikelihoodCostFunctionTests
     public void Fit_NearZeroOneValues_Success()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] nearZeroOneData = {
+        double[,] nearZeroOneData =
+        {
             { 0.0, 1.0, Tolerance / 2.0, 1.0 - Tolerance / 2.0, -Tolerance / 2.0 },
         };
         // Values within Epsilon tolerance of 0 or 1 should be accepted and clamped internally
@@ -49,11 +59,14 @@ public class BernoulliLikelihoodCostFunctionTests
         Assert.DoesNotThrow(() => costFunc.Fit(nearZeroOneData));
     }
 
-     [Test]
+    [Test]
     public void Fit_ExactlyZeroOneValues_Success()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] validData = { { 0.0, 1.0, 0.0, 1.0, 1.0 } };
+        double[,] validData =
+        {
+            { 0.0, 1.0, 0.0, 1.0, 1.0 },
+        };
         Assert.DoesNotThrow(() => costFunc.Fit(validData));
     }
 
@@ -68,7 +81,7 @@ public class BernoulliLikelihoodCostFunctionTests
         Assert.DoesNotThrow(() => costFunc.Fit(emptyDataMultiDim));
 
         costFunc.Fit(emptyData);
-        
+
         Assert.That(costFunc.ComputeCost(), Is.EqualTo(0.0));
     }
 
@@ -76,20 +89,21 @@ public class BernoulliLikelihoodCostFunctionTests
     public void Fit_MultidimensionalData_Success()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] validMultiData = {
+        double[,] validMultiData =
+        {
             { 0.0, 1.0, 0.0 },
             { 1.0, 1.0, 0.0 },
         };
         Assert.DoesNotThrow(() => costFunc.Fit(validMultiData));
     }
 
-     [Test]
-     public void Fit_OneDimensionalData_Success()
-     {
-         var costFunc = new BernoulliLikelihoodCostFunction();
-         double[] valid1DData = [0.0, 1.0, 0.0, 1.0, 1.0];
-         Assert.DoesNotThrow(() => costFunc.Fit(valid1DData));
-     }
+    [Test]
+    public void Fit_OneDimensionalData_Success()
+    {
+        var costFunc = new BernoulliLikelihoodCostFunction();
+        double[] valid1DData = [0.0, 1.0, 0.0, 1.0, 1.0];
+        Assert.DoesNotThrow(() => costFunc.Fit(valid1DData));
+    }
 
     [Test]
     public void ComputeCost_BeforeFit_ThrowsUninitializedDataException()
@@ -108,14 +122,17 @@ public class BernoulliLikelihoodCostFunctionTests
 
         var emptyDataMultiDim = new double[2, 0];
         costFunc.Fit(emptyDataMultiDim);
-         Assert.That(costFunc.ComputeCost(), Is.EqualTo(0.0));
+        Assert.That(costFunc.ComputeCost(), Is.EqualTo(0.0));
     }
 
     [Test]
     public void ComputeCost_FullSegment_AllZeros_ReturnsZero()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] data = { { 0.0, 0.0, 0.0, 0.0 } };
+        double[,] data =
+        {
+            { 0.0, 0.0, 0.0, 0.0 },
+        };
         costFunc.Fit(data);
         var cost = costFunc.ComputeCost(); // S=0, n=4
         Assert.That(cost, Is.EqualTo(0.0).Within(Tolerance));
@@ -125,7 +142,10 @@ public class BernoulliLikelihoodCostFunctionTests
     public void ComputeCost_FullSegment_AllOnes_ReturnsZero()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] data = { { 1.0, 1.0, 1.0 } };
+        double[,] data =
+        {
+            { 1.0, 1.0, 1.0 },
+        };
         costFunc.Fit(data);
         var cost = costFunc.ComputeCost(); // S=3, n=3
         Assert.That(cost, Is.EqualTo(0.0).Within(Tolerance));
@@ -135,7 +155,10 @@ public class BernoulliLikelihoodCostFunctionTests
     public void ComputeCost_FullSegment_Mixed_CalculatesCorrectCost()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] data = { { 0.0, 1.0, 0.0, 1.0 } }; // n=4, S=2
+        double[,] data =
+        {
+            { 0.0, 1.0, 0.0, 1.0 },
+        }; // n=4, S=2
         costFunc.Fit(data);
         var cost = costFunc.ComputeCost();
 
@@ -155,7 +178,10 @@ public class BernoulliLikelihoodCostFunctionTests
     public void ComputeCost_SubsetSegment_Mixed_CalculatesCorrectCost()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] data = { { 0.0, 1.0, 0.0, 1.0, 1.0 } };
+        double[,] data =
+        {
+            { 0.0, 1.0, 0.0, 1.0, 1.0 },
+        };
         costFunc.Fit(data);
         var cost = costFunc.ComputeCost(1, 4); // Segment [1, 4): {1, 0, 1} => n=3, S=2
 
@@ -172,7 +198,10 @@ public class BernoulliLikelihoodCostFunctionTests
     public void ComputeCost_SinglePointSegment_ReturnsZero()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] data = { { 0.0, 1.0, 0.0 } };
+        double[,] data =
+        {
+            { 0.0, 1.0, 0.0 },
+        };
         costFunc.Fit(data);
 
         // Single point segment [0, 1): {0} => n=1, S=0. Cost = 0
@@ -181,28 +210,32 @@ public class BernoulliLikelihoodCostFunctionTests
 
         // Single point segment [1, 2): {1} => n=1, S=1. Cost = 0
         var cost1 = costFunc.ComputeCost(1, 2);
-         Assert.That(cost1, Is.EqualTo(0.0).Within(Tolerance));
+        Assert.That(cost1, Is.EqualTo(0.0).Within(Tolerance));
     }
 
-     [Test]
-     public void ComputeCost_NearZeroOneValues_TreatedAsZeroOne()
-     {
-         var costFunc = new BernoulliLikelihoodCostFunction();
-         // These values should be clamped to 0, 1, 0, 1 internally by Fit
-         double[,] nearData = { { Tolerance / 2.0, 1.0 - Tolerance / 2.0, -Tolerance / 2.0, 0.9999999999 } };
-         costFunc.Fit(nearData); // Should result in effective data {0, 1, 0, 1}
+    [Test]
+    public void ComputeCost_NearZeroOneValues_TreatedAsZeroOne()
+    {
+        var costFunc = new BernoulliLikelihoodCostFunction();
+        // These values should be clamped to 0, 1, 0, 1 internally by Fit
+        double[,] nearData =
+        {
+            { Tolerance / 2.0, 1.0 - Tolerance / 2.0, -Tolerance / 2.0, 0.9999999999 },
+        };
+        costFunc.Fit(nearData); // Should result in effective data {0, 1, 0, 1}
 
-         // Cost should be the same as for {0, 1, 0, 1}: n=4, S=2 => 8*log(2)
-         var cost = costFunc.ComputeCost();
-         var expectedCost = 8.0 * Math.Log(2.0);
-         Assert.That(cost, Is.EqualTo(expectedCost).Within(Tolerance));
-     }
+        // Cost should be the same as for {0, 1, 0, 1}: n=4, S=2 => 8*log(2)
+        var cost = costFunc.ComputeCost();
+        var expectedCost = 8.0 * Math.Log(2.0);
+        Assert.That(cost, Is.EqualTo(expectedCost).Within(Tolerance));
+    }
 
     [Test]
     public void ComputeCost_Multidimensional_CalculatesCorrectCost()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] data = {
+        double[,] data =
+        {
             { 0.0, 1.0, 0.0 }, // Dim 0: n=3, S=1 => Cost = -2*[1*log(1)+2*log(2)-3*log(3)] = -4*log(2)+6*log(3)
             { 1.0, 1.0, 0.0 }, // Dim 1: n=3, S=2 => Cost = -2*[2*log(2)+1*log(1)-3*log(3)] = -4*log(2)+6*log(3)
         };
@@ -220,7 +253,21 @@ public class BernoulliLikelihoodCostFunctionTests
         var costFunc = new BernoulliLikelihoodCostFunction();
         // Segment 1: mostly 0s (p low)
         // Segment 2: mostly 1s (p high)
-        double[,] data = { { 0.0, 0.0, 1.0, 0.0, 0.0,   /* Change -> */   1.0, 1.0, 0.0, 1.0, 1.0 } };
+        double[,] data =
+        {
+            {
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0, /* Change -> */
+                1.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+            },
+        };
         costFunc.Fit(data);
 
         // Cost segment 1 [0, 5): n=5, S=1
@@ -247,14 +294,21 @@ public class BernoulliLikelihoodCostFunctionTests
         // 20*log(5) vs 52*log(2)
         // 20*1.609 vs 52*0.693
         // 32.18 vs 36.03 -> Splitting is cheaper, good.
-        Assert.That(cost1 + cost2, Is.LessThan(costTotal), "Sum of costs for homogeneous segments should be less than the cost of the combined inhomogeneous segment.");
+        Assert.That(
+            cost1 + cost2,
+            Is.LessThan(costTotal),
+            "Sum of costs for homogeneous segments should be less than the cost of the combined inhomogeneous segment."
+        );
     }
 
     [Test]
     public void ComputeCost_InvalidIndices_ThrowsArgumentOutOfRangeException()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] data = { { 0.0, 1.0 } };
+        double[,] data =
+        {
+            { 0.0, 1.0 },
+        };
         costFunc.Fit(data);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => costFunc.ComputeCost(-1, 1));
@@ -266,7 +320,10 @@ public class BernoulliLikelihoodCostFunctionTests
     public void ComputeCost_InvalidSegmentLength_ThrowsSegmentLengthException()
     {
         var costFunc = new BernoulliLikelihoodCostFunction();
-        double[,] data = { { 0.0, 1.0 } };
+        double[,] data =
+        {
+            { 0.0, 1.0 },
+        };
         costFunc.Fit(data);
 
         Assert.Throws<SegmentLengthException>(() => costFunc.ComputeCost(0, 0)); // Length 0

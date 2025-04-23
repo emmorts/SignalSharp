@@ -12,19 +12,18 @@ namespace SignalSharp.Smoothing.SavitzkyGolay;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The Savitzky-Golay filter smooths a signal by fitting successive sub-sets of adjacent data points 
-/// with a low-degree polynomial using the method of linear least squares. It is widely used in data 
-/// preprocessing for its ability to preserve features of the dataset such as relative maxima, minima, 
+/// The Savitzky-Golay filter smooths a signal by fitting successive sub-sets of adjacent data points
+/// with a low-degree polynomial using the method of linear least squares. It is widely used in data
+/// preprocessing for its ability to preserve features of the dataset such as relative maxima, minima,
 /// and width, which are usually flattened by other smoothing techniques.
 /// </para>
 /// <para>
-/// This implementation requires the specification of a window length and a polynomial order. 
+/// This implementation requires the specification of a window length and a polynomial order.
 /// The window length must be an odd number, and the polynomial order must be less than the window length.
 /// </para>
 /// </remarks>
 public static class SavitzkyGolayFilter
 {
-    
     /// <summary>
     /// Applies the Savitzky-Golay filter to the input signal.
     /// </summary>
@@ -46,23 +45,28 @@ public static class SavitzkyGolayFilter
     /// </example>
     /// <remarks>
     /// <para>
-    /// The method processes the input signal by applying the Savitzky-Golay filter. If the input signal 
-    /// length is insufficient to apply the filter (i.e., less than 2 * window length + 1), the original 
+    /// The method processes the input signal by applying the Savitzky-Golay filter. If the input signal
+    /// length is insufficient to apply the filter (i.e., less than 2 * window length + 1), the original
     /// signal is returned.
     /// </para>
     /// </remarks>
-    public static T[] Apply<T>(T[] inputSignal, int windowLength, int polynomialOrder, int derivativeOrder = 0,
-        Padding padding = Padding.None, double paddedValue = 0) where T : INumber<T>
+    public static T[] Apply<T>(
+        T[] inputSignal,
+        int windowLength,
+        int polynomialOrder,
+        int derivativeOrder = 0,
+        Padding padding = Padding.None,
+        double paddedValue = 0
+    )
+        where T : INumber<T>
     {
-        var doubleInputSignal = inputSignal
-            .Select(x => Convert.ToDouble(x))
-            .ToArray();
-        
+        var doubleInputSignal = inputSignal.Select(x => Convert.ToDouble(x)).ToArray();
+
         return Apply(doubleInputSignal, windowLength, polynomialOrder, derivativeOrder, padding, paddedValue)
             .Select(x => (T)Convert.ChangeType(x, typeof(T)))
             .ToArray();
     }
-    
+
     /// <summary>
     /// Applies the Savitzky-Golay filter to the input signal.
     /// </summary>
@@ -84,27 +88,33 @@ public static class SavitzkyGolayFilter
     /// </example>
     /// <remarks>
     /// <para>
-    /// The method processes the input signal by applying the Savitzky-Golay filter. If the input signal 
-    /// length is insufficient to apply the filter (i.e., less than 2 * window length + 1), the original 
+    /// The method processes the input signal by applying the Savitzky-Golay filter. If the input signal
+    /// length is insufficient to apply the filter (i.e., less than 2 * window length + 1), the original
     /// signal is returned.
     /// </para>
     /// </remarks>
-    public static double[] Apply(double[] inputSignal, int windowLength, int polynomialOrder, int derivativeOrder = 0,
-        Padding padding = Padding.None, double paddedValue = 0)
+    public static double[] Apply(
+        double[] inputSignal,
+        int windowLength,
+        int polynomialOrder,
+        int derivativeOrder = 0,
+        Padding padding = Padding.None,
+        double paddedValue = 0
+    )
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(polynomialOrder, windowLength, nameof(polynomialOrder));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(derivativeOrder, polynomialOrder, nameof(derivativeOrder));
-        
-        if (inputSignal.Length == 0) return [];
-        
+
+        if (inputSignal.Length == 0)
+            return [];
+
         // Input signal must be at least 2 * windowLength + 1 in order to apply Savitzky-Golay filter
-        if (inputSignal.Length < (windowLength << 1) + 1) return inputSignal;
+        if (inputSignal.Length < (windowLength << 1) + 1)
+            return inputSignal;
 
         var halfWindow = windowLength / 2;
 
-        var extendedSignal = padding is not Padding.None 
-            ? SignalPadding.ApplyPadding(inputSignal, windowLength, padding, paddedValue) 
-            : inputSignal;
+        var extendedSignal = padding is not Padding.None ? SignalPadding.ApplyPadding(inputSignal, windowLength, padding, paddedValue) : inputSignal;
         var coefficients = ComputeCoefficients(windowLength, polynomialOrder, derivativeOrder);
         var filteredSignal = ApplyConvolution(extendedSignal, coefficients, halfWindow);
 
@@ -150,14 +160,14 @@ public static class SavitzkyGolayFilter
     {
         var pos = halfWindow - 0.5;
         var x = new double[windowLength];
-        
+
         for (var i = 0; i < windowLength; i++)
         {
             x[i] = i - pos;
         }
-        
+
         Array.Reverse(x);
-        
+
         return x;
     }
 
@@ -204,10 +214,10 @@ public static class SavitzkyGolayFilter
     private static double[] SolveCoefficients(double[,] A, double[] y)
     {
         var coefficients = MatrixOperations.SolveLinearSystemQR(A, y);
-        
+
         return coefficients.Reverse().ToArray();
     }
-    
+
     /// <summary>
     /// Applies the convolution of the input signal with the computed coefficients.
     /// </summary>
@@ -218,23 +228,25 @@ public static class SavitzkyGolayFilter
     private static double[] ApplyConvolution(double[] inputSignal, double[] coefficients, int halfWindow)
     {
         var result = new double[inputSignal.Length];
-        
+
         for (var i = 0; i < inputSignal.Length; i++)
         {
             double sum = 0;
-            
+
             for (var j = 0; j < coefficients.Length; j++)
             {
                 var idx = i + j - halfWindow;
-                if (idx < 0) idx = 0;
-                if (idx >= inputSignal.Length) idx = inputSignal.Length - 1;
-                
+                if (idx < 0)
+                    idx = 0;
+                if (idx >= inputSignal.Length)
+                    idx = inputSignal.Length - 1;
+
                 sum += inputSignal[idx] * coefficients[j];
             }
-            
+
             result[i] = sum;
         }
-        
+
         return result;
     }
 
@@ -248,9 +260,17 @@ public static class SavitzkyGolayFilter
     private static void PolynomialFitEdges(double[] inputSignal, double[] outputSignal, int windowLength, int polyOrder)
     {
         var halfWindow = windowLength / 2;
-        
+
         PolynomialFit(inputSignal, outputSignal, 0, windowLength, 0, halfWindow, polyOrder);
-        PolynomialFit(inputSignal, outputSignal, inputSignal.Length - windowLength, inputSignal.Length, inputSignal.Length - halfWindow, inputSignal.Length, polyOrder);
+        PolynomialFit(
+            inputSignal,
+            outputSignal,
+            inputSignal.Length - windowLength,
+            inputSignal.Length,
+            inputSignal.Length - halfWindow,
+            inputSignal.Length,
+            polyOrder
+        );
     }
 
     /// <summary>
@@ -263,12 +283,19 @@ public static class SavitzkyGolayFilter
     /// <param name="interpStart">The starting index of the interpolation.</param>
     /// <param name="interpStop">The ending index of the interpolation.</param>
     /// <param name="polyOrder">The order of the polynomial.</param>
-    private static void PolynomialFit(double[] inputSignal, double[] outputSignal, int windowStart, 
-        int windowStop, int interpStart, int interpStop, int polyOrder)
+    private static void PolynomialFit(
+        double[] inputSignal,
+        double[] outputSignal,
+        int windowStart,
+        int windowStop,
+        int interpStart,
+        int interpStop,
+        int polyOrder
+    )
     {
         var xVals = new double[windowStop - windowStart];
         var yVals = new double[windowStop - windowStart];
-        
+
         for (var i = windowStart; i < windowStop; i++)
         {
             xVals[i - windowStart] = i - windowStart;
@@ -292,8 +319,9 @@ public static class SavitzkyGolayFilter
     /// <param name="derivativeOrder">The order of the derivative.</param>
     private static void RestoreMiddleSection(double[] inputSignal, double[] outputSignal, int halfWindow, int derivativeOrder)
     {
-        if (derivativeOrder != 0) return;
-        
+        if (derivativeOrder != 0)
+            return;
+
         for (var i = halfWindow; i < inputSignal.Length - halfWindow; i++)
         {
             outputSignal[i] = inputSignal[i];

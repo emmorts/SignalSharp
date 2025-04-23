@@ -22,10 +22,10 @@ public class ResamplingTests
     public void Downsample_ShouldReturnCorrectResult_WhenCalledWithValidInputs()
     {
         double[] signal = [1, 2, 3, 4, 5, 6];
-        
+
         var result = SignalSharp.Resampling.Resampling.Downsample(signal, 2);
         double[] expected = [1, 3, 5];
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -59,10 +59,10 @@ public class ResamplingTests
     public void SegmentMedian_ShouldReturnCorrectResult_WhenCalledWithValidInputs()
     {
         double[] signal = [1, 2, 3, 4, 5, 6];
-        
+
         var result = SignalSharp.Resampling.Resampling.SegmentMedian(signal, 2);
         double[] expected = [1.5, 3.5, 5.5];
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -70,10 +70,10 @@ public class ResamplingTests
     public void SegmentMedian_ShouldReturnCorrectResult_WhenCalledWithValidInputs_DisableQuickSelect()
     {
         double[] signal = [1, 2, 3, 4, 5, 6];
-        
+
         var result = SignalSharp.Resampling.Resampling.SegmentMedian(signal, 2, false);
         double[] expected = [1.5, 3.5, 5.5];
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -81,10 +81,10 @@ public class ResamplingTests
     public void SegmentMedian_ShouldHandleOddLengthFactor()
     {
         double[] signal = [1, 3, 2, 5, 4, 6, 7];
-        
+
         var result = SignalSharp.Resampling.Resampling.SegmentMedian(signal, 3);
         double[] expected = [2, 5, 7];
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -92,10 +92,10 @@ public class ResamplingTests
     public void SegmentMedian_ShouldHandleOddLengthFactor_DisableQuickSelect()
     {
         double[] signal = [1, 3, 2, 5, 4, 6, 7];
-        
+
         var result = SignalSharp.Resampling.Resampling.SegmentMedian(signal, 3, false);
         double[] expected = [2, 5, 7];
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -103,10 +103,10 @@ public class ResamplingTests
     public void SegmentMedian_ShouldHandleSingleElementSignal()
     {
         double[] signal = [1];
-        
+
         var result = SignalSharp.Resampling.Resampling.SegmentMedian(signal, 2);
         double[] expected = [1];
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -114,10 +114,10 @@ public class ResamplingTests
     public void SegmentMedian_ShouldHandleSingleElementSignal_DisableQuickSelect()
     {
         double[] signal = [1];
-        
+
         var result = SignalSharp.Resampling.Resampling.SegmentMedian(signal, 2, false);
         double[] expected = [1];
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -125,9 +125,9 @@ public class ResamplingTests
     public void SegmentMedian_ShouldHandleFactorLargerThanSignalLength()
     {
         double[] signal = [1, 2, 3];
-        
+
         var result = SignalSharp.Resampling.Resampling.SegmentMedian(signal, 5);
-        
+
         double[] expected = [2];
         Assert.That(expected, Is.EqualTo(result));
     }
@@ -136,13 +136,13 @@ public class ResamplingTests
     public void SegmentMedian_ShouldHandleFactorLargerThanSignalLength_DisableQuickSelect()
     {
         double[] signal = [1, 2, 3];
-        
+
         var result = SignalSharp.Resampling.Resampling.SegmentMedian(signal, 5, false);
-        
+
         double[] expected = [2];
         Assert.That(expected, Is.EqualTo(result));
     }
-    
+
     [Test]
     public void SegmentMean_ShouldThrowArgumentNullException_WhenSignalIsNull()
     {

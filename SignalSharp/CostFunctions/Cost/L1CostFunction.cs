@@ -8,15 +8,15 @@ namespace SignalSharp.CostFunctions.Cost;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The L1 norm, also known as the Manhattan distance or absolute deviation, is a measure of distance 
-/// between points in a multi-dimensional space. It is calculated as the sum of the absolute differences 
+/// The L1 norm, also known as the Manhattan distance or absolute deviation, is a measure of distance
+/// between points in a multi-dimensional space. It is calculated as the sum of the absolute differences
 /// between the coordinates of the points.
 /// </para>
 ///
 /// <para>
-/// In the context of the Piecewise Linear Trend Change (PELT) method, the L1 cost function is used to 
-/// compute the cost of segmenting a time series or sequential data into different segments where the 
-/// statistical properties change. The L1 norm is particularly robust to outliers, making it a good choice 
+/// In the context of the Piecewise Linear Trend Change (PELT) method, the L1 cost function is used to
+/// compute the cost of segmenting a time series or sequential data into different segments where the
+/// statistical properties change. The L1 norm is particularly robust to outliers, making it a good choice
 /// when the data contains anomalies or non-Gaussian noise.
 /// </para>
 ///
@@ -33,7 +33,7 @@ public class L1CostFunction : CostFunctionBase
 {
     private double[,] _data = null!;
     private double[,,] _medians = null!;
-    
+
     /// <summary>
     /// Fits the cost function to the provided data.
     /// </summary>
@@ -54,13 +54,13 @@ public class L1CostFunction : CostFunctionBase
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
         ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
-        
+
         _data = signalMatrix;
         _medians = PrecomputeMedians(signalMatrix);
 
         return this;
     }
-    
+
     /// <summary>
     /// Computes the cost for a segment of the data using the L1 norm.
     /// </summary>
@@ -71,7 +71,7 @@ public class L1CostFunction : CostFunctionBase
     /// <para>The cost function measures the sum of absolute deviations from the median of the segment,
     /// which is useful for detecting change points in time series analysis.</para>
     ///
-    /// <para>This method must be called after the <see cref="Fit(double[,])"/> method has been used to 
+    /// <para>This method must be called after the <see cref="Fit(double[,])"/> method has been used to
     /// initialize the data.</para>
     ///
     /// <example>
@@ -89,17 +89,18 @@ public class L1CostFunction : CostFunctionBase
     public override double ComputeCost(int? start = null, int? end = null)
     {
         UninitializedDataException.ThrowIfUninitialized(_data, "Fit() must be called before ComputeCost().");
-        
-        if (_data.Length == 0) return 0;
-        
+
+        if (_data.Length == 0)
+            return 0;
+
         var startIndex = start ?? 0;
         var endIndex = end ?? _data.GetLength(1);
         var segmentLength = endIndex - startIndex;
-        
+
         SegmentLengthException.ThrowIfInvalid(segmentLength);
         ArgumentOutOfRangeException.ThrowIfNegative(startIndex, nameof(start));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(endIndex, _data.GetLength(1), nameof(end));
-        
+
         double sum = 0;
         for (var dim = 0; dim < _data.GetLength(0); dim++)
         {
@@ -109,7 +110,7 @@ public class L1CostFunction : CostFunctionBase
                 sum += Math.Abs(_data[dim, i] - median);
             }
         }
-        
+
         return sum;
     }
 
@@ -139,7 +140,7 @@ public class L1CostFunction : CostFunctionBase
 
         return slice[length / 2];
     }
-    
+
     /// <summary>
     /// Precomputes the medians for all possible segments of the data array.
     /// </summary>

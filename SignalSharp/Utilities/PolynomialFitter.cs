@@ -88,12 +88,12 @@ public static class PolynomialFitter
     public static double EvaluatePolynomial(double[] coefficients, double x)
     {
         double result = 0;
-        
+
         for (var i = 0; i < coefficients.Length; i++)
         {
             result += coefficients[i] * Math.Pow(x, i);
         }
-        
+
         return result;
     }
 
@@ -120,7 +120,7 @@ public static class PolynomialFitter
             {
                 (A[maxRow, k], A[i, k]) = (A[i, k], A[maxRow, k]);
             }
-            
+
             (b[maxRow], b[i]) = (b[i], b[maxRow]);
 
             // Make all rows below this one 0 in current column

@@ -9,12 +9,12 @@ public class MovingAverageTests
     public void SimpleMovingAverage_ValidInput_ReturnsCorrectResult()
     {
         const int windowSize = 3;
-        
+
         double[] signal = [1, 2, 3, 4, 5];
         double[] expected = [2, 3, 4];
-        
+
         var result = MovingAverage.SimpleMovingAverage(signal, windowSize);
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -22,7 +22,7 @@ public class MovingAverageTests
     public void SimpleMovingAverage_NullSignal_ThrowsArgumentNullException()
     {
         const int windowSize = 3;
-        
+
         double[] signal = null!;
 
         Assert.Throws<ArgumentNullException>(() => MovingAverage.SimpleMovingAverage(signal, windowSize));
@@ -32,7 +32,7 @@ public class MovingAverageTests
     public void SimpleMovingAverage_WindowSizeLessThanOrEqualToZero_ThrowsArgumentOutOfRangeException()
     {
         const int windowSize = 0;
-        
+
         double[] signal = [1, 2, 3, 4, 5];
 
         Assert.Throws<ArgumentOutOfRangeException>(() => MovingAverage.SimpleMovingAverage(signal, windowSize));
@@ -51,12 +51,12 @@ public class MovingAverageTests
     public void ExponentialMovingAverage_ValidInput_ReturnsCorrectResult()
     {
         const double alpha = 0.5;
-        
+
         double[] signal = [1, 2, 3, 4, 5];
         double[] expected = [1, 1.5, 2.25, 3.125, 4.0625];
-        
+
         var result = MovingAverage.ExponentialMovingAverage(signal, alpha);
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 
@@ -64,7 +64,7 @@ public class MovingAverageTests
     public void ExponentialMovingAverage_NullSignal_ThrowsArgumentNullException()
     {
         const double alpha = 0.5;
-        
+
         double[] signal = null!;
 
         Assert.Throws<ArgumentNullException>(() => MovingAverage.ExponentialMovingAverage(signal, alpha));
@@ -88,9 +88,9 @@ public class MovingAverageTests
         double[] signal = [1, 2, 3, 4, 5];
         double[] weights = [0.1, 0.3, 0.6];
         double[] expected = [2.5, 3.5, 4.5];
-        
+
         var result = MovingAverage.WeightedMovingAverage(signal, weights);
-        
+
         Assert.That(expected, Is.EqualTo(result));
     }
 

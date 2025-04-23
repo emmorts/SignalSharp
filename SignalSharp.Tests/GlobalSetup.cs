@@ -8,13 +8,16 @@ namespace SignalSharp.Tests;
 public class GlobalSetup
 {
     [OneTimeSetUp]
-    public void GlobalTestSetup() {
+    public void GlobalTestSetup()
+    {
         GlobalLogger.Initialize();
     }
 }
 
-internal static class GlobalLogger {
-    static GlobalLogger() {
+internal static class GlobalLogger
+{
+    static GlobalLogger()
+    {
         var factory = LoggerFactory.Create(builder =>
         {
             builder
@@ -26,5 +29,5 @@ internal static class GlobalLogger {
         LoggerProvider.Configure(factory);
     }
 
-    public static void Initialize() {}
+    public static void Initialize() { }
 }

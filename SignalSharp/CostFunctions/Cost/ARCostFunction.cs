@@ -80,8 +80,7 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
         if (signal.Length < _order + 1)
         {
-            throw new ArgumentException(
-                $"Signal length must be at least order + 1 ({_order + 1}) for AR({_order}) model.", nameof(signal));
+            throw new ArgumentException($"Signal length must be at least order + 1 ({_order + 1}) for AR({_order}) model.", nameof(signal));
         }
         _logger.LogTrace("Fitting ARCostFunction to 1D signal of length {SignalLength}.", signal.Length);
         _signal = signal;
@@ -144,12 +143,10 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
 
         try
         {
-            return !FitARAndGetRSS(segmentData, _order, _includeIntercept, startIndex, endIndex, out var rss)
-                ? double.PositiveInfinity
-                : rss;
+            return !FitARAndGetRSS(segmentData, _order, _includeIntercept, startIndex, endIndex, out var rss) ? double.PositiveInfinity : rss;
         }
-        catch (Exception ex) when (ex is not SegmentLengthException and not ArgumentOutOfRangeException
-                                       and not UninitializedDataException and not CostFunctionException)
+        catch (Exception ex)
+            when (ex is not SegmentLengthException and not ArgumentOutOfRangeException and not UninitializedDataException and not CostFunctionException)
         {
             var message = $"Unexpected error during AR({_order}) model fitting for segment [{startIndex}, {endIndex}). Reason: {ex.Message}";
             _logger.LogError(ex, message);
@@ -170,8 +167,7 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
     /// <exception cref="CostFunctionException">Thrown if an unexpected error occurs during calculation.</exception>
     public double ComputeLikelihoodMetric(int start, int end)
     {
-        UninitializedDataException.ThrowIfUninitialized(_signal,
-            "Fit() must be called before ComputeLikelihoodMetric().");
+        UninitializedDataException.ThrowIfUninitialized(_signal, "Fit() must be called before ComputeLikelihoodMetric().");
 
         _logger.LogTrace("Computing AR likelihood metric for segment [{StartIndex}, {EndIndex}).", start, end);
         CheckSegmentValidity(start, end);
@@ -183,13 +179,22 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
         {
             if (!FitARAndGetRSS(segmentData, _order, _includeIntercept, start, end, out var rss))
             {
-                _logger.LogWarning("AR model fit failed for segment [{StartIndex}, {EndIndex}) during likelihood calculation. Returning +Infinity.", start, end);
+                _logger.LogWarning(
+                    "AR model fit failed for segment [{StartIndex}, {EndIndex}) during likelihood calculation. Returning +Infinity.",
+                    start,
+                    end
+                );
                 return double.PositiveInfinity;
             }
 
             if (numEquations <= 0)
             {
-                _logger.LogWarning("Number of effective equations ({NumEquations}) is non-positive for segment [{StartIndex}, {EndIndex}) in likelihood calculation. Returning +Infinity.", numEquations, start, end);
+                _logger.LogWarning(
+                    "Number of effective equations ({NumEquations}) is non-positive for segment [{StartIndex}, {EndIndex}) in likelihood calculation. Returning +Infinity.",
+                    numEquations,
+                    start,
+                    end
+                );
                 return double.PositiveInfinity;
             }
 
@@ -198,7 +203,12 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
             // use variance epsilon for check
             if (NumericUtils.IsEffectivelyZero(varianceMle, Constants.VarianceEpsilon))
             {
-                 _logger.LogWarning("Estimated variance ({VarianceMle}) is effectively zero for segment [{StartIndex}, {EndIndex}) in likelihood calculation. Returning +Infinity.", varianceMle, start, end);
+                _logger.LogWarning(
+                    "Estimated variance ({VarianceMle}) is effectively zero for segment [{StartIndex}, {EndIndex}) in likelihood calculation. Returning +Infinity.",
+                    varianceMle,
+                    start,
+                    end
+                );
                 return double.PositiveInfinity;
             }
 
@@ -208,15 +218,20 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
 
             if (double.IsNaN(metric) || double.IsInfinity(metric))
             {
-                _logger.LogWarning("Likelihood metric calculation resulted in NaN or Infinity for segment [{StartIndex}, {EndIndex}) (Variance: {VarianceMle}). Returning +Infinity.", start, end, varianceMle);
+                _logger.LogWarning(
+                    "Likelihood metric calculation resulted in NaN or Infinity for segment [{StartIndex}, {EndIndex}) (Variance: {VarianceMle}). Returning +Infinity.",
+                    start,
+                    end,
+                    varianceMle
+                );
                 return double.PositiveInfinity;
             }
 
             _logger.LogTrace("Computed AR likelihood metric for segment [{StartIndex}, {EndIndex}): {MetricValue}", start, end, metric);
             return metric;
         }
-        catch (Exception ex) when (ex is not SegmentLengthException and not ArgumentOutOfRangeException
-                                       and not UninitializedDataException and not CostFunctionException)
+        catch (Exception ex)
+            when (ex is not SegmentLengthException and not ArgumentOutOfRangeException and not UninitializedDataException and not CostFunctionException)
         {
             var message = $"Unexpected error during AR({_order}) likelihood calculation for segment [{start}, {end}). Reason: {ex.Message}";
             _logger.LogError(ex, message);
@@ -243,7 +258,6 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
     /// </summary>
     public bool SupportsInformationCriteria => true;
 
-
     /// <summary>
     /// Checks if the segment indices and length are valid for AR model fitting.
     /// </summary>
@@ -262,10 +276,12 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
         var minSolverLength = _includeIntercept ? (2 * _order + 1) : (2 * _order);
         var minRequiredLength = Math.Max(minFormationLength, minSolverLength);
 
-        SegmentLengthException.ThrowIfInvalid(segmentLength, minRequiredLength,
-            $"AR({_order}, Intercept={_includeIntercept}) model fitting requires at least {minRequiredLength} points in a segment, but got {segmentLength} for [{startIndex}, {endIndex}).");
+        SegmentLengthException.ThrowIfInvalid(
+            segmentLength,
+            minRequiredLength,
+            $"AR({_order}, Intercept={_includeIntercept}) model fitting requires at least {minRequiredLength} points in a segment, but got {segmentLength} for [{startIndex}, {endIndex})."
+        );
     }
-
 
     /// <summary>
     /// Fits an AR(p) model to the data segment using OLS and returns the Residual Sum of Squares (RSS).
@@ -277,8 +293,7 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
     /// <param name="endIndex">Original end index (for logging).</param>
     /// <param name="rss">Output: Residual Sum of Squares (RSS) if successful.</param>
     /// <returns>True if the model was fit successfully, false otherwise (e.g., singular matrix).</returns>
-    private bool FitARAndGetRSS(ReadOnlySpan<double> segmentData, int order, bool includeIntercept, int startIndex,
-        int endIndex, out double rss)
+    private bool FitARAndGetRSS(ReadOnlySpan<double> segmentData, int order, bool includeIntercept, int startIndex, int endIndex, out double rss)
     {
         rss = double.NaN;
         var n = segmentData.Length;
@@ -286,7 +301,12 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
         // this check should technically be covered by CheckSegmentValidity, but double-check here
         if (numEquations <= 0)
         {
-            _logger.LogError("Internal error: FitARAndGetRSS called with insufficient effective points ({NumEquations}) for segment [{StartIndex}, {EndIndex}).", numEquations, startIndex, endIndex);
+            _logger.LogError(
+                "Internal error: FitARAndGetRSS called with insufficient effective points ({NumEquations}) for segment [{StartIndex}, {EndIndex}).",
+                numEquations,
+                startIndex,
+                endIndex
+            );
             return false;
         }
 
@@ -318,7 +338,10 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
         {
             _logger.LogWarning(
                 "AR({Order}, Intercept=true) fitting cannot proceed for constant data segment [{StartIndex}, {EndIndex}] due to perfect collinearity. Returning infinite cost.",
-                order, startIndex, endIndex);
+                order,
+                startIndex,
+                endIndex
+            );
             rss = double.PositiveInfinity; // explicit assignment for clarity
             return false; // signal failure, cost function should handle this
         }
@@ -327,7 +350,11 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
         {
             _logger.LogWarning(
                 "AR({Order}, Intercept={IncludeIntercept}) solver failed for segment [{StartIndex}, {EndIndex}] likely due to singular matrix or collinearity. Returning failure.",
-                order, includeIntercept, startIndex, endIndex);
+                order,
+                includeIntercept,
+                startIndex,
+                endIndex
+            );
             return false; // solver failed
         }
 
@@ -345,12 +372,23 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
         {
             _logger.LogWarning(
                 "AR({Order}, Intercept={IncludeIntercept}) fitting resulted in NaN/Infinite RSS for segment [{StartIndex}, {EndIndex}]. Returning failure.",
-                order, includeIntercept, startIndex, endIndex);
+                order,
+                includeIntercept,
+                startIndex,
+                endIndex
+            );
             return false; // calculation resulted in invalid RSS
         }
 
         rss = currentRss;
-         _logger.LogTrace("Successfully fit AR({Order}, Intercept={IncludeIntercept}) for segment [{StartIndex}, {EndIndex}) with RSS={RssValue}.", order, includeIntercept, startIndex, endIndex, rss);
+        _logger.LogTrace(
+            "Successfully fit AR({Order}, Intercept={IncludeIntercept}) for segment [{StartIndex}, {EndIndex}) with RSS={RssValue}.",
+            order,
+            includeIntercept,
+            startIndex,
+            endIndex,
+            rss
+        );
         return true;
     }
 
@@ -359,7 +397,8 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
     /// </summary>
     private static bool IsSegmentConstant(ReadOnlySpan<double> segmentData)
     {
-        if (segmentData.Length <= 1) return true;
+        if (segmentData.Length <= 1)
+            return true;
 
         var firstVal = segmentData[0];
         for (var i = 1; i < segmentData.Length; i++)

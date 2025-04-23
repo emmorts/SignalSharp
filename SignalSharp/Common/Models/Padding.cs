@@ -6,7 +6,7 @@ namespace SignalSharp.Common.Models;
 public enum Padding
 {
     /// <summary>
-    /// The signal is not padded. 
+    /// The signal is not padded.
     /// No additional values are added to the signal at the boundaries.
     /// </summary>
     None,
@@ -35,5 +35,5 @@ public enum Padding
     /// The end of the signal wraps around to the start, making the signal repeat itself.
     /// This is useful for signals that are inherently periodic, ensuring continuity.
     /// </summary>
-    Periodic
+    Periodic,
 }

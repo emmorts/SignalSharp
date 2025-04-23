@@ -10,16 +10,18 @@ public class MatrixOperationsTests
     [Test]
     public void Transpose_SquareMatrix_ReturnsTransposedMatrix()
     {
-        double[,] matrix = {
+        double[,] matrix =
+        {
             { 1, 2, 3 },
             { 4, 5, 6 },
-            { 7, 8, 9 }
+            { 7, 8, 9 },
         };
 
-        double[,] expected = {
+        double[,] expected =
+        {
             { 1, 4, 7 },
             { 2, 5, 8 },
-            { 3, 6, 9 }
+            { 3, 6, 9 },
         };
 
         var result = MatrixOperations.Transpose(matrix);
@@ -30,33 +32,37 @@ public class MatrixOperationsTests
     [Test]
     public void Transpose_RectangularMatrix_ReturnsTransposedMatrix()
     {
-        double[,] matrix = {
+        double[,] matrix =
+        {
             { 1, 2, 3 },
-            { 4, 5, 6 }
+            { 4, 5, 6 },
         };
 
-        double[,] expected = {
+        double[,] expected =
+        {
             { 1, 4 },
             { 2, 5 },
-            { 3, 6 }
+            { 3, 6 },
         };
 
         var result = MatrixOperations.Transpose(matrix);
 
         Assert.That(expected, Is.EqualTo(result));
     }
-    
+
     [Test]
     public void Inverse_ValidSquareMatrix_ReturnsInverseMatrix()
     {
-        double[,] matrix = {
+        double[,] matrix =
+        {
             { 4, 7 },
-            { 2, 6 }
+            { 2, 6 },
         };
 
-        double[,] expected = {
+        double[,] expected =
+        {
             { 0.6, -0.7 },
-            { -0.2, 0.4 }
+            { -0.2, 0.4 },
         };
 
         var result = MatrixOperations.Inverse(matrix);
@@ -67,16 +73,18 @@ public class MatrixOperationsTests
     [Test]
     public void Inverse_IdentityMatrix_ReturnsIdentityMatrix()
     {
-        double[,] matrix = {
+        double[,] matrix =
+        {
             { 1, 0, 0 },
             { 0, 1, 0 },
-            { 0, 0, 1 }
+            { 0, 0, 1 },
         };
 
-        double[,] expected = {
+        double[,] expected =
+        {
             { 1, 0, 0 },
             { 0, 1, 0 },
-            { 0, 0, 1 }
+            { 0, 0, 1 },
         };
 
         var result = MatrixOperations.Inverse(matrix);
@@ -87,10 +95,11 @@ public class MatrixOperationsTests
     [Test]
     public void Inverse_SingularMatrix_ThrowsArgumentException()
     {
-        double[,] matrix = {
+        double[,] matrix =
+        {
             { 1, 2, 3 },
             { 4, 5, 6 },
-            { 7, 8, 9 }
+            { 7, 8, 9 },
         };
 
         Assert.Throws<ArgumentException>(() => MatrixOperations.Inverse(matrix));
@@ -99,9 +108,10 @@ public class MatrixOperationsTests
     [Test]
     public void Inverse_NonSquareMatrix_ThrowsArgumentException()
     {
-        double[,] matrix = {
+        double[,] matrix =
+        {
             { 1, 2, 3 },
-            { 4, 5, 6 }
+            { 4, 5, 6 },
         };
 
         Assert.Throws<ArgumentException>(() => MatrixOperations.Inverse(matrix));
@@ -110,19 +120,22 @@ public class MatrixOperationsTests
     [Test]
     public void Multiply_TwoMatrices_ReturnsProductMatrix()
     {
-        double[,] A = {
+        double[,] A =
+        {
             { 1, 2 },
-            { 3, 4 }
+            { 3, 4 },
         };
 
-        double[,] B = {
+        double[,] B =
+        {
             { 2, 0 },
-            { 1, 2 }
+            { 1, 2 },
         };
 
-        double[,] expected = {
+        double[,] expected =
+        {
             { 4, 4 },
-            { 10, 8 }
+            { 10, 8 },
         };
 
         var result = MatrixOperations.Multiply(A, B);
@@ -133,9 +146,10 @@ public class MatrixOperationsTests
     [Test]
     public void Multiply_MatrixAndVector_ReturnsProductVector()
     {
-        double[,] A = {
+        double[,] A =
+        {
             { 1, 2, 3 },
-            { 4, 5, 6 }
+            { 4, 5, 6 },
         };
 
         var B = new double[] { 7, 8, 9 };
@@ -150,33 +164,36 @@ public class MatrixOperationsTests
     [Test]
     public void Multiply_IncompatibleMatrices_ThrowsException()
     {
-        double[,] A = {
+        double[,] A =
+        {
             { 1, 2, 3 },
-            { 4, 5, 6 }
+            { 4, 5, 6 },
         };
 
-        double[,] B = {
+        double[,] B =
+        {
             { 7, 8 },
-            { 9, 10 }
+            { 9, 10 },
         };
 
         Assert.Throws<ArgumentException>(() => MatrixOperations.Multiply(A, B));
     }
-    
+
     [Test]
     public void SolveCoefficients_ValidInput_ReturnsCorrectCoefficients()
     {
-        double[,] A = {
+        double[,] A =
+        {
             { 1, 2 },
             { 3, 4 },
-            { 5, 6 }
+            { 5, 6 },
         };
 
         double[] y = [7, 8, 9];
         double[] expected = [-6, 6.5];
-        
+
         var result = MatrixOperations.SolveLinearSystemQR(A, y);
-        
+
         Assert.That(expected, Is.EqualTo(result).Within(1e-10));
     }
 }

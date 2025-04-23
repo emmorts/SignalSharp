@@ -13,7 +13,7 @@ namespace SignalSharp.Utilities;
 public static class MatrixOperations
 {
     private const double SingularityTolerance = 1e-12;
-    
+
     /// <summary>
     /// Transposes the given matrix.
     /// <para>
@@ -45,7 +45,7 @@ public static class MatrixOperations
 
         return transposed;
     }
-    
+
     /// <summary>
     /// Inverts the given matrix.
     /// <para>
@@ -78,7 +78,7 @@ public static class MatrixOperations
 
         return ExtractInverseMatrix(augmented, n);
     }
-    
+
     /// <summary>
     /// Multiplies two matrices and returns the result.
     /// <para>
@@ -207,7 +207,7 @@ public static class MatrixOperations
 
         return result;
     }
-    
+
     /// <summary>
     /// Solves a system of linear equations Ax = b using QR factorization with SIMD optimization.
     /// </summary>
@@ -287,9 +287,9 @@ public static class MatrixOperations
             solution = null;
             return false;
         }
-        
+
         solution = result;
-        
+
         return true;
     }
 
@@ -326,7 +326,6 @@ public static class MatrixOperations
         return Math.Sqrt(sumOfSquares);
     }
 
-
     /// <summary>
     /// Normalizes a specified column in matrix A and stores the result in matrix Q.
     /// </summary>
@@ -353,11 +352,10 @@ public static class MatrixOperations
     /// <param name="rowCount">The number of rows in the matrices.</param>
     /// <param name="vectorLength">The length of the SIMD vector.</param>
     /// <returns>The dot product of the specified columns.</returns>
-    private static double CalculateDotProduct(double[,] Q, double[,] A, int qColumn, int aColumn, int rowCount, 
-        int vectorLength)
+    private static double CalculateDotProduct(double[,] Q, double[,] A, int qColumn, int aColumn, int rowCount, int vectorLength)
     {
         double dotProductSum = 0;
-        
+
         var columnQValues = new double[rowCount];
         var columnAValues = new double[rowCount];
 
@@ -382,7 +380,7 @@ public static class MatrixOperations
 
         return dotProductSum;
     }
-    
+
     /// <summary>
     /// Updates a specified column in matrix A using the values from matrix Q and the calculated dot product.
     /// </summary>
@@ -413,11 +411,11 @@ public static class MatrixOperations
     {
         var qTransposeY = new double[columnCount];
         var columnQValues = new double[rowCount];
-    
+
         for (var colIndex = 0; colIndex < columnCount; colIndex++)
         {
             double dotProductSum = 0;
-        
+
             for (var rowIndex = 0; rowIndex < rowCount; rowIndex++)
             {
                 columnQValues[rowIndex] = Q[rowIndex, colIndex];
@@ -452,11 +450,11 @@ public static class MatrixOperations
     private static double[] BackSubstitution(double[,] R, double[] QTy, int dimension)
     {
         var solution = new double[dimension];
-        
+
         for (var rowIndex = dimension - 1; rowIndex >= 0; rowIndex--)
         {
             solution[rowIndex] = QTy[rowIndex];
-            
+
             for (var columnIndex = rowIndex + 1; columnIndex < dimension; columnIndex++)
             {
                 solution[rowIndex] -= R[rowIndex, columnIndex] * solution[columnIndex];
@@ -467,20 +465,20 @@ public static class MatrixOperations
 
         return solution;
     }
-    
+
     private static bool TryBackSubstitution(double[,] R, double[] QTy, int dimension, out double[] solution)
     {
         solution = new double[dimension];
-        
+
         for (var rowIndex = dimension - 1; rowIndex >= 0; rowIndex--)
         {
             if (Math.Abs(R[rowIndex, rowIndex]) < SingularityTolerance)
             {
                 return false;
             }
-            
+
             solution[rowIndex] = QTy[rowIndex];
-            
+
             for (var columnIndex = rowIndex + 1; columnIndex < dimension; columnIndex++)
             {
                 solution[rowIndex] -= R[rowIndex, columnIndex] * solution[columnIndex];
@@ -501,17 +499,17 @@ public static class MatrixOperations
     private static double[,] CreateAugmentedMatrix(double[,] matrix, int dimension)
     {
         var augmented = new double[dimension, 2 * dimension];
-        
+
         for (var i = 0; i < dimension; i++)
         {
             for (var j = 0; j < dimension; j++)
             {
                 augmented[i, j] = matrix[i, j];
             }
-            
+
             augmented[i, dimension + i] = 1;
         }
-        
+
         return augmented;
     }
 
@@ -564,7 +562,8 @@ public static class MatrixOperations
     {
         for (var k = 0; k < dimension; k++)
         {
-            if (k == currentRow) continue;
+            if (k == currentRow)
+                continue;
 
             var factor = augmented[k, currentRow];
             for (var j = 0; j < 2 * dimension; j++)
@@ -583,13 +582,13 @@ public static class MatrixOperations
     private static double[,] ExtractInverseMatrix(double[,] augmented, int dimension)
     {
         var inverse = new double[dimension, dimension];
-        
+
         for (var i = 0; i < dimension; i++)
         {
             for (var j = 0; j < dimension; j++)
             {
                 inverse[i, j] = augmented[i, j + dimension];
-            }            
+            }
         }
 
         return inverse;

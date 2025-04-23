@@ -42,7 +42,8 @@ public static class SignalPadding
     /// </example>
     public static double[] ApplyPadding(double[] signal, int windowSize, Padding padding, double paddedValue)
     {
-        if (padding == Padding.None) return signal;
+        if (padding == Padding.None)
+            return signal;
 
         var halfWindow = windowSize / 2;
         var extendedLength = signal.Length + 2 * halfWindow;
@@ -89,9 +90,9 @@ public static class SignalPadding
     {
         var halfWindow = windowSize / 2;
         var trimmedSignal = new double[originalLength];
-        
+
         Array.Copy(extendedSignal, halfWindow, trimmedSignal, 0, originalLength);
-        
+
         return trimmedSignal;
     }
 
