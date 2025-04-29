@@ -37,7 +37,7 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
-      - run: dotnet pack --configuration Release --output ${{ env.NuGetDirectory }}
+      - run: dotnet pack SignalSharp/SignalSharp.csproj --configuration Release  --output ${{ env.NuGetDirectory }}
 
       - uses: actions/upload-artifact@v4
         with:
