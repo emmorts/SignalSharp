@@ -55,11 +55,14 @@ public class GridSearchOptimizerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Success, Is.False);
-        Assert.That(result.Message, Is.EqualTo("No parameters to optimize."));
-        Assert.That(double.IsNaN(result.MinimizedMetric), Is.True);
-        Assert.That(result.BestParameters, Is.Empty);
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(0));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("No parameters to optimize."));
+            Assert.That(double.IsNaN(result.MinimizedMetric), Is.True);
+            Assert.That(result.BestParameters, Is.Empty);
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(0));
+        }
     }
 
     [Test]
@@ -76,10 +79,13 @@ public class GridSearchOptimizerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.MinimizedMetric, Is.EqualTo(0.0).Within(Tolerance));
-        Assert.That(result.BestParameters["x"], Is.EqualTo(2.0).Within(ParamTolerance));
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(11));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.MinimizedMetric, Is.Zero.Within(Tolerance));
+            Assert.That(result.BestParameters["x"], Is.EqualTo(2.0).Within(ParamTolerance));
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(11));
+        }
     }
 
     [Test]
@@ -96,11 +102,14 @@ public class GridSearchOptimizerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.MinimizedMetric, Is.EqualTo(0.0).Within(Tolerance));
-        Assert.That(result.BestParameters["x"], Is.EqualTo(2.0).Within(ParamTolerance));
-        Assert.That(result.BestParameters["y"], Is.EqualTo(3.0).Within(ParamTolerance));
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(36));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.MinimizedMetric, Is.Zero.Within(Tolerance));
+            Assert.That(result.BestParameters["x"], Is.EqualTo(2.0).Within(ParamTolerance));
+            Assert.That(result.BestParameters["y"], Is.EqualTo(3.0).Within(ParamTolerance));
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(36));
+        }
     }
 
     [Test]
@@ -133,11 +142,14 @@ public class GridSearchOptimizerTests
 
         var result = await optimizer.OptimizeAsync(_testInputData, parameters, ObjectiveFunctions.ThrowingFunction, CancellationToken.None);
 
-        Assert.That(result.Success, Is.False);
-        Assert.That(double.IsPositiveInfinity(result.MinimizedMetric), Is.True);
-        Assert.That(result.BestParameters, Is.Empty);
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(3));
-        Assert.That(result.Message, Does.Contain("Grid search optimization failed to find any valid parameters"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(double.IsPositiveInfinity(result.MinimizedMetric), Is.True);
+            Assert.That(result.BestParameters, Is.Empty);
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(3));
+            Assert.That(result.Message, Does.Contain("Grid search optimization failed to find any valid parameters"));
+        }
     }
 
     #endregion
@@ -162,11 +174,14 @@ public class GridSearchOptimizerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.MinimizedMetric, Is.EqualTo(0.25).Within(Tolerance));
-        Assert.That(result.BestParameters["x"], Is.EqualTo(2.5).Within(ParamTolerance));
-        Assert.That(result.BestParameters["y"], Is.EqualTo(3.0).Within(ParamTolerance));
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(18));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.MinimizedMetric, Is.EqualTo(0.25).Within(Tolerance));
+            Assert.That(result.BestParameters["x"], Is.EqualTo(2.5).Within(ParamTolerance));
+            Assert.That(result.BestParameters["y"], Is.EqualTo(3.0).Within(ParamTolerance));
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(18));
+        }
     }
 
     [Test]
@@ -183,10 +198,13 @@ public class GridSearchOptimizerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(10));
-        Assert.That(result.BestParameters.ContainsKey("x"), Is.True);
-        Assert.That(result.BestParameters.ContainsKey("y"), Is.True);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(10));
+            Assert.That(result.BestParameters.ContainsKey("x"), Is.True);
+            Assert.That(result.BestParameters.ContainsKey("y"), Is.True);
+        }
     }
 
     [Test]
@@ -208,12 +226,15 @@ public class GridSearchOptimizerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.MinimizedMetric, Is.EqualTo(0.0).Within(Tolerance));
-        Assert.That(result.BestParameters["x"], Is.EqualTo(2.0).Within(ParamTolerance));
-        Assert.That(result.BestParameters["y"], Is.EqualTo(2.0).Within(ParamTolerance));
-        Assert.That(result.FunctionEvaluations, Is.LessThan(36));
-        Assert.That(result.Message, Does.Contain("Grid search completed early due to reaching threshold."));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.MinimizedMetric, Is.Zero.Within(Tolerance));
+            Assert.That(result.BestParameters["x"], Is.EqualTo(2.0).Within(ParamTolerance));
+            Assert.That(result.BestParameters["y"], Is.EqualTo(2.0).Within(ParamTolerance));
+            Assert.That(result.FunctionEvaluations, Is.LessThan(36));
+            Assert.That(result.Message, Does.Contain("Grid search completed early due to reaching threshold."));
+        }
     }
 
     #endregion
@@ -240,9 +261,12 @@ public class GridSearchOptimizerTests
         var logOptimizer = new GridSearchOptimizer<TestInput, double>(logOptions, _logger);
         var logResult = await logOptimizer.OptimizeAsync(_testInputData, parameters, objectiveFunc, CancellationToken.None);
 
-        // Log scaling should get closer to the 0.01 target
-        Assert.That(logResult.MinimizedMetric, Is.LessThan(linearResult.MinimizedMetric));
-        Assert.That(Math.Abs(logResult.BestParameters["x"] - 0.01), Is.LessThan(Math.Abs(linearResult.BestParameters["x"] - 0.01)));
+        using (Assert.EnterMultipleScope())
+        {
+            // Log scaling should get closer to the 0.01 target
+            Assert.That(logResult.MinimizedMetric, Is.LessThan(linearResult.MinimizedMetric));
+            Assert.That(Math.Abs(logResult.BestParameters["x"] - 0.01), Is.LessThan(Math.Abs(linearResult.BestParameters["x"] - 0.01)));
+        }
     }
 
     [Test]
@@ -259,8 +283,11 @@ public class GridSearchOptimizerTests
 
         var result = await optimizer.OptimizeAsync(_testInputData, parameters, objectiveFunc, CancellationToken.None);
 
-        Assert.That(result.BestParameters["x"], Is.EqualTo(0.0).Within(ParamTolerance));
-        Assert.That(result.MinimizedMetric, Is.EqualTo(0.0001).Within(Tolerance));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.BestParameters["x"], Is.Zero.Within(ParamTolerance));
+            Assert.That(result.MinimizedMetric, Is.EqualTo(0.0001).Within(Tolerance));
+        }
     }
 
     #endregion
@@ -288,12 +315,15 @@ public class GridSearchOptimizerTests
 
         var result = await optimizer.OptimizeAsync(_testInputData, parameters, objectiveFunc, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.MinimizedMetric, Is.EqualTo(0.0).Within(Tolerance));
-        Assert.That(result.BestParameters["x"], Is.EqualTo(targetX).Within(ParamTolerance));
-        Assert.That(result.BestParameters["y"], Is.EqualTo(targetY).Within(ParamTolerance));
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(36 + 25));
-        Assert.That(result.Message, Does.Contain("Grid search with adaptive refinement completed successfully."));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.MinimizedMetric, Is.EqualTo(0.0).Within(Tolerance));
+            Assert.That(result.BestParameters["x"], Is.EqualTo(targetX).Within(ParamTolerance));
+            Assert.That(result.BestParameters["y"], Is.EqualTo(targetY).Within(ParamTolerance));
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(36 + 25));
+            Assert.That(result.Message, Does.Contain("Grid search with adaptive refinement completed successfully."));
+        }
     }
 
     [Test]
@@ -317,13 +347,16 @@ public class GridSearchOptimizerTests
 
         var result = await optimizer.OptimizeAsync(_testInputData, parameters, objectiveFunc, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.MinimizedMetric, Is.EqualTo(0.0).Within(Tolerance));
-        Assert.That(result.BestParameters["x"], Is.EqualTo(targetX).Within(ParamTolerance));
-        Assert.That(result.BestParameters["y"], Is.EqualTo(targetY).Within(ParamTolerance));
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(21 * 21 + 5 * 5));
-        Assert.That(result.Message, Does.Contain("Grid search completed successfully."));
-        Assert.That(result.Message, Does.Not.Contain("adaptive refinement completed successfully"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.MinimizedMetric, Is.EqualTo(0.0).Within(Tolerance));
+            Assert.That(result.BestParameters["x"], Is.EqualTo(targetX).Within(ParamTolerance));
+            Assert.That(result.BestParameters["y"], Is.EqualTo(targetY).Within(ParamTolerance));
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(21 * 21 + 5 * 5));
+            Assert.That(result.Message, Does.Contain("Grid search completed successfully."));
+            Assert.That(result.Message, Does.Not.Contain("adaptive refinement completed successfully"));
+        }
     }
 
     [Test]
@@ -347,12 +380,15 @@ public class GridSearchOptimizerTests
 
         var result = await optimizer.OptimizeAsync(_testInputData, parameters, objectiveFunc, CancellationToken.None);
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.MinimizedMetric, Is.EqualTo(0.125).Within(Tolerance));
-        Assert.That(result.BestParameters["x"], Is.EqualTo(2.0).Within(ParamTolerance));
-        Assert.That(result.BestParameters["y"], Is.EqualTo(3.0).Within(ParamTolerance));
-        Assert.That(result.FunctionEvaluations, Is.EqualTo(36));
-        Assert.That(result.Message, Does.Not.Contain("adaptive refinement"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.MinimizedMetric, Is.EqualTo(0.125).Within(Tolerance));
+            Assert.That(result.BestParameters["x"], Is.EqualTo(2.0).Within(ParamTolerance));
+            Assert.That(result.BestParameters["y"], Is.EqualTo(3.0).Within(ParamTolerance));
+            Assert.That(result.FunctionEvaluations, Is.EqualTo(36));
+            Assert.That(result.Message, Does.Not.Contain("adaptive refinement"));
+        }
     }
 
     #endregion
@@ -373,10 +409,13 @@ public class GridSearchOptimizerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.BestParameters["x"], Is.EqualTo(0.0).Within(ParamTolerance));
-        Assert.That(result.Message, Does.Contain("Warning: The following parameters are at or near their bounds"));
-        Assert.That(result.Message, Does.Contain("x (at lower bound, distance: 0.00%)"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.BestParameters["x"], Is.Zero.Within(ParamTolerance));
+            Assert.That(result.Message, Does.Contain("Warning: The following parameters are at or near their bounds"));
+            Assert.That(result.Message, Does.Contain("x (at lower bound, distance: 0.00"));
+        }
     }
 
     [Test]
@@ -394,10 +433,13 @@ public class GridSearchOptimizerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.BestParameters["x"], Is.EqualTo(targetX).Within(ParamTolerance));
-        Assert.That(result.Message, Does.Contain("Warning: The following parameters are at or near their bounds"));
-        Assert.That(result.Message, Does.Contain("x (at lower bound"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.BestParameters["x"], Is.EqualTo(targetX).Within(ParamTolerance));
+            Assert.That(result.Message, Does.Contain("Warning: The following parameters are at or near their bounds"));
+            Assert.That(result.Message, Does.Contain("x (at lower bound"));
+        }
     }
 
     #endregion
@@ -430,11 +472,14 @@ public class GridSearchOptimizerTests
         OptimizationResult<double> result = default;
         Assert.DoesNotThrowAsync(async () => result = await optimizer.OptimizeAsync(_testInputData, parameters, objectiveFuncWithCancel, cts.Token));
 
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.Success, Is.True);
-        Assert.That(result.MinimizedMetric, Is.Not.EqualTo(double.PositiveInfinity));
-        Assert.That(result.FunctionEvaluations, Is.GreaterThan(0));
-        Assert.That(result.FunctionEvaluations, Is.LessThan(options.DefaultGridSteps * options.DefaultGridSteps));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.MinimizedMetric, Is.Not.EqualTo(double.PositiveInfinity));
+            Assert.That(result.FunctionEvaluations, Is.GreaterThan(0));
+            Assert.That(result.FunctionEvaluations, Is.LessThan(options.DefaultGridSteps * options.DefaultGridSteps));
+        }
     }
 
     #endregion
