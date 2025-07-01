@@ -213,7 +213,7 @@ public static class SavitzkyGolayFilter
     /// <returns>An array of polynomial coefficients.</returns>
     private static double[] SolveCoefficients(double[,] A, double[] y)
     {
-        var coefficients = MatrixOperations.SolveLinearSystemQR(A, y);
+        var coefficients = MatrixOperations.SolveLinearSystem(A, y);
 
         return coefficients.Reverse().ToArray();
     }

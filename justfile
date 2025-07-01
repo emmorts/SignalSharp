@@ -8,7 +8,7 @@ default:
     @just --list
     
 format:
-    dotnet csharpier .
+    dotnet csharpier format .
 
 benchmark-list:
     @dotnet run --project SignalSharp.Benchmark\SignalSharp.Benchmark.csproj -c Release -- --job short --runtimes net9.0 --list flat

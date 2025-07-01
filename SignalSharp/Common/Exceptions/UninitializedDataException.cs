@@ -19,4 +19,18 @@ public class UninitializedDataException(string? message) : Exception(message)
             throw new UninitializedDataException(message);
         }
     }
+
+    /// <summary>
+    /// Throws an exception if the condition is false.
+    /// </summary>
+    /// <param name="condition">The condition to validate.</param>
+    /// <param name="message">The exception message.</param>
+    /// <exception cref="UninitializedDataException">Thrown when the condition is false.</exception>
+    public static void ThrowIfFalse(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new UninitializedDataException(message);
+        }
+    }
 }

@@ -12,6 +12,20 @@
     href: smoothing/moving-average.md
   - name: Savitzky-Golay Filter
     href: smoothing/savitzky-golay-filter.md
+- name: Extrapolation
+  items:
+  - name: Linear Extrapolation
+    href: extrapolation/linear-extrapolation.md
+  - name: Simple Exponential Smoothing
+    href: extrapolation/simple-exponential-smoothing.md
+  - name: Holt's Linear Trend Method
+    href: extrapolation/holt-method.md
+- name: Optimization
+  items:
+  - name: Grid Search
+    href: optimization/grid-search.md
+  - name: Nelder-Mead
+    href: optimization/nelder-mead.md
 - name: Resampling
   href: resampling/resampling.md
 - name: Future Plans

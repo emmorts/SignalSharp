@@ -82,6 +82,7 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
         {
             throw new ArgumentException($"Signal length must be at least order + 1 ({_order + 1}) for AR({_order}) model.", nameof(signal));
         }
+
         _logger.LogTrace("Fitting ARCostFunction to 1D signal of length {SignalLength}.", signal.Length);
         _signal = signal;
         return this;
@@ -346,14 +347,15 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
             return false; // signal failure, cost function should handle this
         }
 
-        if (!MatrixOperations.TrySolveLinearSystemQR(designMatrix, targetVector, out var coefficients) || coefficients == null)
+        if (!MatrixOperations.TrySolveLinearSystem(designMatrix, targetVector, out var coefficients, out var errorMessage) || coefficients == null)
         {
             _logger.LogWarning(
-                "AR({Order}, Intercept={IncludeIntercept}) solver failed for segment [{StartIndex}, {EndIndex}] likely due to singular matrix or collinearity. Returning failure.",
+                "AR({Order}, Intercept={IncludeIntercept}) solver failed for segment [{StartIndex}, {EndIndex}] likely due to singular matrix or collinearity. Error: {errorMessage}.",
                 order,
                 includeIntercept,
                 startIndex,
-                endIndex
+                endIndex,
+                errorMessage
             );
             return false; // solver failed
         }
@@ -409,6 +411,7 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
                 return false;
             }
         }
+
         return true;
     }
 }

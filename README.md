@@ -1,44 +1,54 @@
+![NuGet Version](https://img.shields.io/nuget/v/SignalSharp)
+
 ## SignalSharp
 
 SignalSharp is a .NET library focused on time series analysis, change point detection, and signal smoothing/filtering tasks. It provides implementations of common algorithms optimized for clarity and efficiency.
 
-## Core Features
+### Core Features
 
-### Change Point Detection
+#### Change Point Detection
 
 Algorithms to identify points in time where the statistical properties of a signal change.
 
-*   **PELT (Pruned Exact Linear Time)**:
-    *   Detects multiple change points efficiently.
-    *   Supports exact (`Jump = 1`) and approximate (`Jump > 1`) modes for speed/accuracy trade-offs.
-    *   Configurable via cost functions to target specific types of changes:
-        *   `L1CostFunction`: Robust to outliers, sensitive to median shifts.
-        *   `L2CostFunction`: Sensitive to mean shifts, assumes constant variance (computationally efficient).
-        *   `GaussianLikelihoodCostFunction`: Sensitive to changes in both mean and variance, assumes normality (computationally efficient, supports BIC/AIC).
-        *   `PoissonLikelihoodCostFunction`: For count data, sensitive to changes in event rate (supports BIC/AIC).
-        *   `BernoulliLikelihoodCostFunction`: For binary (0/1) data, sensitive to changes in success probability (supports BIC/AIC).
-        *   `BinomialLikelihoodCostFunction`: For success/trial data, sensitive to changes in success probability (supports BIC/AIC).
-        *   `RBFCostFunction`: Kernel-based, can detect complex changes in the underlying distribution shape.
-        *   `ARCostFunction`: Fits an Autoregressive model, sensitive to changes in signal dynamics/autocorrelation (univariate only, supports BIC/AIC).
-    *   Includes `PELTPenaltySelector` for automatic penalty selection using BIC, AIC, or AICc for supported likelihood-based cost functions.
+  * **PELT (Pruned Exact Linear Time)**:
 
-*   **CUSUM (Cumulative Sum)**:
-    *   Detects shifts in the mean of a signal.
-    *   Works by accumulating deviations from an expected level and triggering when a threshold is exceeded. Useful for process monitoring.
+      * Detects multiple change points efficiently.
+      * Supports various cost functions to target specific types of changes, including mean, variance, event rate, and distribution shape.
+      * Includes a `PELTPenaltySelector` for automatic penalty selection using BIC, AIC, or AICc for supported cost functions.
 
-### Signal Smoothing
+  * **CUSUM (Cumulative Sum)**:
+
+      * Detects shifts in the mean of a signal.
+      * Works by accumulating deviations from an expected level and triggering when a threshold is exceeded.
+
+#### Signal Smoothing
 
 Methods to reduce noise from measurements.
 
-*   **Savitzky-Golay Filter**: Smooths data by fitting successive sub-sets of adjacent data points with a low-degree polynomial using linear least squares. Helps preserve signal features better than a simple moving average.
-*   **Moving Average**: Basic smoothing technique that calculates the average of data points within a sliding window.
+  * **Savitzky-Golay Filter**: Smooths data by fitting successive sub-sets of adjacent data points with a low-degree polynomial. This helps preserve signal features better than a simple moving average. 
+  * **Moving Average**: A basic smoothing technique that calculates the average of data points within a sliding window.
 
-### Utilities
+#### Extrapolation
 
-*   **Signal Padding**: Methods for common padding modes (`Constant`, `Mirror`, `Nearest`, `Periodic`).
-*   **Statistical Functions**: Basic statistics (`Mean`, `Variance`, `StdDev`, `Median`, `Normalization`, etc.).
+Methods for forecasting future values based on historical data.
 
-## Installation
+  * **Simple Exponential Smoothing (SES)**: A forecasting method for univariate time series without a clear trend or seasonal pattern. It computes future values based on a weighted average of past observations, with recent observations given more weight. The forecast is a constant value, which is the last smoothed level calculated from the data.
+  * **Holt's Linear Trend Method**: Also known as Double Exponential Smoothing, this method is for data with a trend but no seasonality. It supports both additive and multiplicative trends and can include a "damped" trend to improve long-term forecast accuracy. The implementation can also automatically find optimal smoothing parameters via a built-in grid search.
+  * **Linear Extrapolation**: Forecasts future values by fitting a simple linear trend to a recent window of data points and extending that line into the future. The size of the fitting window is configurable.
+
+#### Optimization
+
+Hyperparameter tuning methods to find the best-performing parameters for a model.
+
+  * **Grid Search**: An exhaustive search method that systematically evaluates a grid of parameter combinations to find the one that yields the best performance. It supports parallel processing and an "adaptive refinement" feature that performs a second, more focused search around the best initial result.
+  * **Nelder-Mead**: A direct search method that "crawls" toward the minimum of a function in a multi-dimensional space without requiring derivative information. This makes it well-suited for objective functions that are noisy or non-differentiable. It can be configured to perform multiple restarts from different starting points to increase the likelihood of finding a global minimum.
+
+#### Utilities
+
+  * **Signal Padding**: Methods for common padding modes (`Constant`, `Mirror`, `Nearest`, `Periodic`).
+  * **Statistical Functions**: Basic statistics (`Mean`, `Variance`, `StdDev`, `Median`, `Normalization`, etc.).
+
+### Installation
 
 Install the package via the `dotnet` CLI:
 
@@ -48,7 +58,7 @@ dotnet add package SignalSharp
 
 Or use the NuGet Package Manager in your IDE.
 
-## Usage
+### Usage
 
 For detailed examples and API documentation, please refer to the [official documentation](https://emmorts.github.io/SignalSharp/).
 
@@ -89,6 +99,6 @@ Console.WriteLine($"Auto Penalty Change Points: {string.Join(", ", result.Optima
 // Expected: likely [3, 6], penalty will vary
 ```
 
-## Contributing
+### Contributing
 
-Contributions are welcome! If you have ideas, suggestions, or bug reports, feel free to open an issue or submit a pull request. 
+Contributions are welcome! If you have ideas, suggestions, or bug reports, feel free to open an issue or submit a pull request.

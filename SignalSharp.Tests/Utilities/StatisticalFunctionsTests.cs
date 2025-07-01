@@ -318,7 +318,7 @@ public class StatisticalFunctionsTests
         double[] values = [1.0, 2.0, 3.0, 4.0, 5.0]; // Min=1, Max=5, Range=4
         var normalized = StatisticalFunctions.Normalize<double>(values.AsSpan());
         double[] expected = [0.0, 0.25, 0.5, 0.75, 1.0];
-        AssertEqualWithin(expected, normalized, Constants.DefaultEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -327,7 +327,8 @@ public class StatisticalFunctionsTests
         float[] values = [1.0f, 2.0f, 3.0f, 4.0f, 5.0f]; // Min=1, Max=5, Range=4
         var normalized = StatisticalFunctions.Normalize<float>(values);
         float[] expected = [0.0f, 0.25f, 0.5f, 0.75f, 1.0f];
-        AssertEqualWithin(expected, normalized, Constants.FloatDefaultEpsilon);
+
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -336,7 +337,7 @@ public class StatisticalFunctionsTests
         decimal[] values = [10m, 20m, 30m, 40m, 50m]; // Min=10, Max=50, Range=40
         var normalized = StatisticalFunctions.Normalize<decimal>(values);
         decimal[] expected = [0.0m, 0.25m, 0.5m, 0.75m, 1.0m];
-        AssertEqualWithin(expected, normalized, Constants.DecimalDefaultEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -345,7 +346,7 @@ public class StatisticalFunctionsTests
         double[] values = [5.0, 5.0, 5.0, 5.0];
         var normalized = StatisticalFunctions.Normalize<double>(values.AsSpan());
         double[] expected = [0.0, 0.0, 0.0, 0.0];
-        AssertEqualWithin(expected, normalized, Constants.StrictEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -354,7 +355,7 @@ public class StatisticalFunctionsTests
         float[] values = [5.0f, 5.0f, 5.0f, 5.0f];
         var normalized = StatisticalFunctions.Normalize<float>(values);
         float[] expected = [0.0f, 0.0f, 0.0f, 0.0f];
-        AssertEqualWithin(expected, normalized, Constants.FloatStrictEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -363,7 +364,7 @@ public class StatisticalFunctionsTests
         double[] values = [42.5];
         var normalized = StatisticalFunctions.Normalize<double>(values.AsSpan());
         double[] expected = [0.0];
-        AssertEqualWithin(expected, normalized, Constants.StrictEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -373,7 +374,7 @@ public class StatisticalFunctionsTests
         var normalized = StatisticalFunctions.Normalize<double>(values.AsSpan());
         // Expected: (-5 - -5)/15=0, (0 - -5)/15=5/15=1/3, (5 - -5)/15=10/15=2/3, (10 - -5)/15=15/15=1
         double[] expected = [0.0, 1.0 / 3.0, 2.0 / 3.0, 1.0];
-        AssertEqualWithin(expected, normalized, Constants.DefaultEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -386,7 +387,7 @@ public class StatisticalFunctionsTests
         double[] expected = range == 0 ? new double[values.Length] : values.Select(v => (v - min) / range).ToArray();
 
         var normalized = StatisticalFunctions.Normalize<double>(values.AsSpan());
-        AssertEqualWithin(expected, normalized, Constants.DefaultEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -414,7 +415,7 @@ public class StatisticalFunctionsTests
 
         StatisticalFunctions.Normalize(values.AsSpan(), destination.AsSpan());
 
-        AssertEqualWithin(expected, destination, Constants.DefaultEpsilon);
+        AssertEqualWithin(expected, destination);
     }
 
     [Test]
@@ -426,7 +427,7 @@ public class StatisticalFunctionsTests
 
         StatisticalFunctions.Normalize(values.AsSpan(), destination.AsSpan());
 
-        AssertEqualWithin(expected, destination, Constants.StrictEpsilon);
+        AssertEqualWithin(expected, destination);
     }
 
     [Test]
@@ -438,7 +439,7 @@ public class StatisticalFunctionsTests
 
         StatisticalFunctions.Normalize(values.AsSpan(), destination.AsSpan());
 
-        AssertEqualWithin(expected, destination, Constants.StrictEpsilon);
+        AssertEqualWithin(expected, destination);
     }
 
     [Test]
@@ -453,7 +454,7 @@ public class StatisticalFunctionsTests
 
         StatisticalFunctions.Normalize(values.AsSpan(), destination.AsSpan());
 
-        AssertEqualWithin(expected, destination, Constants.DefaultEpsilon);
+        AssertEqualWithin(expected, destination);
     }
 
     [Test]
@@ -482,7 +483,7 @@ public class StatisticalFunctionsTests
         var normalized = StatisticalFunctions.ZScoreNormalization<double>(values.AsSpan());
         double invStdDev = 1.0 / Math.Sqrt(2.0);
         double[] expected = [-2.0 * invStdDev, -1.0 * invStdDev, 0.0, 1.0 * invStdDev, 2.0 * invStdDev];
-        AssertEqualWithin(expected, normalized, Constants.DefaultEpsilon);
+        AssertEqualWithin(expected, normalized);
 
         Assert.That(StatisticalFunctions.Mean<double>(normalized), Is.EqualTo(0.0).Within(Constants.StrictEpsilon));
         Assert.That(StatisticalFunctions.StandardDeviation<double>(normalized), Is.EqualTo(1.0).Within(Constants.DefaultEpsilon));
@@ -496,7 +497,7 @@ public class StatisticalFunctionsTests
         float invStdDev = 1.0f / (float)Math.Sqrt(2.0);
         float[] expected = [-2.0f * invStdDev, -1.0f * invStdDev, 0.0f, 1.0f * invStdDev, 2.0f * invStdDev];
 
-        AssertEqualWithin(expected, normalized, Constants.FloatDefaultEpsilon);
+        AssertEqualWithin(expected, normalized);
         Assert.That(StatisticalFunctions.Mean<float>(normalized), Is.EqualTo(0.0f).Within(Constants.FloatStrictEpsilon));
         Assert.That(StatisticalFunctions.StandardDeviation<float>(normalized), Is.EqualTo(1.0f).Within(Constants.FloatDefaultEpsilon));
     }
@@ -507,7 +508,7 @@ public class StatisticalFunctionsTests
         double[] values = [5.0, 5.0, 5.0, 5.0];
         var normalized = StatisticalFunctions.ZScoreNormalization<double>(values.AsSpan());
         double[] expected = [0.0, 0.0, 0.0, 0.0];
-        AssertEqualWithin(expected, normalized, Constants.StrictEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -516,7 +517,7 @@ public class StatisticalFunctionsTests
         float[] values = [5.0f, 5.0f, 5.0f, 5.0f];
         var normalized = StatisticalFunctions.ZScoreNormalization<float>(values);
         float[] expected = [0.0f, 0.0f, 0.0f, 0.0f];
-        AssertEqualWithin(expected, normalized, Constants.FloatStrictEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -526,7 +527,7 @@ public class StatisticalFunctionsTests
         double[] values = [42.5];
         var normalized = StatisticalFunctions.ZScoreNormalization<double>(values.AsSpan());
         double[] expected = [0.0];
-        AssertEqualWithin(expected, normalized, Constants.StrictEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -535,7 +536,7 @@ public class StatisticalFunctionsTests
         float[] values = [42.5f];
         var normalized = StatisticalFunctions.ZScoreNormalization<float>(values);
         float[] expected = [0.0f];
-        AssertEqualWithin(expected, normalized, Constants.FloatStrictEpsilon);
+        AssertEqualWithin(expected, normalized);
     }
 
     [Test]
@@ -563,7 +564,7 @@ public class StatisticalFunctionsTests
         double[] expected = stdDev == 0 ? new double[values.Length] : values.Select(v => (v - mean) / stdDev).ToArray();
 
         var normalized = StatisticalFunctions.ZScoreNormalization<double>(values.AsSpan());
-        AssertEqualWithin(expected, normalized, Constants.DefaultEpsilon);
+        AssertEqualWithin(expected, normalized);
 
         if (stdDev != 0)
         {
@@ -575,7 +576,7 @@ public class StatisticalFunctionsTests
     [Test]
     public void Skewness_Double_SymmetricDistribution_ShouldBeNearZero()
     {
-        double[] values = [1.0, 2.0, 3.0, 4.0, 5.0]; // Perfectly symmetric
+        double[] values = [1.0, 2.0, 3.0, 4.0, 5.0]; // perfectly symmetric
         var skewness = StatisticalFunctions.Skewness<double>(values.AsSpan());
         Assert.That(skewness, Is.EqualTo(0.0).Within(Constants.StrictEpsilon));
     }
@@ -583,7 +584,7 @@ public class StatisticalFunctionsTests
     [Test]
     public void Skewness_Float_SymmetricDistribution_ShouldBeNearZero()
     {
-        float[] values = [1.0f, 2.0f, 2.0f, 3.0f, 3.0f, 4.0f]; // Symmetric
+        float[] values = [1.0f, 2.0f, 2.0f, 3.0f, 3.0f, 4.0f]; // symmetric
         var skewness = StatisticalFunctions.Skewness<float>(values);
         Assert.That(skewness, Is.EqualTo(0.0f).Within(Constants.FloatStrictEpsilon));
     }
@@ -754,30 +755,6 @@ public class StatisticalFunctionsTests
     {
         float[] values3 = [1.0f, 2.0f, 3.0f];
         Assert.Throws<ArgumentException>(() => StatisticalFunctions.SampleKurtosisG2<float>(values3));
-    }
-
-    private static void AssertEqualWithin<T>(T[] expected, T[] actual, T tolerance)
-        where T : INumber<T>
-    {
-        Assert.That(actual, Has.Length.EqualTo(expected.Length), "Array lengths differ.");
-        Assert.Multiple(() =>
-        {
-            for (int i = 0; i < expected.Length; i++)
-            {
-                Assert.That(actual[i], Is.EqualTo(expected[i]).Within(tolerance), $"Mismatch at index {i}");
-            }
-        });
-    }
-
-    private static void AssertEqualWithin<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, T tolerance)
-        where T : INumber<T>
-    {
-        Assert.That(actual.Length, Is.EqualTo(expected.Length), "Span lengths differ.");
-
-        for (int i = 0; i < expected.Length; i++)
-        {
-            Assert.That(actual[i], Is.EqualTo(expected[i]).Within(tolerance), $"Mismatch at index {i}");
-        }
     }
 
     private static double[] GenerateNonVectorAlignedData(int size)

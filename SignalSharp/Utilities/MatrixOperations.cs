@@ -1,5 +1,6 @@
 // ReSharper disable InconsistentNaming
 
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 namespace SignalSharp.Utilities;
@@ -16,34 +17,223 @@ public static class MatrixOperations
 
     /// <summary>
     /// Transposes the given matrix.
-    /// <para>
-    /// The transpose of a matrix is obtained by swapping its rows with its columns.
-    /// </para>
     /// </summary>
+    /// <typeparam name="T">The numeric type of the matrix elements, implementing <see cref="IFloatingPointIeee754{TSelf}"/>.</typeparam>
     /// <param name="matrix">The matrix to transpose.</param>
     /// <returns>The transposed matrix.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="matrix"/> is null.</exception>
     /// <example>
     /// <code>
-    /// double[,] matrix = { {1, 2}, {3, 4}, {5, 6} };
-    /// double[,] result = MatrixOperations.Transpose(matrix);
-    /// // result is { {1, 3, 5}, {2, 4, 6} }
+    /// float[,] matrix = { {1f, 2f}, {3f, 4f}, {5f, 6f} };
+    /// float[,] result = MatrixOperations.Transpose<float>(matrix);
+    /// // result is { {1f, 3f, 5f}, {2f, 4f, 6f} }
     /// </code>
     /// </example>
-    public static double[,] Transpose(double[,] matrix)
+    public static T[,] Transpose<T>(T[,] matrix)
+        where T : IFloatingPointIeee754<T>
     {
-        var rows = matrix.GetLength(0);
-        var cols = matrix.GetLength(1);
-        var transposed = new double[cols, rows];
+        ArgumentNullException.ThrowIfNull(matrix);
 
-        for (var i = 0; i < rows; i++)
+        int rows = matrix.GetLength(0);
+        int cols = matrix.GetLength(1);
+        var transposed = new T[cols, rows];
+
+        for (int i = 0; i < rows; i++)
         {
-            for (var j = 0; j < cols; j++)
+            for (int j = 0; j < cols; j++)
             {
                 transposed[j, i] = matrix[i, j];
             }
         }
 
         return transposed;
+    }
+
+    /// <summary>
+    /// Adds two matrices of the same dimensions.
+    /// </summary>
+    /// <typeparam name="T">The numeric type of the matrix elements, implementing <see cref="IFloatingPointIeee754{TSelf}"/>.</typeparam>
+    /// <param name="matrixA">The first matrix.</param>
+    /// <param name="matrixB">The second matrix.</param>
+    /// <returns>A new matrix representing the sum of <paramref name="matrixA"/> and <paramref name="matrixB"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="matrixA"/> or <paramref name="matrixB"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if the dimensions of <paramref name="matrixA"/> and <paramref name="matrixB"/> do not match.</exception>
+    public static T[,] Add<T>(T[,] matrixA, T[,] matrixB)
+        where T : IFloatingPointIeee754<T>
+    {
+        ArgumentNullException.ThrowIfNull(matrixA);
+        ArgumentNullException.ThrowIfNull(matrixB);
+
+        int rowsA = matrixA.GetLength(0);
+        int colsA = matrixA.GetLength(1);
+        int rowsB = matrixB.GetLength(0);
+        int colsB = matrixB.GetLength(1);
+
+        if (rowsA != rowsB || colsA != colsB)
+        {
+            throw new ArgumentException("Matrices must have the same dimensions for addition.");
+        }
+
+        var result = new T[rowsA, colsA];
+
+        for (int i = 0; i < rowsA; i++)
+        {
+            for (int j = 0; j < colsA; j++)
+            {
+                result[i, j] = matrixA[i, j] + matrixB[i, j];
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Multiplies two matrices and returns the result.
+    /// </summary>
+    /// <typeparam name="T">The numeric type of the matrix elements, implementing <see cref="IFloatingPointIeee754{TSelf}"/>.</typeparam>
+    /// <param name="matrixA">The first matrix.</param>
+    /// <param name="matrixB">The second matrix.</param>
+    /// <returns>The product of the two matrices.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="matrixA"/> or <paramref name="matrixB"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if the inner dimensions of the matrices do not match for multiplication.</exception>
+    /// <example>
+    /// <code>
+    /// float[,] A = { {1f, 2f}, {3f, 4f} };
+    /// float[,] B = { {5f, 6f}, {7f, 8f} };
+    /// float[,] result = MatrixOperations.Multiply<float>(A, B);
+    /// // result is { {19f, 22f}, {43f, 50f} }
+    /// </code>
+    /// </example>
+    public static T[,] Multiply<T>(T[,] matrixA, T[,] matrixB)
+        where T : IFloatingPointIeee754<T>
+    {
+        ArgumentNullException.ThrowIfNull(matrixA);
+        ArgumentNullException.ThrowIfNull(matrixB);
+
+        int rowsA = matrixA.GetLength(0);
+        int colsA = matrixA.GetLength(1);
+        int rowsB = matrixB.GetLength(0);
+        int colsB = matrixB.GetLength(1);
+
+        if (colsA != rowsB)
+        {
+            throw new ArgumentException("Inner dimensions of matrices do not match for multiplication.");
+        }
+
+        var result = new T[rowsA, colsB];
+
+        for (int i = 0; i < rowsA; i++)
+        {
+            for (int j = 0; j < colsB; j++)
+            {
+                T sum = T.Zero;
+                for (int k = 0; k < colsA; k++)
+                {
+                    sum += matrixA[i, k] * matrixB[k, j];
+                }
+
+                result[i, j] = sum;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Multiplies a matrix by a vector and returns the result.
+    /// </summary>
+    /// <typeparam name="T">The numeric type of the elements, implementing <see cref="IFloatingPointIeee754{TSelf}"/>.</typeparam>
+    /// <param name="matrixA">The matrix.</param>
+    /// <param name="vectorB">The vector.</param>
+    /// <returns>The product of the matrix and the vector as a new vector.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="matrixA"/> or <paramref name="vectorB"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if the number of columns in the matrix does not match the length of the vector.</exception>
+    /// <example>
+    /// <code>
+    /// float[,] A = { {1f, 2f}, {3f, 4f}, {5f, 6f} };
+    /// float[] B = { 7f, 8f };
+    /// float[] result = MatrixOperations.Multiply<float>(A, B);
+    /// // result is { 23f, 53f, 83f }
+    /// </code>
+    /// </example>
+    public static T[] Multiply<T>(T[,] matrixA, T[] vectorB)
+        where T : IFloatingPointIeee754<T>
+    {
+        ArgumentNullException.ThrowIfNull(matrixA);
+        ArgumentNullException.ThrowIfNull(vectorB);
+
+        int rowsA = matrixA.GetLength(0);
+        int colsA = matrixA.GetLength(1);
+
+        if (colsA != vectorB.Length)
+        {
+            throw new ArgumentException("Number of columns in the matrix must match the length of the vector.");
+        }
+
+        var result = new T[rowsA];
+
+        for (int i = 0; i < rowsA; i++)
+        {
+            T sum = T.Zero;
+            for (int k = 0; k < colsA; k++)
+            {
+                sum += matrixA[i, k] * vectorB[k];
+            }
+
+            result[i] = sum;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Multiplies a matrix by a scalar value.
+    /// </summary>
+    /// <typeparam name="T">The numeric type of the matrix elements and scalar, implementing <see cref="IFloatingPointIeee754{TSelf}"/>.</typeparam>
+    /// <param name="scalar">The scalar value to multiply by.</param>
+    /// <param name="matrix">The matrix to be multiplied.</param>
+    /// <returns>A new matrix representing the product of the <paramref name="scalar"/> and <paramref name="matrix"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="matrix"/> is null.</exception>
+    public static T[,] ScalarMultiply<T>(T scalar, T[,] matrix)
+        where T : IFloatingPointIeee754<T>
+    {
+        ArgumentNullException.ThrowIfNull(matrix);
+
+        int rows = matrix.GetLength(0);
+        int cols = matrix.GetLength(1);
+        var result = new T[rows, cols];
+
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                result[i, j] = scalar * matrix[i, j];
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Calculates combinations C(n, k).
+    /// </summary>
+    public static T Combinations<T>(int n, int k)
+        where T : IFloatingPointIeee754<T>
+    {
+        if (k < 0 || k > n)
+            return T.Zero;
+        if (k == 0 || k == n)
+            return T.One;
+        if (k > n / 2)
+            k = n - k; // take advantage of symmetry C(n, k) = C(n, n-k)
+
+        T result = T.One;
+        for (int i = 1; i <= k; i++)
+        {
+            result = result * T.CreateChecked(n - i + 1) / T.CreateChecked(i);
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -73,234 +263,203 @@ public static class MatrixOperations
         }
 
         var augmented = CreateAugmentedMatrix(matrix, n);
-
         PerformGaussJordanElimination(augmented, n);
-
         return ExtractInverseMatrix(augmented, n);
     }
 
     /// <summary>
-    /// Multiplies two matrices and returns the result.
-    /// <para>
-    /// Matrix multiplication is only defined when the number of columns in the first matrix
-    /// matches the number of rows in the second matrix.
-    /// </para>
+    /// Solves a system of linear equations Ax = b.
+    /// For square systems (A is n x n), it uses Gaussian elimination.
+    /// For overdetermined systems (A is m x n, m > n), it solves the normal equations A^T A x = A^T b using Gaussian elimination.
     /// </summary>
-    /// <param name="A">The first matrix.</param>
-    /// <param name="B">The second matrix.</param>
-    /// <returns>The product of the two matrices.</returns>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the number of columns in A does not match the number of rows in B.
-    /// </exception>
-    /// <example>
-    /// <code>
-    /// double[,] A = { {1, 2}, {3, 4} };
-    /// double[,] B = { {5, 6}, {7, 8} };
-    /// double[,] result = MatrixOperations.Multiply(A, B);
-    /// // result is { {19, 22}, {43, 50} }
-    /// </code>
-    /// </example>
-    public static double[,] Multiply(double[,] A, double[,] B)
-    {
-        var aRows = A.GetLength(0);
-        var aCols = A.GetLength(1);
-        var bRows = B.GetLength(0);
-        var bCols = B.GetLength(1);
-        var result = new double[aRows, bCols];
-
-        if (aCols != bRows)
-        {
-            throw new ArgumentException("Number of columns in A must match number of rows in B.");
-        }
-
-        for (var i = 0; i < aRows; i++)
-        {
-            for (var j = 0; j < bCols; j++)
-            {
-                var sum = Vector<double>.Zero;
-
-                int k;
-                for (k = 0; k <= aCols - Vector<double>.Count; k += Vector<double>.Count)
-                {
-                    var va = new double[Vector<double>.Count];
-                    var vb = new double[Vector<double>.Count];
-
-                    for (var v = 0; v < Vector<double>.Count; v++)
-                    {
-                        va[v] = A[i, k + v];
-                        vb[v] = B[k + v, j];
-                    }
-
-                    sum += new Vector<double>(va) * new Vector<double>(vb);
-                }
-
-                result[i, j] = Vector.Dot(sum, Vector<double>.One);
-
-                for (; k < aCols; k++)
-                {
-                    result[i, j] += A[i, k] * B[k, j];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Multiplies a matrix by a vector and returns the result.
-    /// <para>
-    /// This operation is defined when the number of columns in the matrix matches the length of the vector.
-    /// </para>
-    /// </summary>
-    /// <param name="A">The matrix.</param>
-    /// <param name="B">The vector.</param>
-    /// <returns>The product of the matrix and the vector.</returns>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the number of columns in the matrix does not match the length of the vector.
-    /// </exception>
-    /// <example>
-    /// <code>
-    /// double[,] A = { {1, 2}, {3, 4}, {5, 6} };
-    /// double[] B = { 7, 8 };
-    /// double[] result = MatrixOperations.Multiply(A, B);
-    /// // result is { 23, 53, 83 }
-    /// </code>
-    /// </example>
-    public static double[] Multiply(double[,] A, double[] B)
-    {
-        var aRows = A.GetLength(0);
-        var aCols = A.GetLength(1);
-
-        if (aCols != B.Length)
-        {
-            throw new ArgumentException("Number of columns in A must match the length of vector B.");
-        }
-
-        var result = new double[aRows];
-
-        for (var i = 0; i < aRows; i++)
-        {
-            var sum = Vector<double>.Zero;
-
-            int k;
-            for (k = 0; k <= aCols - Vector<double>.Count; k += Vector<double>.Count)
-            {
-                var va = new double[Vector<double>.Count];
-                var vb = new double[Vector<double>.Count];
-
-                for (var v = 0; v < Vector<double>.Count; v++)
-                {
-                    va[v] = A[i, k + v];
-                    vb[v] = B[k + v];
-                }
-
-                sum += new Vector<double>(va) * new Vector<double>(vb);
-            }
-
-            result[i] = Vector.Dot(sum, Vector<double>.One);
-
-            for (; k < aCols; k++)
-            {
-                result[i] += A[i, k] * B[k];
-            }
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Solves a system of linear equations Ax = b using QR factorization with SIMD optimization.
-    /// </summary>
-    /// <param name="A">The matrix representing the system of linear equations.</param>
-    /// <param name="y">The vector representing the right-hand side of the equations.</param>
+    /// <typeparam name="T">The numeric type of the elements, implementing <see cref="IFloatingPointIeee754{TSelf}"/>.</typeparam>
+    /// <param name="A">The matrix representing the system of linear equations.
+    /// If A is square, it will be modified in place. If A is overdetermined, it is not modified.</param>
+    /// <param name="b">The vector representing the right-hand side of the equations.
+    /// If A is square, b will be modified in place. If A is overdetermined, b is not modified.</param>
     /// <returns>An array of solutions for the system of linear equations.</returns>
-    /// <example>
-    /// <code>
-    /// double[,] A = { { 1, 2 }, { 3, 4 } };
-    /// double[] y = { 5, 6 };
-    /// double[] result = SolveLinearSystemQR(A, y);
-    /// </code>
-    /// </example>
-    public static double[] SolveLinearSystemQR(double[,] A, double[] y)
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="A"/> or <paramref name="b"/> is null.</exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown if dimensions are incompatible, if the matrix is singular or ill-conditioned, or if the system is underdetermined.
+    /// </exception>
+    /// <remarks>
+    /// For square systems, this method modifies the input matrix <paramref name="A"/> and vector <paramref name="b"/> in place for efficiency.
+    /// For overdetermined systems, intermediate matrices derived from <paramref name="A"/> and <paramref name="b"/> are created and modified,
+    /// leaving the original <paramref name="A"/> and <paramref name="b"/> unchanged by the Gaussian elimination step.
+    /// </remarks>
+    public static T[] SolveLinearSystem<T>(T[,] A, T[] b)
+        where T : IFloatingPointIeee754<T>
     {
-        var m = A.GetLength(0);
-        var n = A.GetLength(1);
-        var Q = new double[m, n];
-        var R = new double[n, n];
-
-        var simdLength = Vector<double>.Count;
-
-        // QR Factorization
-        for (var k = 0; k < n; k++)
+        if (!TrySolveLinearSystem(A, b, out T[]? solution, out string? errorMessage))
         {
-            var norm = CalculateNorm(A, k, m, simdLength);
-            R[k, k] = norm;
-
-            NormalizeColumn(A, Q, k, norm, m);
-
-            for (var j = k + 1; j < n; j++)
-            {
-                var dotProduct = CalculateDotProduct(Q, A, k, j, m, simdLength);
-                R[k, j] = dotProduct;
-                UpdateColumn(A, Q, k, j, dotProduct, m);
-            }
+            throw new ArgumentException(errorMessage ?? "Failed to solve linear system for unspecified reasons.");
         }
-
-        // Compute Q^T * y
-        var QTy = ComputeQTransposeY(Q, y, m, n, simdLength);
-
-        // Solve R * x = Q^T * y using back substitution
-        return BackSubstitution(R, QTy, n);
+        return solution!;
     }
 
-    public static bool TrySolveLinearSystemQR(double[,] A, double[] y, out double[]? solution)
+    /// <summary>
+    /// Attempts to solve a system of linear equations Ax = b.
+    /// For square systems (A is n x n), it uses Gaussian elimination.
+    /// For overdetermined systems (A is m x n, m > n), it solves the normal equations A^T A x = A^T b using Gaussian elimination.
+    /// </summary>
+    /// <typeparam name="T">The numeric type of the elements, implementing <see cref="IFloatingPointIeee754{TSelf}"/>.</typeparam>
+    /// <param name="A">The matrix representing the system of linear equations.
+    /// If A is square, it will be modified in place. If A is overdetermined, it is not modified.</param>
+    /// <param name="b">The vector representing the right-hand side of the equations.
+    /// If A is square, b will be modified in place. If A is overdetermined, b is not modified.</param>
+    /// <param name="solution">When this method returns, contains the solution vector if the solution was found; otherwise, null.</param>
+    /// <param name="errorMessage">When this method returns, contains an error message if the solution failed; otherwise, null.</param>
+    /// <returns>True if the system was solved successfully; otherwise, false.</returns>
+    /// <remarks>
+    /// For square systems, this method modifies the input matrix <paramref name="A"/> and vector <paramref name="b"/> in place for efficiency.
+    /// For overdetermined systems, intermediate matrices derived from <paramref name="A"/> and <paramref name="b"/> are created and modified,
+    /// leaving the original <paramref name="A"/> and <paramref name="b"/> unchanged by the Gaussian elimination step.
+    /// Underdetermined systems (fewer rows than columns in A) are not supported.
+    /// </remarks>
+    public static bool TrySolveLinearSystem<T>(T[,] A, T[] b, [NotNullWhen(true)] out T[]? solution, out string? errorMessage)
+        where T : IFloatingPointIeee754<T>
     {
-        var m = A.GetLength(0);
-        var n = A.GetLength(1);
-        var Q = new double[m, n];
-        var R = new double[n, n];
+        solution = null;
+        errorMessage = null;
 
-        var simdLength = Vector<double>.Count;
+        int rowsA = A.GetLength(0);
+        int colsA = A.GetLength(1);
 
-        // QR Factorization
-        for (var k = 0; k < n; k++)
+        if (rowsA != b.Length)
         {
-            var norm = CalculateNorm(A, k, m, simdLength);
-            R[k, k] = norm;
-
-            NormalizeColumn(A, Q, k, norm, m);
-
-            for (var j = k + 1; j < n; j++)
-            {
-                var dotProduct = CalculateDotProduct(Q, A, k, j, m, simdLength);
-                R[k, j] = dotProduct;
-                UpdateColumn(A, Q, k, j, dotProduct, m);
-            }
-        }
-
-        // Compute Q^T * y
-        var QTy = ComputeQTransposeY(Q, y, m, n, simdLength);
-
-        // Solve R * x = Q^T * y using back substitution
-        if (!TryBackSubstitution(R, QTy, n, out var result))
-        {
-            solution = null;
+            errorMessage = $"Number of rows in matrix A ({rowsA}) must match the length of vector b ({b.Length}).";
             return false;
         }
 
-        solution = result;
+        // handle empty system cases
+        if (rowsA == 0)
+        {
+            if (colsA == 0)
+            {
+                solution = [];
+                return true;
+            }
 
+            errorMessage = "System has 0 equations but non-zero variables; cannot determine a unique solution.";
+            return false;
+        }
+
+        // handle zero variables case
+        if (colsA == 0)
+        {
+            var epsilon = NumericUtils.GetDefaultEpsilon<T>();
+            for (int i = 0; i < rowsA; ++i)
+            {
+                if (!NumericUtils.IsEffectivelyZero(b[i], epsilon))
+                {
+                    errorMessage = "System has no variables but non-zero values in b vector, leading to inconsistency (0 = non-zero).";
+                    return false;
+                }
+            }
+            solution = [];
+            return true;
+        }
+
+        if (rowsA == colsA)
+        {
+            return SolveSquareSystemInPlace(A, b, out solution, out errorMessage);
+        }
+
+        if (rowsA > colsA)
+        {
+            T[,] A_T = Transpose(A);
+            T[,] A_T_A = Multiply(A_T, A);
+            T[] A_T_b = Multiply(A_T, b);
+
+            return SolveSquareSystemInPlace(A_T_A, A_T_b, out solution, out errorMessage);
+        }
+
+        errorMessage = "Underdetermined systems (fewer rows/equations than columns/variables in A) are not supported for a unique solution.";
+        return false;
+    }
+
+    /// <summary>
+    /// Solves a square system of linear equations Ax = b using Gaussian elimination with partial pivoting.
+    /// Modifies A_square and b_square in place.
+    /// </summary>
+    private static bool SolveSquareSystemInPlace<T>(T[,] A_square, T[] b_square, out T[]? solution, out string? errorMessage)
+        where T : IFloatingPointIeee754<T>
+    {
+        solution = null;
+        errorMessage = null;
+
+        int n = b_square.Length;
+        var epsilon = NumericUtils.GetDefaultEpsilon<T>();
+
+        // Forward Elimination with Partial Pivoting
+        for (int i = 0; i < n; i++)
+        {
+            // find row with maximum pivot element
+            int maxRow = i;
+            for (int k = i + 1; k < n; k++)
+            {
+                if (T.Abs(A_square[k, i]) > T.Abs(A_square[maxRow, i]))
+                {
+                    maxRow = k;
+                }
+            }
+
+            // swap rows if needed
+            if (maxRow != i)
+            {
+                for (int k = i; k < n; k++)
+                {
+                    (A_square[maxRow, k], A_square[i, k]) = (A_square[i, k], A_square[maxRow, k]);
+                }
+                (b_square[maxRow], b_square[i]) = (b_square[i], b_square[maxRow]);
+            }
+
+            // check for singularity
+            if (NumericUtils.IsEffectivelyZero(A_square[i, i], epsilon))
+            {
+                errorMessage = $"Matrix is singular or ill-conditioned at row {i}. Pivot element too small: {A_square[i, i]}.";
+                return false;
+            }
+
+            // eliminate below
+            for (int k = i + 1; k < n; k++)
+            {
+                T factor = A_square[k, i] / A_square[i, i];
+                b_square[k] -= factor * b_square[i];
+
+                for (int j = i; j < n; j++)
+                {
+                    A_square[k, j] -= factor * A_square[i, j];
+                }
+                A_square[k, i] = T.Zero;
+            }
+        }
+
+        // back Substitution
+        var x = new T[n];
+        for (int i = n - 1; i >= 0; i--)
+        {
+            T sum = T.Zero;
+            for (int j = i + 1; j < n; j++)
+            {
+                sum += A_square[i, j] * x[j];
+            }
+
+            if (NumericUtils.IsEffectivelyZero(A_square[i, i], epsilon))
+            {
+                errorMessage = $"Matrix became singular during back-substitution at row {i}. Pivot too small: {A_square[i, i]}.";
+                return false;
+            }
+            x[i] = (b_square[i] - sum) / A_square[i, i];
+        }
+
+        solution = x;
         return true;
     }
 
     /// <summary>
     /// Calculates the Euclidean norm of a specified column in a matrix using SIMD optimization.
     /// </summary>
-    /// <param name="A">The matrix from which the column is taken.</param>
-    /// <param name="column">The index of the column for which the norm is calculated.</param>
-    /// <param name="rowCount">The number of rows in the matrix.</param>
-    /// <param name="vectorLength">The length of the SIMD vector.</param>
-    /// <returns>The Euclidean norm of the column.</returns>
     private static double CalculateNorm(double[,] A, int column, int rowCount, int vectorLength)
     {
         double sumOfSquares = 0;
@@ -329,11 +488,6 @@ public static class MatrixOperations
     /// <summary>
     /// Normalizes a specified column in matrix A and stores the result in matrix Q.
     /// </summary>
-    /// <param name="A">The input matrix A.</param>
-    /// <param name="Q">The output matrix Q.</param>
-    /// <param name="column">The index of the column to normalize.</param>
-    /// <param name="norm">The norm of the column.</param>
-    /// <param name="rowCount">The number of rows in the matrices.</param>
     private static void NormalizeColumn(double[,] A, double[,] Q, int column, double norm, int rowCount)
     {
         for (var i = 0; i < rowCount; i++)
@@ -345,13 +499,6 @@ public static class MatrixOperations
     /// <summary>
     /// Calculates the dot product of two specified columns from matrices Q and A using SIMD optimization.
     /// </summary>
-    /// <param name="Q">The matrix Q.</param>
-    /// <param name="A">The matrix A.</param>
-    /// <param name="qColumn">The index of the column in matrix Q.</param>
-    /// <param name="aColumn">The index of the column in matrix A.</param>
-    /// <param name="rowCount">The number of rows in the matrices.</param>
-    /// <param name="vectorLength">The length of the SIMD vector.</param>
-    /// <returns>The dot product of the specified columns.</returns>
     private static double CalculateDotProduct(double[,] Q, double[,] A, int qColumn, int aColumn, int rowCount, int vectorLength)
     {
         double dotProductSum = 0;
@@ -384,12 +531,6 @@ public static class MatrixOperations
     /// <summary>
     /// Updates a specified column in matrix A using the values from matrix Q and the calculated dot product.
     /// </summary>
-    /// <param name="A">The matrix A to be updated.</param>
-    /// <param name="Q">The matrix Q.</param>
-    /// <param name="qColumn">The index of the column in matrix Q.</param>
-    /// <param name="aColumn">The index of the column in matrix A.</param>
-    /// <param name="dotProduct">The calculated dot product.</param>
-    /// <param name="rowCount">The number of rows in the matrices.</param>
     private static void UpdateColumn(double[,] A, double[,] Q, int qColumn, int aColumn, double dotProduct, int rowCount)
     {
         for (var i = 0; i < rowCount; i++)
@@ -401,12 +542,6 @@ public static class MatrixOperations
     /// <summary>
     /// Computes the product of the transpose of matrix Q and vector Y (Q^T * Y) using SIMD optimization.
     /// </summary>
-    /// <param name="Q">The matrix Q.</param>
-    /// <param name="Y">The vector Y.</param>
-    /// <param name="rowCount">The number of rows in the matrix Q and the length of vector Y.</param>
-    /// <param name="columnCount">The number of columns in the matrix Q.</param>
-    /// <param name="vectorLength">The length of the SIMD vector.</param>
-    /// <returns>The product of the transpose of matrix Q and vector Y.</returns>
     private static double[] ComputeQTransposeY(double[,] Q, double[] Y, int rowCount, int columnCount, int vectorLength)
     {
         var qTransposeY = new double[columnCount];
@@ -443,10 +578,6 @@ public static class MatrixOperations
     /// <summary>
     /// Solves the upper triangular system R * x = Q^T * y using back substitution.
     /// </summary>
-    /// <param name="R">The upper triangular matrix R.</param>
-    /// <param name="QTy">The product of Q^T and y.</param>
-    /// <param name="dimension">The dimension of the system.</param>
-    /// <returns>The solution vector x.</returns>
     private static double[] BackSubstitution(double[,] R, double[] QTy, int dimension)
     {
         var solution = new double[dimension];
@@ -493,9 +624,6 @@ public static class MatrixOperations
     /// <summary>
     /// Creates an augmented matrix by appending the identity matrix to the given matrix.
     /// </summary>
-    /// <param name="matrix">The original matrix.</param>
-    /// <param name="dimension">The dimension of the matrix (assumed to be square).</param>
-    /// <returns>The augmented matrix.</returns>
     private static double[,] CreateAugmentedMatrix(double[,] matrix, int dimension)
     {
         var augmented = new double[dimension, 2 * dimension];
@@ -516,23 +644,17 @@ public static class MatrixOperations
     /// <summary>
     /// Performs the Gauss-Jordan elimination process on the augmented matrix.
     /// </summary>
-    /// <param name="augmented">The augmented matrix.</param>
-    /// <param name="dimension">The dimension of the matrix (assumed to be square).</param>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the matrix is singular and cannot be inverted.
-    /// </exception>
     private static void PerformGaussJordanElimination(double[,] augmented, int dimension)
     {
         for (var i = 0; i < dimension; i++)
         {
             var diagElement = augmented[i, i];
-            if (diagElement == 0)
+            if (Math.Abs(diagElement) < SingularityTolerance)
             {
                 throw new ArgumentException("Matrix is singular and cannot be inverted.");
             }
 
             NormalizeRow(augmented, i, diagElement, dimension);
-
             EliminateOtherRows(augmented, i, dimension);
         }
     }
@@ -540,10 +662,6 @@ public static class MatrixOperations
     /// <summary>
     /// Normalizes the given row in the augmented matrix by dividing all elements by the diagonal element.
     /// </summary>
-    /// <param name="augmented">The augmented matrix.</param>
-    /// <param name="row">The row to normalize.</param>
-    /// <param name="diagElement">The diagonal element of the current row.</param>
-    /// <param name="dimension">The dimension of the matrix (assumed to be square).</param>
     private static void NormalizeRow(double[,] augmented, int row, double diagElement, int dimension)
     {
         for (var j = 0; j < 2 * dimension; j++)
@@ -555,9 +673,6 @@ public static class MatrixOperations
     /// <summary>
     /// Eliminates other rows in the augmented matrix to create zeros in the current column.
     /// </summary>
-    /// <param name="augmented">The augmented matrix.</param>
-    /// <param name="currentRow">The current row being processed.</param>
-    /// <param name="dimension">The dimension of the matrix (assumed to be square).</param>
     private static void EliminateOtherRows(double[,] augmented, int currentRow, int dimension)
     {
         for (var k = 0; k < dimension; k++)
@@ -576,9 +691,6 @@ public static class MatrixOperations
     /// <summary>
     /// Extracts the inverse matrix from the augmented matrix.
     /// </summary>
-    /// <param name="augmented">The augmented matrix.</param>
-    /// <param name="dimension">The dimension of the matrix (assumed to be square).</param>
-    /// <returns>The inverse of the original matrix.</returns>
     private static double[,] ExtractInverseMatrix(double[,] augmented, int dimension)
     {
         var inverse = new double[dimension, dimension];

@@ -1,54 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <Version>0.1.8</Version>
-        <Title>SignalSharp</Title>
-        <Authors>emmorts</Authors>
-        <Description>SignalSharp is a library designed for signal processing and time series analysis.</Description>
-        <PackageProjectUrl>https://github.com/emmorts/SignalSharp</PackageProjectUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <RepositoryUrl>https://github.com/emmorts/SignalSharp</RepositoryUrl>
-        <PackageTags>signal,smoothing,segmentation,segment,signal-processing</PackageTags>
-        <PackageIcon>logo.jpg</PackageIcon>
-
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(CI_BUILD)'=='true'">
-        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <None Include="..\assets\logo.jpg">
-            <Pack>True</Pack>
-            <PackagePath></PackagePath>
-            <Link>logo.jpg</Link>
-            <Visible>False</Visible>
-        </None>
-        <None Include="..\LICENSE">
-            <Pack>true</Pack>
-            <PackagePath></PackagePath>
-            <Visible>False</Visible>
-        </None>
-        <None Include="..\README.md">
-            <Pack>true</Pack>
-            <PackagePath></PackagePath>
-            <Visible>False</Visible>
-        </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="CostFunctions\" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
-    </ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>0.1.9</Version>
+    <Title>SignalSharp</Title>
+    <Authors>emmorts</Authors>
+    <Description>SignalSharp is a library designed for signal processing and time series analysis.</Description>
+    <PackageProjectUrl>https://github.com/emmorts/SignalSharp</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/emmorts/SignalSharp</RepositoryUrl>
+    <PackageTags>signal,smoothing,segmentation,segment,signal-processing</PackageTags>
+    <PackageIcon>logo.jpg</PackageIcon>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(CI_BUILD)'=='true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\assets\logo.jpg">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+      <Link>logo.jpg</Link>
+      <Visible>False</Visible>
+    </None>
+    <None Include="..\LICENSE">
+      <Pack>true</Pack>
+      <PackagePath></PackagePath>
+      <Visible>False</Visible>
+    </None>
+    <None Include="..\README.md">
+      <Pack>true</Pack>
+      <PackagePath></PackagePath>
+      <Visible>False</Visible>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="CostFunctions\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.6" />
+  </ItemGroup>
 </Project>
