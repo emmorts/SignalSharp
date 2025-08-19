@@ -61,7 +61,7 @@ jobs:
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
@@ -114,7 +114,7 @@ jobs:
     needs: [ release ]
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
