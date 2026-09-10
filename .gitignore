@@ -8,3 +8,4 @@ api/
 riderModule.iml
 /_ReSharper.Caches/
 BenchmarkDotNet.Artifacts/
+.memini
