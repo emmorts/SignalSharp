@@ -105,10 +105,14 @@ public record NelderMeadOptimizerOptions
 
     public NelderMeadOptimizerOptions()
     {
-        ValidateProperties();
+        Validate();
     }
 
-    private void ValidateProperties()
+    /// <summary>
+    /// Validates the option values. Called by the constructor and by the optimizer before the options are used,
+    /// which also covers instances produced by <c>with</c> expressions or object initializers.
+    /// </summary>
+    internal void Validate()
     {
         if (MaxIterations <= 0)
         {
@@ -169,6 +173,16 @@ public record NelderMeadOptimizerOptions
                 nameof(InitialSimplexAbsoluteStepForZeroRange),
                 $"{nameof(InitialSimplexAbsoluteStepForZeroRange)} must be positive."
             );
+        }
+
+        if (StagnationThresholdCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(StagnationThresholdCount), $"{nameof(StagnationThresholdCount)} must be positive.");
+        }
+
+        if (StagnationImprovementThreshold < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(StagnationImprovementThreshold), $"{nameof(StagnationImprovementThreshold)} must be non-negative.");
         }
     }
 }

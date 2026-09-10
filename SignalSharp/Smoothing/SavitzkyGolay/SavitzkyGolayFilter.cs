@@ -33,21 +33,35 @@ public static class SavitzkyGolayFilter
     /// <param name="derivativeOrder">The order of the derivative to compute. Default is 0 (no derivative).</param>
     /// <param name="padding">The padding method to apply to the signal. Default is None.</param>
     /// <param name="paddedValue">The value to use for padding. Default is 0.</param>
-    /// <returns>The filtered signal.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the polynomial order is greater than or equal to the window length. </exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the input signal length is insufficient for the specified window length.</exception>
+    /// <returns>The filtered signal. If the input signal length is less than <c>2 * windowLength + 1</c>, a copy of the input is returned unchanged.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="inputSignal"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="windowLength"/> is not positive or is even, when the polynomial order is negative or
+    /// greater than or equal to the window length, or when the derivative order is negative or greater than the polynomial order.
+    /// </exception>
     /// <example>
     /// For example, to apply the Savitzky-Golay filter to an array of measurements:
     /// <code>
-    /// double[] inputSignal = {1.0, 2.0, 3.0, 4.0, 5.0};
-    /// double[] filteredSignal = SavitzkyGolay.Apply(inputSignal, 3, 1);
+    /// double[] inputSignal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0};
+    /// double[] filteredSignal = SavitzkyGolayFilter.Apply(inputSignal, 5, 2);
     /// </code>
     /// </example>
     /// <remarks>
     /// <para>
-    /// The method processes the input signal by applying the Savitzky-Golay filter. If the input signal
-    /// length is insufficient to apply the filter (i.e., less than 2 * window length + 1), the original
-    /// signal is returned.
+    /// The interior of the signal is produced by the Savitzky-Golay convolution.
+    /// With <see cref="Padding.None"/> the first and last <c>windowLength / 2</c> samples are produced by
+    /// fitting a polynomial to the corresponding edge window; with any other padding mode the padded
+    /// convolution is used for the boundary samples instead.
+    /// </para>
+    /// <para>
+    /// If the input signal length is insufficient to apply the filter (i.e., less than 2 * window length + 1),
+    /// a copy of the original signal is returned.
+    /// </para>
+    /// <para>
+    /// The generic overload converts the input to <see cref="double"/>, filters it, and converts the result back to
+    /// <typeparamref name="T"/>. For integral <typeparamref name="T"/> the filtered values are therefore rounded
+    /// (banker's rounding), and values outside the range of <typeparamref name="T"/> cause an
+    /// <see cref="OverflowException"/>.
     /// </para>
     /// </remarks>
     public static T[] Apply<T>(
@@ -60,6 +74,8 @@ public static class SavitzkyGolayFilter
     )
         where T : INumber<T>
     {
+        ArgumentNullException.ThrowIfNull(inputSignal);
+
         var doubleInputSignal = inputSignal.Select(x => Convert.ToDouble(x)).ToArray();
 
         return Apply(doubleInputSignal, windowLength, polynomialOrder, derivativeOrder, padding, paddedValue)
@@ -77,8 +93,11 @@ public static class SavitzkyGolayFilter
     /// <param name="padding">The padding method to apply to the signal. Default is None.</param>
     /// <param name="paddedValue">The value to use for padding. Default is 0.</param>
     /// <returns>The filtered signal.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the polynomial order is greater than or equal to the window length. </exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the input signal length is insufficient for the specified window length.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="inputSignal"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="windowLength"/> is not positive or is even, when the polynomial order is negative or
+    /// greater than or equal to the window length, or when the derivative order is negative or greater than the polynomial order.
+    /// </exception>
     /// <example>
     /// For example, to apply the Savitzky-Golay filter to an array of measurements:
     /// <code>
@@ -88,9 +107,14 @@ public static class SavitzkyGolayFilter
     /// </example>
     /// <remarks>
     /// <para>
-    /// The method processes the input signal by applying the Savitzky-Golay filter. If the input signal
-    /// length is insufficient to apply the filter (i.e., less than 2 * window length + 1), the original
-    /// signal is returned.
+    /// The interior of the signal is produced by the Savitzky-Golay convolution.
+    /// With <see cref="Padding.None"/> the first and last <c>windowLength / 2</c> samples are produced by
+    /// fitting a polynomial to the corresponding edge window; with any other padding mode the padded
+    /// convolution is used for the boundary samples instead.
+    /// </para>
+    /// <para>
+    /// If the input signal length is insufficient to apply the filter (i.e., less than 2 * window length + 1),
+    /// a copy of the original signal is returned.
     /// </para>
     /// </remarks>
     public static double[] Apply(
@@ -102,6 +126,16 @@ public static class SavitzkyGolayFilter
         double paddedValue = 0
     )
     {
+        ArgumentNullException.ThrowIfNull(inputSignal);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(windowLength, nameof(windowLength));
+        ArgumentOutOfRangeException.ThrowIfNegative(polynomialOrder, nameof(polynomialOrder));
+        ArgumentOutOfRangeException.ThrowIfNegative(derivativeOrder, nameof(derivativeOrder));
+
+        if (windowLength % 2 == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(windowLength), windowLength, "Window length must be an odd number.");
+        }
+
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(polynomialOrder, windowLength, nameof(polynomialOrder));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(derivativeOrder, polynomialOrder, nameof(derivativeOrder));
 
@@ -110,7 +144,7 @@ public static class SavitzkyGolayFilter
 
         // Input signal must be at least 2 * windowLength + 1 in order to apply Savitzky-Golay filter
         if (inputSignal.Length < (windowLength << 1) + 1)
-            return inputSignal;
+            return inputSignal.ToArray();
 
         var halfWindow = windowLength / 2;
 
@@ -123,99 +157,67 @@ public static class SavitzkyGolayFilter
             filteredSignal = SignalPadding.TrimPadding(filteredSignal, inputSignal.Length, windowLength);
         }
 
-        if (inputSignal.Length >= windowLength)
+        // Without padding, boundary samples have no full window; fit a polynomial over the edge windows instead.
+        // With padding, the padded convolution already provides values for the boundary samples.
+        if (padding == Padding.None && inputSignal.Length >= windowLength)
         {
-            PolynomialFitEdges(inputSignal, filteredSignal, windowLength, polynomialOrder);
+            PolynomialFitEdges(inputSignal, filteredSignal, windowLength, polynomialOrder, derivativeOrder);
         }
-
-        RestoreMiddleSection(inputSignal, filteredSignal, halfWindow, derivativeOrder);
 
         return filteredSignal;
     }
 
     /// <summary>
-    /// Computes the filter coefficients for the given window length and polynomial order.
+    /// Computes the convolution (Savitzky-Golay) weights for the given window length, polynomial order and derivative order.
     /// </summary>
-    /// <param name="windowLength">The length of the filter window.</param>
+    /// <param name="windowLength">The length of the filter window (odd).</param>
     /// <param name="polyOrder">The order of the polynomial.</param>
     /// <param name="derivativeOrder">The order of the derivative.</param>
-    /// <returns>An array of coefficients.</returns>
+    /// <returns>An array of convolution weights, in sample order across the window.</returns>
+    /// <remarks>
+    /// The weights are computed as <c>w = A * (A^T A)^-1 * e_d * d!</c> where <c>A[i, j] = (i - halfWindow)^j</c>
+    /// is the centered Vandermonde matrix and <c>e_d</c> is the unit vector of index <c>d = derivativeOrder</c>.
+    /// For <c>d = 0</c> this is the first row of the pseudoinverse of <c>A</c>, scaled by <c>d!</c> for higher
+    /// derivative orders. Convolving the weights with a window yields the least-squares polynomial value
+    /// (or its <c>d</c>-th derivative) at the window centre.
+    /// </remarks>
     private static double[] ComputeCoefficients(int windowLength, int polyOrder, int derivativeOrder)
     {
         var halfWindow = windowLength / 2;
-        var x = GenerateXValues(windowLength, halfWindow);
-        var A = CreateMatrixA(windowLength, polyOrder, x);
-        var y = CreateVectorY(windowLength, halfWindow, derivativeOrder);
 
-        return SolveCoefficients(A, y);
-    }
-
-    /// <summary>
-    /// Generates an array of x-values for the given window length.
-    /// </summary>
-    /// <param name="windowLength">The length of the filter window.</param>
-    /// <param name="halfWindow">Half the window length.</param>
-    /// <returns>An array of x-values.</returns>
-    private static double[] GenerateXValues(int windowLength, int halfWindow)
-    {
-        var pos = halfWindow - 0.5;
-        var x = new double[windowLength];
-
+        // Design matrix over the centered window: A[i, j] = (i - halfWindow)^j
+        var design = new double[windowLength, polyOrder + 1];
         for (var i = 0; i < windowLength; i++)
         {
-            x[i] = i - pos;
+            var offset = i - halfWindow;
+            for (var j = 0; j <= polyOrder; j++)
+            {
+                design[i, j] = Math.Pow(offset, j);
+            }
         }
 
-        Array.Reverse(x);
-
-        return x;
-    }
-
-    /// <summary>
-    /// Creates a matrix A used for solving the polynomial coefficients.
-    /// </summary>
-    /// <param name="windowLength">The length of the filter window.</param>
-    /// <param name="polyOrder">The order of the polynomial.</param>
-    /// <param name="x">The array of x-values.</param>
-    /// <returns>A matrix representing the polynomial equations.</returns>
-    private static double[,] CreateMatrixA(int windowLength, int polyOrder, double[] x)
-    {
-        var A = new double[windowLength, polyOrder + 1];
-        for (var i = 0; i < windowLength; i++)
+        // Normal equations matrix A^T A
+        var normalMatrix = new double[polyOrder + 1, polyOrder + 1];
+        for (var i = 0; i <= polyOrder; i++)
         {
             for (var j = 0; j <= polyOrder; j++)
             {
-                A[i, j] = Math.Pow(x[i], j);
+                double sum = 0;
+                for (var k = 0; k < windowLength; k++)
+                {
+                    sum += design[k, i] * design[k, j];
+                }
+                normalMatrix[i, j] = sum;
             }
         }
-        return A;
-    }
 
-    /// <summary>
-    /// Creates a vector y used for solving the polynomial coefficients.
-    /// </summary>
-    /// <param name="windowLength">The length of the filter window.</param>
-    /// <param name="halfWindow">Half the window length.</param>
-    /// <param name="derivativeOrder">The order of the derivative.</param>
-    /// <returns>A vector representing the desired output values.</returns>
-    private static double[] CreateVectorY(int windowLength, int halfWindow, int derivativeOrder)
-    {
-        var y = new double[windowLength];
-        y[halfWindow] = MathFunctions.Factorial(derivativeOrder);
-        return y;
-    }
+        // Target: the derivativeOrder-th polynomial coefficient weighted by derivativeOrder!
+        var target = new double[polyOrder + 1];
+        target[derivativeOrder] = MathFunctions.Factorial(derivativeOrder);
 
-    /// <summary>
-    /// Solves for the polynomial coefficients using matrix algebra.
-    /// </summary>
-    /// <param name="A">The matrix representing the polynomial equations.</param>
-    /// <param name="y">The vector representing the desired output values.</param>
-    /// <returns>An array of polynomial coefficients.</returns>
-    private static double[] SolveCoefficients(double[,] A, double[] y)
-    {
-        var coefficients = MatrixOperations.SolveLinearSystem(A, y);
+        var projectedTarget = MatrixOperations.SolveLinearSystem(normalMatrix, target);
 
-        return coefficients.Reverse().ToArray();
+        return MatrixOperations.Multiply(design, projectedTarget);
     }
 
     /// <summary>
@@ -257,11 +259,11 @@ public static class SavitzkyGolayFilter
     /// <param name="outputSignal">The array of filtered data points.</param>
     /// <param name="windowLength">The length of the filter window.</param>
     /// <param name="polyOrder">The order of the polynomial.</param>
-    private static void PolynomialFitEdges(double[] inputSignal, double[] outputSignal, int windowLength, int polyOrder)
+    private static void PolynomialFitEdges(double[] inputSignal, double[] outputSignal, int windowLength, int polyOrder, int derivativeOrder)
     {
         var halfWindow = windowLength / 2;
 
-        PolynomialFit(inputSignal, outputSignal, 0, windowLength, 0, halfWindow, polyOrder);
+        PolynomialFit(inputSignal, outputSignal, 0, windowLength, 0, halfWindow, polyOrder, derivativeOrder);
         PolynomialFit(
             inputSignal,
             outputSignal,
@@ -269,7 +271,8 @@ public static class SavitzkyGolayFilter
             inputSignal.Length,
             inputSignal.Length - halfWindow,
             inputSignal.Length,
-            polyOrder
+            polyOrder,
+            derivativeOrder
         );
     }
 
@@ -290,41 +293,63 @@ public static class SavitzkyGolayFilter
         int windowStop,
         int interpStart,
         int interpStop,
-        int polyOrder
+        int polyOrder,
+        int derivativeOrder
     )
     {
-        var xVals = new double[windowStop - windowStart];
-        var yVals = new double[windowStop - windowStart];
+        var windowLength = windowStop - windowStart;
+        var center = (windowLength - 1) / 2.0;
+        var halfRange = Math.Max(center, 1.0);
+
+        var xVals = new double[windowLength];
+        var yVals = new double[windowLength];
 
         for (var i = windowStart; i < windowStop; i++)
         {
-            xVals[i - windowStart] = i - windowStart;
+            // Fit on a centered, unit-scaled basis (x in [-1, 1]). A raw monomial basis makes the normal
+            // equations ill-conditioned for higher polynomial orders, to the point of being reported as singular.
+            xVals[i - windowStart] = (i - windowStart - center) / halfRange;
             yVals[i - windowStart] = inputSignal[i];
         }
 
         var polyCoefficients = PolynomialFitter.FitPolynomial(xVals, yVals, polyOrder);
 
+        // The fit is in the scaled variable, so the d-th derivative scales by halfRange^-d when mapped back.
+        var derivativeScale = Math.Pow(halfRange, derivativeOrder);
+
         for (var i = interpStart; i < interpStop; i++)
         {
-            outputSignal[i] = PolynomialFitter.EvaluatePolynomial(polyCoefficients, i - windowStart);
+            var scaledX = (i - windowStart - center) / halfRange;
+            outputSignal[i] = EvaluatePolynomialDerivative(polyCoefficients, scaledX, derivativeOrder) / derivativeScale;
         }
     }
 
     /// <summary>
-    /// Restores the middle section of the input signal to the output signal.
+    /// Evaluates the given derivative of a polynomial at a point.
     /// </summary>
-    /// <param name="inputSignal">The array of data points to be filtered.</param>
-    /// <param name="outputSignal">The array of filtered data points.</param>
-    /// <param name="halfWindow">Half the window length.</param>
-    /// <param name="derivativeOrder">The order of the derivative.</param>
-    private static void RestoreMiddleSection(double[] inputSignal, double[] outputSignal, int halfWindow, int derivativeOrder)
+    /// <param name="coefficients">The polynomial coefficients, from lowest to highest order.</param>
+    /// <param name="x">The point at which to evaluate.</param>
+    /// <param name="derivativeOrder">The derivative order (0 evaluates the polynomial itself).</param>
+    private static double EvaluatePolynomialDerivative(double[] coefficients, double x, int derivativeOrder)
     {
-        if (derivativeOrder != 0)
-            return;
-
-        for (var i = halfWindow; i < inputSignal.Length - halfWindow; i++)
+        if (derivativeOrder == 0)
         {
-            outputSignal[i] = inputSignal[i];
+            return PolynomialFitter.EvaluatePolynomial(coefficients, x);
         }
+
+        double result = 0;
+
+        for (var j = derivativeOrder; j < coefficients.Length; j++)
+        {
+            double factor = 1;
+            for (var k = j - derivativeOrder + 1; k <= j; k++)
+            {
+                factor *= k;
+            }
+
+            result += coefficients[j] * factor * Math.Pow(x, j - derivativeOrder);
+        }
+
+        return result;
     }
 }

@@ -23,6 +23,10 @@ namespace SignalSharp.Detection.PELT;
 /// The PELT algorithm instance provided to this selector must be fitted with the signal data *before* calling
 /// the `SelectPenaltyInternal` method (or implicitly via `FitAndSelect`).
 /// </para>
+/// <para>
+/// Instances reuse the supplied PELT algorithm across all tested penalties and are therefore not thread-safe:
+/// use one selector per concurrent operation.
+/// </para>
 /// </remarks>
 public class PELTPenaltySelector
 {
@@ -65,6 +69,12 @@ public class PELTPenaltySelector
     public PELTPenaltySelectionResult FitAndSelect(double[] signal, PELTPenaltySelectionOptions selectionOptions)
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
+
+        if (signal.Length == 0)
+        {
+            throw new ArgumentException("Signal must contain at least one data point for penalty selection.", nameof(signal));
+        }
+
         _logger.LogInformation("Fitting PELT algorithm to 1D signal of length {Length} for penalty selection.", signal.Length);
         PELTAlgorithm.Fit(signal);
         return SelectPenaltyInternal(signal.Length, selectionOptions);
@@ -82,6 +92,12 @@ public class PELTPenaltySelector
     public PELTPenaltySelectionResult FitAndSelect(double[,] signalMatrix, PELTPenaltySelectionOptions selectionOptions)
     {
         ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+
+        if (signalMatrix.GetLength(1) == 0)
+        {
+            throw new ArgumentException("Signal must contain at least one data point for penalty selection.", nameof(signalMatrix));
+        }
+
         _logger.LogInformation(
             "Fitting PELT algorithm to {Rows}D signal of length {Length} for penalty selection.",
             signalMatrix.GetLength(0),
@@ -104,6 +120,12 @@ public class PELTPenaltySelector
     private PELTPenaltySelectionResult SelectPenaltyInternal(int signalLength, PELTPenaltySelectionOptions selectionOptions)
     {
         ArgumentNullException.ThrowIfNull(selectionOptions, nameof(selectionOptions));
+
+        if (!Enum.IsDefined(selectionOptions.Method))
+        {
+            throw new ArgumentOutOfRangeException(nameof(selectionOptions), selectionOptions.Method, "Unsupported penalty selection method.");
+        }
+
         _logger.LogInformation("Starting penalty selection using method: {Method}.", selectionOptions.Method);
 
         var likelihoodNeeded = selectionOptions.Method is PELTPenaltySelectionMethod.AIC or PELTPenaltySelectionMethod.BIC or PELTPenaltySelectionMethod.AICc;
@@ -157,7 +179,7 @@ public class PELTPenaltySelector
                 bestPenalty = penalty;
                 bestBreakpoints = breakpoints;
             }
-            else if (NumericUtils.AreApproximatelyEqual(score, bestScore) && numChangePoints < bestBreakpoints.Length)
+            else if (NumericUtils.AreApproximatelyEqualRelative(score, bestScore) && numChangePoints < bestBreakpoints.Length)
             {
                 _logger.LogDebug(
                     "Tie-break: Preferring simpler model. Penalty={Penalty:F4}, Score={Score:F4}, ChangePoints={NumChangePoints} (Prev CPs: {PrevCPs})",
@@ -493,7 +515,7 @@ public class PELTPenaltySelector
     /// <param name="n">The total number of data points (signal length).</param>
     /// <param name="totalEffectiveParams">The total number of effective parameters (segment parameters + K changepoints).</param>
     /// <param name="penaltyForLogging">The penalty value being evaluated (for context in log messages).</param>
-    /// <returns>The calculated correction term, or <see cref="double.NaN"/> if the correction is undefined or unstable (i.e., if N <= P + 1).</returns>
+    /// <returns>The calculated correction term, or <see cref="double.NaN"/> if the correction is undefined or unstable (i.e., if N &lt;= P + 1).</returns>
     private double CalculateAiccCorrection(double n, double totalEffectiveParams, double penaltyForLogging)
     {
         if (n > totalEffectiveParams + 1.0)
@@ -534,8 +556,21 @@ public class PELTPenaltySelector
         var minP = options.MinPenalty ?? EstimateMinPenaltyHeuristic(signalLength);
         var maxP = options.MaxPenalty ?? EstimateMaxPenaltyHeuristic(signalLength, minP);
 
-        if (minP < 0)
+        if (!double.IsFinite(minP) || !double.IsFinite(maxP))
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), $"MinPenalty ({minP}) and MaxPenalty ({maxP}) must be finite values.");
+        }
+
+        if (options.MinPenalty.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(options.MinPenalty.Value, nameof(options.MinPenalty));
+        }
+        else if (minP < 0)
+        {
             minP = 0;
+        }
+
+        // A degenerate range (max <= min) is widened so that at least two distinct penalties exist.
         if (maxP <= minP)
         {
             _logger.LogWarning("MaxPenalty ({MaxP:F2}) must be greater than MinPenalty ({MinP:F2}). Adjusting MaxPenalty slightly.", maxP, minP);

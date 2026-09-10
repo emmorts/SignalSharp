@@ -59,6 +59,16 @@ public class RBFCostFunction : CostFunctionBase
     /// </remarks>
     public RBFCostFunction(double? gamma = null)
     {
+        if (gamma.HasValue)
+        {
+            if (!double.IsFinite(gamma.Value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(gamma), gamma, "Gamma must be a finite value.");
+            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(gamma.Value, 0, nameof(gamma));
+        }
+
         _gamma = gamma;
     }
 
@@ -84,10 +94,11 @@ public class RBFCostFunction : CostFunctionBase
     /// </remarks>
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
-        _data = signalMatrix;
+        ValidateSignalFiniteness(signalMatrix);
+        ValidateQuadraticStorageCapacity(signalMatrix.GetLength(0), signalMatrix.GetLength(1), nameof(RBFCostFunction));
+        _data = (double[,])signalMatrix.Clone();
 
-        var distances = GenerateGramMatrix(signalMatrix, _gamma);
+        var distances = GenerateGramMatrix(_data, _gamma);
         PrecomputePrefixSum(distances);
         _prefixSum = distances;
 
@@ -207,8 +218,12 @@ public class RBFCostFunction : CostFunctionBase
         for (var dim = 0; dim < numDimensions; dim++)
         {
             var pairwiseDistances = CalculatePairwiseDistances(data, dim);
-            gamma ??= CalculateGamma(pairwiseDistances);
-            var kernel = ApplyRBFKernel(pairwiseDistances, gamma.Value);
+
+            // When gamma is derived from the data, compute it per dimension: dimensions can have
+            // different scales, so a single dimension's median is not representative for the others.
+            var dimensionGamma = gamma ?? CalculateGamma(pairwiseDistances);
+            var kernel = ApplyRBFKernel(pairwiseDistances, dimensionGamma);
+
             for (var i = 0; i < numPoints; i++)
             {
                 for (var j = 0; j < numPoints; j++)
@@ -273,8 +288,8 @@ public class RBFCostFunction : CostFunctionBase
                     }
                     else
                     {
-                        var value = distances[i, j] * gamma;
-                        value = Math.Clamp(value, 1e-2, 1e2);
+                        // Upper clamp only: guards against underflow to exp(-huge) = 0 for large distances.
+                        var value = Math.Min(distances[i, j] * gamma, 1e2);
                         gramMatrix[i, j] = Math.Exp(-value);
                     }
                 }
@@ -310,17 +325,14 @@ public class RBFCostFunction : CostFunctionBase
         var cols = matrix.GetLength(1);
         var values = new List<double>(rows * (rows - 1) / 2);
 
-        Parallel.For(
-            0,
-            rows,
-            i =>
+        // Sequential by design: List<T> is not thread-safe and the work is negligible compared to the fits.
+        for (var i = 0; i < rows; i++)
+        {
+            for (var j = i + 1; j < cols; j++)
             {
-                for (var j = i + 1; j < cols; j++)
-                {
-                    values.Add(matrix[i, j]);
-                }
+                values.Add(matrix[i, j]);
             }
-        );
+        }
 
         return values;
     }

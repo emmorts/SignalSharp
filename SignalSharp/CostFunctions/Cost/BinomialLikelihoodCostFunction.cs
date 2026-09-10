@@ -105,7 +105,7 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
     /// or if data is invalid (k &lt; 0, n &lt; 1, k > n, not effectively integers, NaN, or Infinity).</exception>
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+        ValidateSignalFiniteness(signalMatrix);
         _logger.LogTrace("Fitting BinomialLikelihoodCostFunction to signal of length {Length}.", signalMatrix.GetLength(1));
 
         if (signalMatrix.GetLength(0) != 2)
@@ -127,12 +127,7 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
             var k = signalMatrix[0, i];
             var n = signalMatrix[1, i];
 
-            if (double.IsNaN(k) || double.IsNaN(n) || double.IsInfinity(k) || double.IsInfinity(n))
-            {
-                var message = $"Invalid data at index {i}: k={k}, n={n}. Values cannot be NaN or Infinity.";
-                _logger.LogError(message);
-                throw new ArgumentException(message, nameof(signalMatrix));
-            }
+            // NaN/Infinity are rejected up front by ValidateSignalFiniteness.
 
             // Check if k and n are effectively integers
             var kIsInteger = NumericUtils.IsEffectivelyInteger(k, tolerance);
@@ -231,7 +226,7 @@ public class BinomialLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
     /// <param name="signal">The one-dimensional time series data.</param>
     /// <returns>Throws NotSupportedException.</returns>
     /// <exception cref="NotSupportedException">Always thrown, explaining the need for 2D input with specific row definitions.</exception>
-    public new IPELTCostFunction Fit(double[] signal)
+    public override IPELTCostFunction Fit(double[] signal)
     {
         var message =
             $"{nameof(BinomialLikelihoodCostFunction)} requires 2D input data (successes 'k' in row 0, trials 'n' in row 1). Use the Fit(double[,]) overload instead.";

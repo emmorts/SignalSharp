@@ -25,7 +25,8 @@ public static class NumericUtils
     /// <returns>True if the absolute difference between <paramref name="a"/> and <paramref name="b"/> is less than or equal to <paramref name="absoluteEpsilon"/>.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="absoluteEpsilon"/> is negative.</exception>
     /// <remarks>
-    /// Compares using `Abs(a - b) <= absoluteEpsilon`.
+    /// Compares using the absolute difference between the values, computed without relying on signed
+    /// subtraction so that unsigned numeric types are handled correctly.
     /// This method uses a fixed absolute tolerance. It may not be suitable for comparing numbers of vastly different magnitudes
     /// or numbers very close to zero if the epsilon is relatively large.
     /// Consider using <see cref="AreApproximatelyEqualRelative{T}(T, T, T, T)"/> for a more robust comparison, especially for floating-point types.
@@ -34,7 +35,8 @@ public static class NumericUtils
         where T : INumber<T>
     {
         ArgumentOutOfRangeException.ThrowIfNegative(absoluteEpsilon, nameof(absoluteEpsilon));
-        return T.Abs(a - b) <= absoluteEpsilon; // Use <= for inclusivity at the boundary
+        var difference = a >= b ? a - b : b - a;
+        return difference <= absoluteEpsilon; // Use <= for inclusivity at the boundary
     }
 
     /// <summary>
@@ -64,7 +66,7 @@ public static class NumericUtils
     /// <returns>True if the absolute value is less than or equal to <paramref name="absoluteEpsilon"/>.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="absoluteEpsilon"/> is negative.</exception>
     /// <remarks>
-    /// Compares using `Abs(value) <= absoluteEpsilon`.
+    /// Compares using `Abs(value) &lt;= absoluteEpsilon`.
     /// This method is useful for handling values that should be zero but might have
     /// small non-zero values due to arithmetic imprecisions or intentional thresholds.
     /// This performs an absolute tolerance check against zero.
@@ -108,7 +110,7 @@ public static class NumericUtils
     /// <returns>True if the values are close enough based on the specified tolerances.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="relativeTolerance"/> or <paramref name="absoluteTolerance"/> is negative.</exception>
     /// <remarks>
-    /// Implements the check `Abs(a - b) <= absoluteTolerance + relativeTolerance * Abs(b)`.
+    /// Implements the check `Abs(a - b) &lt;= absoluteTolerance + relativeTolerance * Abs(b)`.
     /// This approach is generally more robust than pure absolute or pure relative tolerance checks,
     /// handling both comparisons near zero (where absolute tolerance dominates) and comparisons
     /// of large numbers (where relative tolerance dominates).
@@ -165,10 +167,12 @@ public static class NumericUtils
     /// This is useful for determining if a floating-point value should be treated as an integer,
     /// accounting for potential rounding errors in floating-point arithmetic.
     /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="epsilon"/> is negative.</exception>
     public static bool IsEffectivelyInteger<T>(T value, T epsilon)
         where T : INumber<T>, IFloatingPoint<T>
     {
-        return T.Abs(value - T.Round(value)) < epsilon;
+        ArgumentOutOfRangeException.ThrowIfNegative(epsilon, nameof(epsilon));
+        return T.Abs(value - T.Round(value)) <= epsilon;
     }
 
     /// <summary>
@@ -254,11 +258,28 @@ public static class NumericUtils
     /// <remarks>
     /// Provides epsilon values specifically calibrated for variance calculations
     /// to prevent division by zero and logarithm of zero errors in statistical models.
+    /// For integral types the value saturates to zero; variance floors are only meaningful for
+    /// floating-point types.
     /// </remarks>
     public static T GetVarianceEpsilon<T>()
         where T : INumber<T>
     {
-        return (T)Convert.ChangeType(Constants.VarianceEpsilon, typeof(T));
+        if (typeof(T) == typeof(double))
+        {
+            return (T)Convert.ChangeType(Constants.VarianceEpsilon, typeof(T));
+        }
+
+        if (typeof(T) == typeof(float))
+        {
+            return (T)Convert.ChangeType(Constants.VarianceEpsilon, typeof(T));
+        }
+
+        if (typeof(T) == typeof(decimal))
+        {
+            return (T)Convert.ChangeType(Constants.VarianceEpsilon, typeof(T));
+        }
+
+        return T.CreateSaturating(Constants.VarianceEpsilon);
     }
 
     /// <summary>

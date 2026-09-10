@@ -126,7 +126,7 @@ public static partial class StatisticalFunctions
         (T min, T max) = MinMaxGeneric(values);
         var range = max - min;
 
-        if (NumericUtils.IsEffectivelyZero(range))
+        if (range == T.Zero)
         {
             destination.Clear();
             return;
@@ -148,10 +148,19 @@ public static partial class StatisticalFunctions
             return;
         }
 
+        // Constant input must yield zeros even when the mean is not exactly representable (summing rounding can
+        // leave a tiny non-zero standard deviation), so test for identical values instead of a tolerance.
+        if (AllValuesIdentical(values))
+        {
+            destination.Clear();
+            return;
+        }
+
         var mean = MeanGeneric(values);
         var stdDev = StandardDeviationGeneric(values);
 
-        if (NumericUtils.IsEffectivelyZero(stdDev))
+        // Backstop for data that varies only in the subnormal range, where the squared deviations underflow to zero.
+        if (stdDev == T.Zero)
         {
             destination.Clear();
             return;
@@ -174,13 +183,16 @@ public static partial class StatisticalFunctions
         }
 
         var mean = MeanGeneric(values);
-        var stdDev = StandardDeviationGeneric(values);
+        var variance = VarianceGeneric(values);
 
-        if (NumericUtils.IsEffectivelyZero(stdDev))
+        // Guard on variance (matching the double/float SIMD paths) so results do not depend on
+        // which implementation is dispatched to.
+        if (NumericUtils.IsEffectivelyZero(variance))
         {
             return T.Zero;
         }
 
+        var stdDev = T.Sqrt(T.Max(T.Zero, variance));
         T invStdDev = T.One / stdDev;
         var skewnessSum = T.Zero;
 

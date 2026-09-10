@@ -18,8 +18,15 @@ public static class PolynomialFitter
     /// - The polynomial order is negative.
     /// - The number of data points is less than or equal to the polynomial order.
     /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the normal equations are singular (for example, when all x values are identical),
+    /// so no unique polynomial fit exists.
+    /// </exception>
     public static double[] FitPolynomial(double[] x, double[] y, int order)
     {
+        ArgumentNullException.ThrowIfNull(x);
+        ArgumentNullException.ThrowIfNull(y);
+
         if (x.Length != y.Length)
         {
             throw new ArgumentException("Input arrays must have the same length.");
@@ -87,6 +94,8 @@ public static class PolynomialFitter
     /// <returns>The y-value of the polynomial at the given x-value.</returns>
     public static double EvaluatePolynomial(double[] coefficients, double x)
     {
+        ArgumentNullException.ThrowIfNull(coefficients);
+
         double result = 0;
 
         for (var i = 0; i < coefficients.Length; i++)
@@ -101,6 +110,21 @@ public static class PolynomialFitter
     {
         var n = b.Length;
         var x = new double[n];
+
+        // Scale used to detect a singular system independently of the matrix magnitude.
+        var scale = 0.0;
+        for (var i = 0; i < n; i++)
+        {
+            for (var j = 0; j < n; j++)
+            {
+                scale = Math.Max(scale, Math.Abs(A[i, j]));
+            }
+        }
+
+        // Relative to the matrix scale so that equally-conditioned systems behave the same regardless of magnitude.
+        // Truly singular normal equations collapse to a pivot of ~1e-16 * scale, so this still catches them while
+        // not rejecting the (merely ill-conditioned) high-order fits used by the Savitzky-Golay edge windows.
+        var singularityTolerance = 1e-14 * scale;
 
         // Gaussian elimination with partial pivoting
         for (var i = 0; i < n; i++)
@@ -122,6 +146,16 @@ public static class PolynomialFitter
             }
 
             (b[maxRow], b[i]) = (b[i], b[maxRow]);
+
+            // A pivot at or below the scale-relative tolerance means the system is singular
+            // (e.g. duplicated x values or all x values identical for order >= 1).
+            if (!double.IsFinite(A[i, i]) || Math.Abs(A[i, i]) <= singularityTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot fit polynomial: the normal equations are singular at pivot {i} (pivot value {A[i, i]}). "
+                        + "Ensure the x values are not all identical and contain enough distinct points for the requested order."
+                );
+            }
 
             // Make all rows below this one 0 in current column
             for (var k = i + 1; k < n; k++)

@@ -37,11 +37,11 @@ public class SimpleExponentialSmoothingExtrapolatorTests
     [TestCase(1.1)]
     [TestCase(2.0)]
     [TestCase(-1.0)]
-    public void Constructor_AlphaOutsideTypicalZeroOneRangeInOptions_DoesNotThrowExtrapolatorError(double alpha)
+    [TestCase(double.NaN)]
+    [TestCase(double.PositiveInfinity)]
+    public void Constructor_AlphaOutsideDocumentedRange_ThrowsArgumentOutOfRangeException(double alpha)
     {
-        var options = new SimpleExponentialSmoothingOptions { Alpha = alpha };
-
-        Assert.DoesNotThrow(() => new SimpleExponentialSmoothingExtrapolator<double>(options));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SimpleExponentialSmoothingOptions { Alpha = alpha });
     }
 
     #endregion

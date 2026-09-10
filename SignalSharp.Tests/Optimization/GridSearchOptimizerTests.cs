@@ -447,13 +447,13 @@ public class GridSearchOptimizerTests
     #region Cancellation Tests
 
     [Test]
-    public void OptimizeAsync_CancellationRequested_TerminatesGracefully()
+    public async Task OptimizeAsync_CancellationRequested_ThrowsOperationCanceledException()
     {
         var options = new GridSearchOptimizerOptions { DefaultGridSteps = 100, EnableParallelProcessing = true };
         var optimizer = new GridSearchOptimizer<TestInput, double>(options, _logger);
         var parameters = new List<ParameterDefinition> { new("x", 0.0, 5.0), new("y", 0.0, 5.0) };
 
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         int evaluationCount = 0;
 
         Func<TestInput, IReadOnlyDictionary<string, double>, ObjectiveEvaluation<double>> objectiveFuncWithCancel = (data, p) =>
@@ -469,17 +469,14 @@ public class GridSearchOptimizerTests
             return ObjectiveFunctions.Quadratic2D(data, p, targetX: 2.0, targetY: 2.0);
         };
 
-        OptimizationResult<double> result = default;
-        Assert.DoesNotThrowAsync(async () => result = await optimizer.OptimizeAsync(_testInputData, parameters, objectiveFuncWithCancel, cts.Token));
+        // Cancellation must surface to the caller instead of being silently reported as a successful search.
+        Assert.That(
+            async () => await optimizer.OptimizeAsync(_testInputData, parameters, objectiveFuncWithCancel, cts.Token),
+            Throws.InstanceOf<OperationCanceledException>()
+        );
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result.Success, Is.True);
-            Assert.That(result.MinimizedMetric, Is.Not.EqualTo(double.PositiveInfinity));
-            Assert.That(result.FunctionEvaluations, Is.GreaterThan(0));
-            Assert.That(result.FunctionEvaluations, Is.LessThan(options.DefaultGridSteps * options.DefaultGridSteps));
-        }
+        Assert.That(evaluationCount, Is.GreaterThan(0));
+        Assert.That(evaluationCount, Is.LessThan(options.DefaultGridSteps * options.DefaultGridSteps));
     }
 
     #endregion

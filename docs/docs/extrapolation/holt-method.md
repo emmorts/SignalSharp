@@ -48,7 +48,7 @@ $L_t = \alpha y_t + (1 - \alpha) (L_{t-1} + \phi T_{t-1})$
 $T_t = \beta (L_t - L_{t-1}) + (1 - \beta) \phi T_{t-1}$
 $\hat{y}_{t+h} = L_t + (\sum_{i=1}^{h} \phi^i) T_t$
 
-A value of $\phi$ between 0 and 1 dampens the trend. A value of 1 is equivalent to the standard, undamped Holt's method.
+A value of $\phi$ strictly between 0 and 1 dampens the trend. When `DampTrend` is `true`, `Phi` must be in the open interval (0, 1) - a value of 1 is rejected. For the standard, undamped Holt's method set `DampTrend` to `false`.
 
 ## Automatic Parameter Optimization
 
@@ -62,7 +62,7 @@ The behavior of the algorithm is controlled by the `HoltMethodOptions` record:
 * **`Beta`** (`double?`): The smoothing factor for the trend (between 0 and 1). If `null`, it will be optimized.
 * **`TrendType`** (`HoltMethodTrendType`): The type of trend, either `Additive` (default) or `Multiplicative`. Multiplicative trend requires all signal values to be positive.
 * **`DampTrend`** (`bool`): If `true`, a damped trend is used. Defaults to `false`.
-* **`Phi`** (`double?`): The damping parameter (between 0 and 1). Required if `DampTrend` is `true` and you are not optimizing it. If `null` and `DampTrend` is `true`, it will be optimized.
+* **`Phi`** (`double?`): The damping parameter, strictly between 0 and 1 when `DampTrend` is `true`. Required if `DampTrend` is `true` and you are not optimizing it. If `null` and `DampTrend` is `true`, it will be optimized.
 * **`InitialLevel`** (`double?`): An optional initial value for the level. If not provided, it's estimated from the first data point.
 * **`InitialTrend`** (`double?`): An optional initial value for the trend. If not provided, it's estimated from the first two data points.
 * **`OptimizationGridSteps`** (`int`): The number of steps for the grid search when optimizing parameters. Default is 10.

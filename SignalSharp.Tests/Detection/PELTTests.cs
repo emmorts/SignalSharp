@@ -8,6 +8,21 @@ namespace SignalSharp.Tests.Detection;
 public class PELTAlgorithmTests
 {
     [Test]
+    public void Detect_ArCostFunctionWithDefaultMinSize_DoesNotThrowForShortCandidateSegments()
+    {
+        // AR models require more points than PELT's default MinSize = 1, so the first candidates are too short.
+        // Those candidates must be skipped, not turned into a fatal error.
+        var options = new PELTOptions { CostFunction = new ARCostFunction(1) };
+        var algo = new PELTAlgorithm(options);
+        double[] signal = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+        int[] changePoints = [];
+
+        Assert.That(() => changePoints = algo.FitAndDetect(signal, penalty: 5.0), Throws.Nothing);
+        Assert.That(changePoints, Is.All.InRange(1, signal.Length - 1));
+    }
+
+    [Test]
     public void Fit_ValidSignal_ShouldUpdateSignalAndNSamples()
     {
         var options = new PELTOptions { CostFunction = new L2CostFunction() };

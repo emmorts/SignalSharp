@@ -85,7 +85,7 @@ public static partial class StatisticalFunctions
         (double min, double max) = MinMaxGeneric(values);
         var range = max - min;
 
-        if (NumericUtils.IsEffectivelyZero(range))
+        if (range == 0.0)
         {
             destination.Clear();
             return;
@@ -118,10 +118,19 @@ public static partial class StatisticalFunctions
             return;
         }
 
+        // Constant input must yield zeros even when the mean is not exactly representable (summing rounding can
+        // leave a tiny non-zero standard deviation), so test for identical values instead of a tolerance.
+        if (AllValuesIdentical(values))
+        {
+            destination.Clear();
+            return;
+        }
+
         double mean = MeanDoubleSimd(values);
         double stdDev = StandardDeviationDoubleSimd(values);
 
-        if (NumericUtils.IsEffectivelyZero(stdDev))
+        // Backstop for data that varies only in the subnormal range, where the squared deviations underflow to zero.
+        if (stdDev == 0.0)
         {
             destination.Clear();
             return;

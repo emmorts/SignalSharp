@@ -38,9 +38,10 @@ namespace SignalSharp.CostFunctions.Cost;
 /// <para>
 /// Note: This implementation uses the MLE for variance (dividing sum of squared deviations by <c>n</c>). If the segment variance
 /// is zero or numerically very close to zero (e.g., all points in the segment are identical), the logarithm
-/// would be undefined or negative infinity. To handle this, a small minimum variance floor based on <see cref="Constants.VarianceEpsilon"/>
-/// is used to ensure numerical stability. This effectively assigns a very high cost/metric to zero-variance segments,
-/// preventing issues with `log(0)` and ensuring such segments are unlikely to be chosen unless absolutely necessary.
+/// would be undefined. To handle this, a small minimum variance floor based on <see cref="Constants.VarianceEpsilon"/>
+/// is used to ensure numerical stability. Because the logarithm of the floor is a large negative number, a
+/// zero-variance segment receives a strongly negative metric: the floor prevents <c>log(0)</c> (and division by zero)
+/// from producing NaN/infinite values, but it does not by itself penalise constant segments.
 /// </para>
 /// </remarks>
 public class GaussianLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostFunction
@@ -80,7 +81,7 @@ public class GaussianLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostF
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="signalMatrix"/> is null.</exception>
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+        ValidateSignalFiniteness(signalMatrix);
         _logger.LogTrace("Fitting GaussianLikelihoodCostFunction to {Rows}D signal of length {Length}.", signalMatrix.GetLength(0), signalMatrix.GetLength(1));
 
         _numDimensions = signalMatrix.GetLength(0);

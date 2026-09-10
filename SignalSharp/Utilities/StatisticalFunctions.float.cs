@@ -82,7 +82,7 @@ public static partial class StatisticalFunctions
         (float min, float max) = MinMaxGeneric(values);
         var range = max - min;
 
-        if (NumericUtils.IsEffectivelyZero(range, NumericUtils.GetDefaultEpsilon<float>()))
+        if (range == 0f)
         {
             destination.Clear();
             return;
@@ -111,10 +111,19 @@ public static partial class StatisticalFunctions
     {
         int count = values.Length;
 
+        // Constant input must yield zeros even when the mean is not exactly representable (summing rounding can
+        // leave a tiny non-zero standard deviation), so test for identical values instead of a tolerance.
+        if (AllValuesIdentical(values))
+        {
+            destination.Clear();
+            return;
+        }
+
         float mean = MeanFloatSimd(values);
         float stdDev = StandardDeviationFloatSimd(values);
 
-        if (NumericUtils.IsEffectivelyZero(stdDev))
+        // Backstop for data that varies only in the subnormal range, where the squared deviations underflow to zero.
+        if (stdDev == 0f)
         {
             destination.Clear();
             return;
@@ -156,10 +165,6 @@ public static partial class StatisticalFunctions
         }
 
         float stdDev = MathF.Sqrt(variance);
-        if (NumericUtils.IsEffectivelyZero(stdDev))
-        {
-            return 0.0f;
-        }
 
         var meanVector = new Vector<float>(mean);
         var invStdDev = 1.0f / stdDev;

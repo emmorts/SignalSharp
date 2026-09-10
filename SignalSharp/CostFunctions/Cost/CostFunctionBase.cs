@@ -29,7 +29,7 @@ public abstract class CostFunctionBase : IPELTCostFunction
     /// <see cref="Fit(double[,])"/> to perform the actual fitting.
     /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown if the signal is null.</exception>
-    public IPELTCostFunction Fit(double[] signal)
+    public virtual IPELTCostFunction Fit(double[] signal)
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
 
@@ -40,6 +40,56 @@ public abstract class CostFunctionBase : IPELTCostFunction
         }
 
         return Fit(signalMatrix);
+    }
+
+    /// <summary>
+    /// Validates the signal matrix passed to <see cref="Fit(double[,])"/>: it must be non-null and contain only
+    /// finite values. Empty signals are permitted by design and yield a zero cost.
+    /// </summary>
+    /// <param name="signalMatrix">The signal matrix to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="signalMatrix"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if the matrix contains NaN or infinite values.</exception>
+    protected static void ValidateSignalFiniteness(double[,] signalMatrix)
+    {
+        ArgumentNullException.ThrowIfNull(signalMatrix);
+
+        var dimensions = signalMatrix.GetLength(0);
+        var points = signalMatrix.GetLength(1);
+
+        for (var dim = 0; dim < dimensions; dim++)
+        {
+            for (var i = 0; i < points; i++)
+            {
+                if (!double.IsFinite(signalMatrix[dim, i]))
+                {
+                    throw new ArgumentException($"Signal matrix contains a non-finite value at dimension {dim}, index {i}.", nameof(signalMatrix));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Validates that a cost function requiring O(dimensions * points^2) storage can allocate its precomputed
+    /// structures for the supplied signal, throwing a descriptive error instead of failing with an
+    /// <see cref="OutOfMemoryException"/> or a framework array-length error.
+    /// </summary>
+    /// <param name="dimensions">The number of signal dimensions (rows).</param>
+    /// <param name="points">The number of data points (columns).</param>
+    /// <param name="costFunctionName">The name of the cost function, used in the error message.</param>
+    /// <exception cref="ArgumentException">Thrown when the required element count exceeds the maximum array length.</exception>
+    protected static void ValidateQuadraticStorageCapacity(int dimensions, int points, string costFunctionName)
+    {
+        var requiredElements = (long)dimensions * points * points;
+
+        if (requiredElements > Array.MaxLength)
+        {
+            throw new ArgumentException(
+                $"{costFunctionName} requires O(dimensions * points^2) storage ({requiredElements} elements for "
+                    + $"{dimensions} dimensions and {points} points), which exceeds the maximum array length ({Array.MaxLength}). "
+                    + "Use fewer data points or reduce the number of dimensions.",
+                nameof(points)
+            );
+        }
     }
 
     /// <summary>

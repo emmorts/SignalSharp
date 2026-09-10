@@ -10,10 +10,10 @@ The process is as follows:
 
 1.  **Define Parameter Space**: For each parameter you want to optimize, you define a range of possible values (`MinValue`, `MaxValue`).
 2.  **Create the Grid**: The optimizer creates a multi-dimensional grid. Each dimension corresponds to a parameter, and the points along that dimension are the discrete values specified for that parameter (`DefaultGridSteps` or `PerParameterGridSteps`).
-3.  **Exhaustive Evaluation**: The optimizer iterates through every single combination of parameters on the grid. For each combination, it calls the provided `objectiveFunction`.
-4.  **Find the Best**: After evaluating all combinations, the optimizer identifies the set of parameters that resulted in the lowest metric value from the objective function.
+3.  **Evaluation**: The optimizer iterates through the parameter combinations on the grid. For each combination, it calls the provided `objectiveFunction`. Grids up to 1,000,000 combinations are evaluated exhaustively; larger grids are systematically subsampled to stay within the evaluation budget.
+4.  **Find the Best**: After evaluating the selected combinations, the optimizer identifies the set of parameters that resulted in the lowest metric value from the objective function.
 
-This exhaustive approach guarantees that the best parameter combination *on the grid* will be found. However, the true optimum may lie between grid points.
+An exhaustive search (grids within the evaluation budget) guarantees that the best parameter combination *on the grid* will be found. However, the true optimum may lie between grid points, and subsampled searches only cover a systematic subset of the grid.
 
 ## Configuration (`GridSearchOptimizerOptions`)
 
@@ -23,7 +23,7 @@ The behavior of the Grid Search optimizer is controlled by the `GridSearchOptimi
 
 -   **`PerParameterGridSteps`**: A dictionary to specify a different number of grid steps for individual parameters. This is useful when you want to search one parameter more finely than others. *Default: null*.
 
--   **`MaxFunctionEvaluations`**: An optional integer to limit the total number of objective function evaluations. If the total number of points on the grid exceeds this limit, the optimizer will intelligently subsample the grid to stay within budget. This is crucial for high-dimensional problems to keep computation time reasonable. *Default: null (no limit)*.
+-   **`MaxFunctionEvaluations`**: An optional integer to limit the total number of objective function evaluations. If the total number of points on the grid exceeds this limit, the optimizer will intelligently subsample the grid to stay within budget. This is crucial for high-dimensional problems to keep computation time reasonable. *Default: null (exhaustive up to 1,000,000 combinations; a larger grid without a budget is rejected)*.
 
 -   **`EnableParallelProcessing`**: If `true`, the optimizer will evaluate different parameter combinations in parallel, which can significantly speed up the search on multi-core processors. *Default: true*.
 

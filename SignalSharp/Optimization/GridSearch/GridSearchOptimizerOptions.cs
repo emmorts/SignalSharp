@@ -20,11 +20,19 @@ public record GridSearchOptimizerOptions
 
     /// <summary>
     /// Maximum number of function evaluations to perform.
-    /// If null, no limit is applied.
+    /// If null, the grid is evaluated exhaustively up to a maximum of 1,000,000 combinations.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// This is particularly useful for higher-dimensional parameter spaces where the total number
     /// of grid points would be prohibitively large.
+    /// </para>
+    /// <para>
+    /// When the grid exceeds the effective limit (the configured budget, or 1,000,000 combinations when
+    /// <see langword="null"/>), the combos are systematically stride-sampled instead of evaluated exhaustively,
+    /// and a grid larger than the limit with a <see langword="null"/> budget is rejected with
+    /// <see cref="InvalidOperationException"/> rather than exhausting memory.
+    /// </para>
     /// </remarks>
     public int? MaxFunctionEvaluations { get; init; } = null;
 
@@ -72,10 +80,14 @@ public record GridSearchOptimizerOptions
 
     public GridSearchOptimizerOptions()
     {
-        ValidateProperties();
+        Validate();
     }
 
-    private void ValidateProperties()
+    /// <summary>
+    /// Validates the option values. Called by the constructor and by the optimizer before the options are used,
+    /// which also covers instances produced by <c>with</c> expressions or object initializers.
+    /// </summary>
+    internal void Validate()
     {
         if (DefaultGridSteps < 2)
         {

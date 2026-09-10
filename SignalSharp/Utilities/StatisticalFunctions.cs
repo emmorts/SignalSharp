@@ -21,7 +21,12 @@ public static partial class StatisticalFunctions
     /// </summary>
     /// <typeparam name="T">The numeric type of the values, implementing <see cref="INumber{T}"/>.</typeparam>
     /// <param name="values">The set of values.</param>
-    /// <returns>The mean of the values. Returns <see cref="T.Zero"/> if the input span is empty.</returns>
+    /// <returns>The mean of the values. Returns <c>T.Zero</c> if the input span is empty.</returns>
+    /// <remarks>
+    /// For integral numeric types the running sum is accumulated in <typeparamref name="T"/> and can overflow
+    /// for large values; use a floating-point element type when values are large. Integer element types also
+    /// divide with integer (truncating) semantics.
+    /// </remarks>
     /// <example>
     /// <code>
     /// var doubleValues = new[] { 1.0, 2.0, 3.0 };
@@ -65,6 +70,11 @@ public static partial class StatisticalFunctions
     /// <param name="useQuickSelect">A flag indicating whether to use the QuickSelect algorithm (potentially faster, modifies input array copy) or sort-based method.</param>
     /// <returns>The median of the values.</returns>
     /// <exception cref="ArgumentException">Thrown when the values span is empty.</exception>
+    /// <remarks>
+    /// The values are copied before sorting, so the caller's data is never mutated.
+    /// For integral numeric types the even-count midpoint is computed without overflow, but the values themselves
+    /// must be representable in <typeparamref name="T"/>.
+    /// </remarks>
     /// <example>
     /// <code>
     /// var values = new[] { 1.0, 5.0, 2.0, 4.0, 3.0 };
@@ -83,10 +93,12 @@ public static partial class StatisticalFunctions
     /// </summary>
     /// <typeparam name="T">The numeric type of the values, implementing <see cref="INumber{T}"/>.</typeparam>
     /// <param name="values">The set of values.</param>
-    /// <returns>The population variance of the values. Returns <see cref="T.Zero"/> if the input span has 0 or 1 elements.</returns>
+    /// <returns>The population variance of the values. Returns <c>T.Zero</c> if the input span has 0 or 1 elements.</returns>
     /// <remarks>
     /// Population variance uses division by N (number of elements).
     /// Variance measures the dispersion of a set of values from their mean.
+    /// For integral numeric types the intermediate squared deviations are accumulated in <typeparamref name="T"/>
+    /// and can overflow; use a floating-point element type when values are large.
     /// </remarks>
     public static T Variance<T>(ReadOnlySpan<T> values)
         where T : struct, INumber<T>
@@ -113,7 +125,7 @@ public static partial class StatisticalFunctions
     /// </summary>
     /// <typeparam name="T">The numeric type of the values, implementing <see cref="INumber{T}"/> and <see cref="IRootFunctions{T}"/>.</typeparam>
     /// <param name="values">The set of values.</param>
-    /// <returns>The population standard deviation of the values. Returns <see cref="T.Zero"/> if the input span has 0 or 1 elements.</returns>
+    /// <returns>The population standard deviation of the values. Returns <c>T.Zero</c> if the input span has 0 or 1 elements.</returns>
     /// <remarks>
     /// Population standard deviation is the square root of the population variance.
     /// Standard deviation provides a measure of the spread of values.
@@ -145,6 +157,10 @@ public static partial class StatisticalFunctions
     /// <param name="values">The set of values.</param>
     /// <returns>The minimum value in the set.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the input sequence is empty.</exception>
+    /// <remarks>
+    /// NaN handling is positional: if the first value is NaN the result is NaN, while NaN values appearing later
+    /// are ignored because every comparison against NaN is false.
+    /// </remarks>
     public static T Min<T>(ReadOnlySpan<T> values)
         where T : INumber<T>
     {
@@ -161,6 +177,10 @@ public static partial class StatisticalFunctions
     /// <param name="values">The set of values.</param>
     /// <returns>The maximum value in the set.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the input sequence is empty.</exception>
+    /// <remarks>
+    /// NaN handling is positional: if the first value is NaN the result is NaN, while NaN values appearing later
+    /// are ignored because every comparison against NaN is false.
+    /// </remarks>
     public static T Max<T>(ReadOnlySpan<T> values)
         where T : INumber<T>
     {
@@ -174,10 +194,10 @@ public static partial class StatisticalFunctions
     /// </summary>
     /// <typeparam name="T">The numeric type of the values, implementing <see cref="INumber{T}"/>.</typeparam>
     /// <param name="values">The source values to normalize.</param>
-    /// <returns>A new array of type T containing the normalized values. If all input values are the same, returns an array filled with <see cref="T.Zero"/>.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the input sequence is empty.</exception>
+    /// <returns>A new array of type T containing the normalized values. If all input values are the same, returns an array filled with <c>T.Zero</c>. Returns an empty array when the input is empty.</returns>
     /// <remarks>
     /// Normalization scales the values such that the minimum value becomes 0 and the maximum value becomes 1.
+    /// Empty input yields an empty result rather than throwing.
     /// </remarks>
     public static T[] Normalize<T>(ReadOnlySpan<T> values)
         where T : struct, INumber<T>
@@ -201,11 +221,10 @@ public static partial class StatisticalFunctions
     /// <param name="values">The source values to normalize.</param>
     /// <param name="destination">The span to write the normalized values into. Must have the same length as <paramref name="values"/>.</param>
     /// <exception cref="ArgumentException">Thrown if destination length does not match values length.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when the input sequence <paramref name="values"/> is empty.</exception>
     /// <remarks>
     /// Normalization scales the values such that the minimum value becomes 0 and the maximum value becomes 1.
-    /// If all input values are the same, the destination span is filled with <see cref="T.Zero"/>.
-    /// Requires values to be non-empty.
+    /// If all input values are the same, the destination span is filled with <c>T.Zero</c>.
+    /// Empty input is a no-op rather than an error.
     /// </remarks>
     public static void Normalize<T>(ReadOnlySpan<T> values, Span<T> destination)
         where T : struct, INumber<T>
@@ -245,7 +264,7 @@ public static partial class StatisticalFunctions
     /// </summary>
     /// <typeparam name="T">The numeric type of the values, implementing <see cref="INumber{T}"/> and <see cref="IRootFunctions{T}"/>.</typeparam>
     /// <param name="values">The set of values.</param>
-    /// <returns>A new array containing the Z-score normalized values. If the standard deviation is effectively zero, returns an array filled with <see cref="T.Zero"/>.</returns>
+    /// <returns>A new array containing the Z-score normalized values. If all input values are identical, returns an array filled with <c>T.Zero</c>.</returns>
     /// <remarks>
     /// Z-score normalization transforms the data such that it has a mean of 0 and a population standard deviation of 1.
     /// Z = (value - mean) / stdDev
@@ -274,7 +293,7 @@ public static partial class StatisticalFunctions
     /// <exception cref="ArgumentException">Thrown if destination length does not match values length.</exception>
     /// <remarks>
     /// Z-score normalization transforms the data such that it has a mean of 0 and a population standard deviation of 1.
-    /// Z = (value - mean) / stdDev. If the standard deviation is effectively zero, the destination span is filled with <see cref="T.Zero"/>.
+    /// Z = (value - mean) / stdDev. If all input values are identical, the destination span is filled with <c>T.Zero</c>.
     /// </remarks>
     public static void ZScoreNormalization<T>(ReadOnlySpan<T> values, Span<T> destination)
         where T : struct, INumber<T>, IRootFunctions<T>

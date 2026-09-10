@@ -1,6 +1,5 @@
 using System.Numerics;
 using SignalSharp.Common.Exceptions;
-using SignalSharp.Utilities;
 
 namespace SignalSharp.Extrapolation.Linear;
 
@@ -14,11 +13,9 @@ public class LinearExtrapolator<T> : IExtrapolator<T>
 {
     private readonly LinearExtrapolationOptions _options;
     private T _slope = default!;
-    private T _intercept = default!;
     private T _lastValue = default!;
     private int _signalLength;
     private bool _isFitted;
-    private readonly T _epsilon;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LinearExtrapolator{T}"/> class with specified options.
@@ -35,7 +32,6 @@ public class LinearExtrapolator<T> : IExtrapolator<T>
         }
 
         _options = options;
-        _epsilon = NumericUtils.GetStrictEpsilon<T>();
     }
 
     /// <summary>
@@ -47,11 +43,19 @@ public class LinearExtrapolator<T> : IExtrapolator<T>
     /// <summary>
     /// Fits the linear extrapolation model to the provided historical signal data.
     /// </summary>
-    /// <param name="signal">The historical time series data. Must contain at least 2 data points if no window size is specified, or if the window size covers the whole signal.</param>
+    /// <param name="signal">The historical time series data. Must contain at least 2 finite data points if no window size is specified, or if the window size covers the whole signal.</param>
     /// <returns>The fitted extrapolator instance.</returns>
-    /// <exception cref="ArgumentException">Thrown if the effective number of data points for fitting is less than 2.</exception>
+    /// <exception cref="ArgumentException">Thrown if the effective number of data points for fitting is less than 2, or the signal contains NaN/infinite values.</exception>
     public IExtrapolator<T> Fit(ReadOnlySpan<T> signal)
     {
+        for (var i = 0; i < signal.Length; i++)
+        {
+            if (!T.IsFinite(signal[i]))
+            {
+                throw new ArgumentException($"Signal contains a non-finite value at index {i}.", nameof(signal));
+            }
+        }
+
         _signalLength = signal.Length;
 
         int effectiveWindowSize = _options.WindowSize ?? _signalLength;
@@ -83,16 +87,9 @@ public class LinearExtrapolator<T> : IExtrapolator<T>
 
         T denominator = n * sumXSquared - sumX * sumX;
 
-        if (T.Abs(denominator) < _epsilon)
-        {
-            _slope = T.Zero;
-            _intercept = sumY / n;
-        }
-        else
-        {
-            _slope = (n * sumXy - sumX * sumY) / denominator;
-            _intercept = (sumY * sumXSquared - sumX * sumXy) / denominator;
-        }
+        // For consecutive integer x-values the denominator equals n^2(n^2-1)/12 > 0 for every n >= 2,
+        // so no degenerate fallback is required.
+        _slope = (n * sumXy - sumX * sumY) / denominator;
 
         _lastValue = signal[^1];
         _isFitted = true;
@@ -129,6 +126,8 @@ public class LinearExtrapolator<T> : IExtrapolator<T>
     /// <param name="signal">The historical time series data.</param>
     /// <param name="horizon">The number of future time steps to predict.</param>
     /// <returns>An array of type <typeparamref name="T"/> containing the extrapolated signal values.</returns>
+    /// <exception cref="ArgumentException">Thrown if the effective number of data points for fitting is less than 2, or the signal contains NaN/infinite values.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="horizon"/> is less than 1.</exception>
     public T[] FitAndExtrapolate(ReadOnlySpan<T> signal, int horizon)
     {
         Fit(signal);

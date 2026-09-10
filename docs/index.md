@@ -4,7 +4,7 @@ _layout: landing
 
 # SignalSharp
 
-SignalSharp is a C# library designed for efficient signal processing and time series analysis. Whether you're dealing with noise reduction, state estimation, or change point detection, SignalSharp provides tools to help you get the job done.
+SignalSharp is a C# library designed for efficient signal processing and time series analysis. Whether you're dealing with noise reduction, filtering, forecasting, or change point detection, SignalSharp provides tools to help you get the job done.
 
 ## Overview
 
@@ -20,10 +20,20 @@ Signal processing is a critical component in various applications, including tel
 - **L1 Cost Function**: Robust against outliers and non-Gaussian noise.
 - **L2 Cost Function**: Ideal for normally distributed data.
 - **RBF Cost Function**: Handles non-linear relationships between data points.
+- **Likelihood Cost Functions**: Gaussian, Poisson, Bernoulli, and Binomial likelihoods, plus an Autoregressive (AR) cost function. These also provide likelihood metrics suitable for information criteria (BIC/AIC/AICc) during penalty selection.
 
 ### Smoothing and Filtering
 - **Savitzky-Golay Filter**: Smooths data to reduce noise while preserving the shape of the signal.
 - **Moving Average**: Smoothing a signal using a moving average filter.
+
+### Extrapolation
+- **Linear Extrapolation**: Projects a linear trend fitted to recent samples.
+- **Simple Exponential Smoothing**: Level-only smoothing for data without trend or seasonality.
+- **Holt's Method**: Level and trend smoothing, with optional trend damping.
+
+### Optimization
+- **Grid Search**: Exhaustive evaluation over a parameter grid, with optional adaptive refinement.
+- **Nelder-Mead**: Derivative-free simplex optimization with optional multi-start.
 
 ### Resampling
 - **Downsampling**: Reducing the number of samples in a signal.

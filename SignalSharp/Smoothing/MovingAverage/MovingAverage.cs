@@ -54,11 +54,11 @@ public static class MovingAverage
 
         if (padding == Padding.None)
         {
+            if (signal.Length == 0)
+                return [];
+
             // if no padding, window cannot be larger than the signal
             ArgumentOutOfRangeException.ThrowIfGreaterThan(windowSize, signal.Length, nameof(windowSize));
-
-            if (signal.Length == 0 || windowSize > signal.Length)
-                return [];
 
             var outputLength = signal.Length - windowSize + 1;
             var result = new double[outputLength];
@@ -75,6 +75,18 @@ public static class MovingAverage
             for (var i = 1; i < outputLength; i++)
             {
                 currentSum = currentSum - signal[i - 1] + signal[i + windowSize - 1];
+
+                // If a non-finite value entered the window, the running sum stays contaminated after that
+                // value leaves. Recompute it so that only windows actually containing the bad sample are affected.
+                if (!double.IsFinite(currentSum))
+                {
+                    currentSum = 0;
+                    for (var k = 0; k < windowSize; k++)
+                    {
+                        currentSum += signal[i + k];
+                    }
+                }
+
                 result[i] = currentSum / windowSize;
             }
 
@@ -111,13 +123,25 @@ public static class MovingAverage
 
                 if (enteringIndex >= extendedSignal.Length)
                 {
-                    break;
+                    throw new InvalidOperationException(
+                        "Padded signal is too short for the requested window size; padding did not extend the signal as expected."
+                    );
                 }
 
                 var elementLeaving = extendedSignal[leavingIndex];
                 var elementEntering = extendedSignal[enteringIndex];
 
                 currentSum = currentSum - elementLeaving + elementEntering;
+
+                if (!double.IsFinite(currentSum))
+                {
+                    currentSum = 0;
+                    for (var k = 0; k < windowSize; k++)
+                    {
+                        currentSum += extendedSignal[i + k];
+                    }
+                }
+
                 result[i] = currentSum / windowSize;
             }
 
@@ -156,6 +180,11 @@ public static class MovingAverage
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
         // standard alpha range is (0, 1]. Alpha=0 means EMA[t] = EMA[t-1] (constant), Alpha=1 means EMA[t] = signal[t].
+        if (!double.IsFinite(alpha))
+        {
+            throw new ArgumentOutOfRangeException(nameof(alpha), alpha, "Alpha must be a finite value in the range (0, 1].");
+        }
+
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(alpha, 0, nameof(alpha));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(alpha, 1, nameof(alpha));
 
@@ -239,22 +268,29 @@ public static class MovingAverage
         ArgumentOutOfRangeException.ThrowIfZero(weights.Length, nameof(weights));
 
         var windowSize = weights.Length;
+
+        foreach (var weight in weights)
+        {
+            if (!double.IsFinite(weight))
+            {
+                throw new ArgumentException("Weights must be finite values.", nameof(weights));
+            }
+        }
+
         var weightsSum = weights.Sum();
 
-        if (Math.Abs(weightsSum) < 1e-10)
+        if (weightsSum == 0)
             throw new ArgumentException("Sum of weights cannot be zero.", nameof(weights));
 
         if (padding == Padding.None)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(windowSize, signal.Length, nameof(weights));
-
-            if (signal.Length == 0 || windowSize > signal.Length)
+            if (signal.Length == 0)
                 return [];
+
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(windowSize, signal.Length, nameof(weights));
 
             var outputLength = signal.Length - windowSize + 1;
             var result = new double[outputLength];
-            if (outputLength == 0)
-                return result;
 
             for (var i = 0; i < outputLength; i++)
             {
@@ -284,7 +320,11 @@ public static class MovingAverage
             for (var i = 0; i < outputLength; i++)
             {
                 if (i + windowSize > extendedSignal.Length)
-                    break; // stop if window goes out of bounds
+                {
+                    throw new InvalidOperationException(
+                        "Padded signal is too short for the requested window size; padding did not extend the signal as expected."
+                    );
+                }
 
                 double weightedSum = 0;
                 for (var j = 0; j < windowSize; j++)

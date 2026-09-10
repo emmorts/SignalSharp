@@ -22,11 +22,17 @@ public static class MathFunctions
     /// <summary>
     /// Calculates the factorial of a non-negative integer.
     /// </summary>
-    /// <param name="n">The non-negative integer.</param>
+    /// <param name="n">The non-negative integer, at most 12.</param>
     /// <returns>The factorial of the integer.</returns>
+    /// <remarks>
+    /// 12! is the largest factorial that fits in an <see cref="int"/>; larger values would silently overflow,
+    /// so they are rejected. Use <see cref="Factorial(BigInteger)"/> for larger factorials.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="n"/> is negative or greater than 12.</exception>
     public static int Factorial(int n)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(n, nameof(n));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(n, 12, nameof(n));
 
         return FactorialRecursive(n);
     }
@@ -38,7 +44,8 @@ public static class MathFunctions
 
         var mid = n / 2;
 
-        return FactorialRecursive(mid) * FactorialRecursive(n - mid) * ProductRange(mid, n - mid);
+        // n! = (n/2)! * (n/2 + 1) * ... * n
+        return FactorialRecursive(mid) * ProductRange(mid, n - mid);
     }
 
     private static int FactorialRecursive(int n)
@@ -48,7 +55,8 @@ public static class MathFunctions
 
         var mid = n / 2;
 
-        return FactorialRecursive(mid) * FactorialRecursive(n - mid) * ProductRange(mid, n - mid);
+        // n! = (n/2)! * (n/2 + 1) * ... * n
+        return FactorialRecursive(mid) * ProductRange(mid, n - mid);
     }
 
     private static BigInteger ProductRange(BigInteger a, BigInteger b)

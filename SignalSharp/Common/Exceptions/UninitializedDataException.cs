@@ -1,11 +1,35 @@
 namespace SignalSharp.Common.Exceptions;
 
 /// <summary>
-/// Exception thrown when data is not initialized.
+/// Exception thrown when an operation is attempted on data that has not been initialized (for example,
+/// calling a calculation before <c>Fit</c>).
 /// </summary>
-/// <param name="message">The exception message.</param>
-public class UninitializedDataException(string? message) : Exception(message)
+/// <remarks>
+/// Derives from <see cref="InvalidOperationException"/> because it signals an operation-ordering violation.
+/// </remarks>
+public class UninitializedDataException : InvalidOperationException
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UninitializedDataException"/> class.
+    /// </summary>
+    public UninitializedDataException() { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UninitializedDataException"/> class with a specified error message.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    public UninitializedDataException(string? message)
+        : base(message) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UninitializedDataException"/> class with a specified error message
+    /// and a reference to the inner exception that is the cause of this exception.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="innerException">The exception that is the cause of the current exception.</param>
+    public UninitializedDataException(string? message, Exception? innerException)
+        : base(message, innerException) { }
+
     /// <summary>
     /// Throws an exception if the data is not initialized.
     /// </summary>

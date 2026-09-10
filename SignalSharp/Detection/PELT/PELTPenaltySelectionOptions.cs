@@ -22,7 +22,7 @@ public record PELTPenaltySelectionOptions(PELTPenaltySelectionMethod Method)
 
     /// <summary>
     /// The approximate number of penalty values to test between MinPenalty and MaxPenalty.
-    /// Used primarily by grid-search based methods (like AIC/BIC checks). Ignored by CROPS.
+    /// Used primarily by grid-search based methods (like AIC/BIC checks).
     /// Defaults to 50.
     /// </summary>
     public int NumPenaltySteps { get; init; } = 50;

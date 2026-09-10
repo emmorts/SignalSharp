@@ -55,7 +55,7 @@ public class L2CostFunction : CostFunctionBase
     /// </remarks>
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+        ValidateSignalFiniteness(signalMatrix);
 
         _numDimensions = signalMatrix.GetLength(0);
         _numPoints = signalMatrix.GetLength(1);
@@ -104,20 +104,22 @@ public class L2CostFunction : CostFunctionBase
     /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
     public override double ComputeCost(int? start = null, int? end = null)
     {
-        if (_numDimensions == 0 || _numPoints == 0)
-            return 0;
-
         UninitializedDataException.ThrowIfUninitialized(_prefixSum, "Fit() must be called before ComputeCost().");
         UninitializedDataException.ThrowIfUninitialized(_prefixSumSq, "Fit() must be called before ComputeCost().");
+
+        // Empty fitted data has no segments; cost is zero by convention (matching the other cost functions).
+        if (_numDimensions == 0 || _numPoints == 0)
+            return 0;
 
         var startIndex = start ?? 0;
         var endIndex = end ?? _numPoints;
 
-        var segmentLength = endIndex - startIndex;
-
         ArgumentOutOfRangeException.ThrowIfNegative(startIndex, nameof(start));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(endIndex, _numPoints, nameof(end));
-        SegmentLengthException.ThrowIfInvalid(endIndex - startIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, endIndex, nameof(start));
+
+        var segmentLength = endIndex - startIndex;
+        SegmentLengthException.ThrowIfInvalid(segmentLength);
 
         double totalCost = 0;
 
@@ -130,7 +132,9 @@ public class L2CostFunction : CostFunctionBase
             var segmentSumSq = _prefixSumSq[dim, endIndex] - _prefixSumSq[dim, startIndex];
 
             // calculate cost for this dimension: Sum(x^2) - (Sum(x))^2 / n
-            var costDim = segmentSumSq - (segmentSum * segmentSum) / segmentLength;
+            // Clamped at zero: the identity is exact in real arithmetic, but cancellation can produce
+            // small negative values for (near-)constant segments, and PELT requires non-negative costs.
+            var costDim = Math.Max(0.0, segmentSumSq - (segmentSum * segmentSum) / segmentLength);
 
             totalCost += costDim;
         }

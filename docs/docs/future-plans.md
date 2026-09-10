@@ -17,7 +17,7 @@
     - [ ] Bayesian Online Changepoint Detection
     - [ ] Binary Segmentation
 - Prediction
-    - [ ] Exponential Smoothing
+    - [x] Exponential Smoothing
     - [ ] ARIMA (AutoRegressive Integrated Moving Average)
     - [ ] Holt-Winters Exponential Smoothing
 - Filters

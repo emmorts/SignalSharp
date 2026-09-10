@@ -106,10 +106,9 @@ public static class Resampling
 
         for (var i = 0; i < newLength; i++)
         {
-            var start = i * factor;
-            var end = Math.Min(start + factor, signal.Length);
-            var slice = signal[start..end].AsSpan();
-            result[i] = StatisticalFunctions.Mean<double>(slice);
+            var start = (long)i * factor;
+            var end = (int)Math.Min(start + factor, signal.Length);
+            result[i] = StatisticalFunctions.Mean<double>(signal.AsSpan((int)start, end - (int)start));
         }
 
         return result;
@@ -133,10 +132,9 @@ public static class Resampling
 
         for (var i = 0; i < newLength; i++)
         {
-            var start = i * factor;
-            var end = Math.Min(start + factor, signal.Length);
-            var slice = signal[start..end].AsSpan();
-            result[i] = StatisticalFunctions.Max<double>(slice);
+            var start = (long)i * factor;
+            var end = (int)Math.Min(start + factor, signal.Length);
+            result[i] = StatisticalFunctions.Max<double>(signal.AsSpan((int)start, end - (int)start));
         }
 
         return result;
@@ -160,10 +158,9 @@ public static class Resampling
 
         for (var i = 0; i < newLength; i++)
         {
-            var start = i * factor;
-            var end = Math.Min(start + factor, signal.Length);
-            var slice = signal[start..end].AsSpan();
-            result[i] = StatisticalFunctions.Min<double>(slice);
+            var start = (long)i * factor;
+            var end = (int)Math.Min(start + factor, signal.Length);
+            result[i] = StatisticalFunctions.Min<double>(signal.AsSpan((int)start, end - (int)start));
         }
 
         return result;
@@ -182,10 +179,9 @@ public static class Resampling
 
         for (var i = 0; i < newLength; i++)
         {
-            var start = i * factor;
-            var end = Math.Min(start + factor, signal.Length);
-            var slice = signal[start..end].AsSpan();
-            result[i] = StatisticalFunctions.Median<double>(slice);
+            var start = (long)i * factor;
+            var end = (int)Math.Min(start + factor, signal.Length);
+            result[i] = StatisticalFunctions.Median<double>(signal.AsSpan((int)start, end - (int)start));
         }
 
         return result;
@@ -204,10 +200,9 @@ public static class Resampling
 
         for (var i = 0; i < newLength; i++)
         {
-            var start = i * factor;
-            var end = Math.Min(start + factor, signal.Length);
-            var slice = signal[start..end].AsSpan();
-            result[i] = StatisticalFunctions.Median<double>(slice, true);
+            var start = (long)i * factor;
+            var end = (int)Math.Min(start + factor, signal.Length);
+            result[i] = StatisticalFunctions.Median<double>(signal.AsSpan((int)start, end - (int)start), true);
         }
 
         return result;

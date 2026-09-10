@@ -20,7 +20,7 @@ public class ARCostFunctionTests
     public void Fit_NullSignal_ThrowsArgumentNullException()
     {
         var costFunc = new ARCostFunction(1);
-        Assert.Throws<ArgumentNullException>(() => costFunc.Fit(null!));
+        Assert.Throws<ArgumentNullException>(() => costFunc.Fit((double[])null!));
         Assert.Throws<ArgumentNullException>(() => costFunc.Fit((double[,])null!));
     }
 
@@ -202,6 +202,33 @@ public class ARCostFunctionTests
         var cost = costFunc.ComputeCost();
         // Expect zero cost as y[t] = 1 * y[t-1] fits perfectly.
         Assert.That(cost, Is.EqualTo(0.0).Within(Tolerance), "Cost should be zero for constant signal without intercept, as AR(1) model y[t]=1*y[t-1] fits.");
+    }
+
+    [Test]
+    public void ComputeLikelihoodMetric_PerfectFit_ReturnsFiniteMetric()
+    {
+        // A geometric ramp is fitted exactly by AR(1) with intercept while the design matrix stays
+        // well-conditioned, so the MLE variance is at (or below) the variance floor.
+        double[] signal = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0];
+        var costFunc = new ARCostFunction(order: 1, includeIntercept: true);
+        costFunc.Fit(signal);
+
+        var metric = ((ILikelihoodCostFunction)costFunc).ComputeLikelihoodMetric(0, signal.Length);
+
+        // A perfect fit is the best possible segment, so the metric must be finite (and the cost zero),
+        // not the worst possible value of +Infinity.
+        Assert.That(double.IsFinite(metric), Is.True, $"Metric should be finite for a perfect fit, but was {metric}.");
+        Assert.That(metric, Is.LessThan(0.0), "A perfect fit should yield a strongly negative log-likelihood metric.");
+        Assert.That(costFunc.ComputeCost(0, signal.Length), Is.EqualTo(0.0).Within(Tolerance));
+    }
+
+    [Test]
+    public void Fit_NonFiniteSignal_ThrowsArgumentException()
+    {
+        var costFunc = new ARCostFunction(1);
+
+        Assert.That(() => costFunc.Fit([1.0, double.NaN, 3.0]), Throws.ArgumentException);
+        Assert.That(() => costFunc.Fit([1.0, double.PositiveInfinity, 3.0]), Throws.ArgumentException);
     }
 
     [Test]

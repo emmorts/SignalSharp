@@ -29,7 +29,7 @@ When either cumulative sum exceeds a predefined threshold, a change point is ide
 
 ### Data Normalization
 
-Normalization of data is crucial for the CUSUM algorithm to function effectively, especially when dealing with data of varying scales. The library provides built-in normalization functions such as [0,1] normalization and Z-score normalization, available in @"StatisticalFunctions.Normalize" and @"StatisticalFunctions.ZScoreNormalization".
+Normalization of data is crucial for the CUSUM algorithm to function effectively, especially when dealing with data of varying scales. The library provides built-in normalization functions such as [0,1] normalization and Z-score normalization, available in @"SignalSharp.Utilities.StatisticalFunctions.Normalize" and @"SignalSharp.Utilities.StatisticalFunctions.ZScoreNormalization".
 
 #### Normalization Functions
 - **Min-Max Normalization**: Scales the data to the [0,1] range.

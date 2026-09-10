@@ -7,6 +7,31 @@ public static partial class StatisticalFunctions
 {
     private const int InsertionSortThreshold = 15;
 
+    /// <summary>
+    /// Determines whether every value in the span is bit-wise identical to the first one, exiting as soon as a
+    /// differing value is found. Used to detect degenerate (constant) input exactly, without an epsilon that would
+    /// also flatten legitimately small-scale data.
+    /// </summary>
+    private static bool AllValuesIdentical<T>(ReadOnlySpan<T> values)
+        where T : INumber<T>
+    {
+        if (values.Length <= 1)
+        {
+            return true;
+        }
+
+        var first = values[0];
+        for (var i = 1; i < values.Length; i++)
+        {
+            if (values[i] != first)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static T MedianImplementation<T>(ReadOnlySpan<T> values, bool useQuickSelect)
         where T : INumber<T>
     {
@@ -66,9 +91,6 @@ public static partial class StatisticalFunctions
     {
         if (start >= endExclusive)
         {
-            if (start == endExclusive - 1 && start >= 0 && start < values.Length)
-                return values[start];
-
             throw new ArgumentException($"Invalid range for FindMax: start={start}, endExclusive={endExclusive}");
         }
 

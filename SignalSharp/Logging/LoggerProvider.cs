@@ -6,9 +6,14 @@ namespace SignalSharp.Logging;
 /// <summary>
 /// Provides centralized logging capabilities for the SignalSharp library.
 /// </summary>
+/// <remarks>
+/// The configured factory is process-wide and shared by all library types. <see cref="Configure"/> replaces the
+/// factory reference atomically; the previously configured factory is not disposed by this class, so ownership
+/// stays with the caller.
+/// </remarks>
 public static class LoggerProvider
 {
-    private static ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
+    private static volatile ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
 
     /// <summary>
     /// Configures the library to use the specified logger factory.

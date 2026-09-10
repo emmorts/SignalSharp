@@ -75,7 +75,7 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
     /// <returns>The fitted <see cref="ARCostFunction"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown if the signal is null.</exception>
     /// <exception cref="ArgumentException">Thrown if the signal length is less than order + 1.</exception>
-    public new IPELTCostFunction Fit(double[] signal)
+    public override IPELTCostFunction Fit(double[] signal)
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
         if (signal.Length < _order + 1)
@@ -83,21 +83,31 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
             throw new ArgumentException($"Signal length must be at least order + 1 ({_order + 1}) for AR({_order}) model.", nameof(signal));
         }
 
+        for (var i = 0; i < signal.Length; i++)
+        {
+            if (!double.IsFinite(signal[i]))
+            {
+                throw new ArgumentException($"Signal contains a non-finite value at index {i}.", nameof(signal));
+            }
+        }
+
         _logger.LogTrace("Fitting ARCostFunction to 1D signal of length {SignalLength}.", signal.Length);
-        _signal = signal;
+
+        // Copy so that later mutation of the caller's array cannot invalidate the fitted model inputs.
+        _signal = (double[])signal.Clone();
         return this;
     }
 
     /// <summary>
     /// Fits the cost function to the provided multi-dimensional time series data.
-    /// <remark>
-    /// Note: ARCostFunction currently only supports univariate (1D) signals.
-    /// </remark>
     /// </summary>
+    /// <remarks>
+    /// Note: ARCostFunction currently only supports univariate (1D) signals.
+    /// </remarks>
     /// <param name="signalMatrix">The multi-dimensional time series data. Must have exactly one row.</param>
     /// <returns>The fitted <see cref="ARCostFunction"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown if the signal matrix is null.</exception>
-    /// <exception cref="NotSupportedException">Thrown if the signal matrix has more than one dimension (row).</exception>
+    /// <exception cref="NotSupportedException">Thrown if the signal matrix does not have exactly one row (dimension).</exception>
     /// <exception cref="ArgumentException">Thrown if the signal length is less than order + 1.</exception>
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
@@ -161,7 +171,12 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
     /// </summary>
     /// <param name="start">The start index of the segment (inclusive).</param>
     /// <param name="end">The end index of the segment (exclusive).</param>
-    /// <returns>The computed likelihood metric, or double.PositiveInfinity if the model cannot be fit or variance is near zero.</returns>
+    /// <returns>
+    /// The computed likelihood metric, or <see cref="double.PositiveInfinity"/> if the model cannot be fitted, the
+    /// segment yields no effective equations, or the metric itself is NaN/infinite. A fitted variance below
+    /// <see cref="Constants.VarianceEpsilon"/> is clamped to that floor, so a perfect fit produces a finite
+    /// (strongly negative) metric rather than an infinite one.
+    /// </returns>
     /// <exception cref="UninitializedDataException">Thrown when Fit method has not been called.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the segment indices are out of bounds.</exception>
     /// <exception cref="SegmentLengthException">Thrown when the segment length is invalid.</exception>
@@ -201,16 +216,19 @@ public class ARCostFunction : CostFunctionBase, ILikelihoodCostFunction
 
             var varianceMle = rss / numEquations;
 
-            // use variance epsilon for check
-            if (NumericUtils.IsEffectivelyZero(varianceMle, Constants.VarianceEpsilon))
+            // Clamp the MLE variance to the variance floor, mirroring GaussianLikelihoodCostFunction:
+            // a perfect fit is the best possible segment, so flooring the variance yields a strongly
+            // negative (favourable) metric instead of the worst possible (+Infinity).
+            if (varianceMle < Constants.VarianceEpsilon)
             {
-                _logger.LogWarning(
-                    "Estimated variance ({VarianceMle}) is effectively zero for segment [{StartIndex}, {EndIndex}) in likelihood calculation. Returning +Infinity.",
+                _logger.LogTrace(
+                    "Estimated variance ({VarianceMle}) is below the variance floor for segment [{StartIndex}, {EndIndex}); clamping to {Floor}.",
                     varianceMle,
                     start,
-                    end
+                    end,
+                    Constants.VarianceEpsilon
                 );
-                return double.PositiveInfinity;
+                varianceMle = Constants.VarianceEpsilon;
             }
 
             // core likelihood term (omitting constants like log(2*pi))

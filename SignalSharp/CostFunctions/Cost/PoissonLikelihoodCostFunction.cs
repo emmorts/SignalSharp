@@ -94,7 +94,7 @@ public class PoissonLikelihoodCostFunction : CostFunctionBase, ILikelihoodCostFu
     /// <exception cref="ArgumentException">Thrown if any data point in <paramref name="signalMatrix"/> is less than -<c>Epsilon</c>.</exception>
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+        ValidateSignalFiniteness(signalMatrix);
         _logger.LogTrace("Fitting PoissonLikelihoodCostFunction to {Rows}D signal of length {Length}.", signalMatrix.GetLength(0), signalMatrix.GetLength(1));
 
         _numDimensions = signalMatrix.GetLength(0);

@@ -4,7 +4,7 @@ namespace SignalSharp.Optimization;
 /// Interface for a parameter optimization strategy.
 /// Implementations of this interface will define specific optimization algorithms.
 /// </summary>
-/// <typeparam name="TInput">The type of the input data provided to the objective function (e.g., ReadOnlySpan<TData>).</typeparam>
+/// <typeparam name="TInput">The type of the input data provided to the objective function (e.g., <c>ReadOnlySpan&lt;TData&gt;</c>).</typeparam>
 /// <typeparam name="TMetric">The type of the objective metric returned by the objective function (e.g., SSE of type TData).</typeparam>
 public interface IParameterOptimizer<TInput, TMetric>
 {
@@ -47,6 +47,13 @@ public interface IParameterOptimizer<TInput, TMetric>
     /// <param name="cancellationToken">Token to cancel the optimization process.</param>
     /// <returns>An <see cref="OptimizationResult{TMetric}"/> containing the best parameters found,
     /// the minimized metric value, and other optimization details.</returns>
+    /// <exception cref="OperationCanceledException">Thrown when the operation is cancelled through <paramref name="cancellationToken"/>.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="parametersToOptimize"/> or <paramref name="objectiveFunction"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when parameter names are duplicated.</exception>
+    /// <remarks>
+    /// Cancellation stops the search and surfaces as an <see cref="OperationCanceledException"/> rather than
+    /// returning a partial result as if the search had completed.
+    /// </remarks>
     Task<OptimizationResult<TMetric>> OptimizeAsync(
         TInput inputData,
         IEnumerable<ParameterDefinition> parametersToOptimize,

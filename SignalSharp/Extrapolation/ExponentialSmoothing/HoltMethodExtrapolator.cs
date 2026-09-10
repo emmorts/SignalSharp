@@ -66,18 +66,31 @@ public class HoltMethodExtrapolator<T> : HoltBaseExtrapolator, IExtrapolator<T>
     {
         if (options.Alpha.HasValue)
         {
+            ValidateFinite(options.Alpha.Value, nameof(options.Alpha));
             ArgumentOutOfRangeException.ThrowIfNegative(options.Alpha.Value, nameof(options.Alpha));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(options.Alpha.Value, 1.0, nameof(options.Alpha));
         }
 
         if (options.Beta.HasValue)
         {
+            ValidateFinite(options.Beta.Value, nameof(options.Beta));
             ArgumentOutOfRangeException.ThrowIfNegative(options.Beta.Value, nameof(options.Beta));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(options.Beta.Value, 1.0, nameof(options.Beta));
         }
 
+        if (options.InitialLevel.HasValue)
+        {
+            ValidateFinite(options.InitialLevel.Value, nameof(options.InitialLevel));
+        }
+
+        if (options.InitialTrend.HasValue)
+        {
+            ValidateFinite(options.InitialTrend.Value, nameof(options.InitialTrend));
+        }
+
         if (options is { DampTrend: true, Phi: not null })
         {
+            ValidateFinite(options.Phi.Value, nameof(options.Phi));
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(options.Phi.Value, 0.0, nameof(options.Phi));
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(options.Phi.Value, 1.0, nameof(options.Phi));
         }
@@ -89,6 +102,18 @@ public class HoltMethodExtrapolator<T> : HoltBaseExtrapolator, IExtrapolator<T>
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.OptimizationGridSteps, nameof(options.OptimizationGridSteps));
     }
 
+    /// <summary>
+    /// Throws when an optional numeric option is not finite, since NaN or infinity would silently produce
+    /// NaN forecasts (comparison-based range checks do not reject NaN).
+    /// </summary>
+    private static void ValidateFinite(double value, string parameterName)
+    {
+        if (!double.IsFinite(value))
+        {
+            throw new ArgumentOutOfRangeException(parameterName, value, "Value must be finite.");
+        }
+    }
+
     /// <inheritdoc />
     public IExtrapolator<T> Fit(ReadOnlySpan<T> signal)
     {
@@ -96,6 +121,14 @@ public class HoltMethodExtrapolator<T> : HoltBaseExtrapolator, IExtrapolator<T>
         if (signalLength < 2)
         {
             throw new ArgumentException($"Holt's method requires at least 2 data points. Provided: {signalLength}.", nameof(signal));
+        }
+
+        for (var i = 0; i < signalLength; i++)
+        {
+            if (!T.IsFinite(signal[i]))
+            {
+                throw new ArgumentException($"Signal contains a non-finite value at index {i}.", nameof(signal));
+            }
         }
 
         ValidateSignalForTrendType(signal);
@@ -140,7 +173,7 @@ public class HoltMethodExtrapolator<T> : HoltBaseExtrapolator, IExtrapolator<T>
                 _logger.LogError(ex, "Fit failed at step {Time} due to invalid state calculation.", t);
                 throw new InvalidOperationException($"Fit failed at step {t}. See inner exception.", ex);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OutOfMemoryException and not OperationCanceledException)
             {
                 _logger.LogError(ex, "Unexpected error during fit step {Time}.", t);
                 throw new InvalidOperationException($"Unexpected error during fit at step {t}. See inner exception.", ex);
@@ -230,7 +263,7 @@ public class HoltMethodExtrapolator<T> : HoltBaseExtrapolator, IExtrapolator<T>
             phiValues = [_options.DampTrend ? _options.Phi!.Value : 1.0];
         }
 
-        long totalCombinations = alphaValues.Length * betaValues.Length * phiValues.Length;
+        long totalCombinations = (long)alphaValues.Length * betaValues.Length * phiValues.Length;
         long currentCombination = 0;
         long logThreshold = Math.Max(1, totalCombinations / 20);
 
@@ -371,17 +404,8 @@ public class HoltMethodExtrapolator<T> : HoltBaseExtrapolator, IExtrapolator<T>
                 $"Cannot forecast: Multiplicative previous trend ({Convert.ToDouble(previousTrend)}) is non-positive and phi ({Convert.ToDouble(phi)}) is non-zero."
             );
 
-        T trendFactor;
-        if (previousTrend > _epsilon || NumericUtils.AreApproximatelyEqual(phi, T.Zero, _epsilon))
-        {
-            trendFactor = T.Pow(previousTrend, phi);
-        }
-        else
-        {
-            throw new InvalidOperationException(
-                $"Cannot forecast: Multiplicative previous trend ({Convert.ToDouble(previousTrend)}) is non-positive and phi ({Convert.ToDouble(phi)}) is non-zero."
-            );
-        }
+        // The guard above guarantees a positive base, or phi == 0 (where trend^0 == 1).
+        T trendFactor = T.Pow(previousTrend, phi);
 
         return previousLevel * trendFactor;
     }
@@ -449,16 +473,8 @@ public class HoltMethodExtrapolator<T> : HoltBaseExtrapolator, IExtrapolator<T>
             T trendPowerPhi;
             try
             {
-                if (previousTrend > _epsilon || NumericUtils.AreApproximatelyEqual(phi, T.Zero, _epsilon))
-                {
-                    trendPowerPhi = T.Pow(previousTrend, phi);
-                }
-                else
-                {
-                    throw new InvalidOperationException(
-                        $"Cannot compute Trend^Phi: Trend ({Convert.ToDouble(previousTrend)}) is non-positive and Phi ({Convert.ToDouble(phi)}) is non-zero."
-                    );
-                }
+                // The guard above guarantees a positive base, or phi == 0 (where trend^0 == 1).
+                trendPowerPhi = T.Pow(previousTrend, phi);
             }
             catch (Exception ex) when (ex is OverflowException or NotFiniteNumberException)
             {

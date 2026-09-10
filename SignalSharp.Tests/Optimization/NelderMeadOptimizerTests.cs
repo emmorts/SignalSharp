@@ -439,5 +439,39 @@ public class NelderMeadOptimizerTests
         Assert.That(Volatile.Read(ref evaluationCount), Is.LessThan(parameters.Count * 50)); // heuristic, much less than full run.
     }
 
+    #region Configuration Validation Tests
+
+    [Test]
+    public void Constructor_OptionsMutatedAfterConstruction_AreValidated()
+    {
+        // `with` expressions and object initializers bypass the options constructor, so the optimizer
+        // must re-validate before using the configuration.
+        var invalidIterations = new NelderMeadOptimizerOptions() with
+        {
+            MaxIterations = -5,
+        };
+        var invalidStagnation = new NelderMeadOptimizerOptions { StagnationThresholdCount = 0 };
+
+        Assert.That(
+            () => new NelderMeadOptimizer<GridSearchOptimizerTests.TestInput, double>(invalidIterations, _logger),
+            Throws.InstanceOf<ArgumentOutOfRangeException>()
+        );
+        Assert.That(
+            () => new NelderMeadOptimizer<GridSearchOptimizerTests.TestInput, double>(invalidStagnation, _logger),
+            Throws.InstanceOf<ArgumentOutOfRangeException>()
+        );
+    }
+
+    [Test]
+    public void Optimize_DuplicateParameterNames_ThrowsArgumentException()
+    {
+        var optimizer = new NelderMeadOptimizer<GridSearchOptimizerTests.TestInput, double>(new NelderMeadOptimizerOptions(), _logger);
+        var parameters = new List<ParameterDefinition> { new("x", 0.0, 1.0), new("x", 0.0, 1.0) };
+
+        Assert.That(() => optimizer.Optimize(_testInputData, parameters, (_, _) => new ObjectiveEvaluation<double>(0.0)), Throws.ArgumentException);
+    }
+
+    #endregion
+
     #endregion
 }

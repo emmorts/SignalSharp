@@ -25,7 +25,7 @@ public static class MatrixOperations
     /// <example>
     /// <code>
     /// float[,] matrix = { {1f, 2f}, {3f, 4f}, {5f, 6f} };
-    /// float[,] result = MatrixOperations.Transpose<float>(matrix);
+    /// float[,] result = MatrixOperations.Transpose&lt;float&gt;(matrix);
     /// // result is { {1f, 3f, 5f}, {2f, 4f, 6f} }
     /// </code>
     /// </example>
@@ -100,7 +100,7 @@ public static class MatrixOperations
     /// <code>
     /// float[,] A = { {1f, 2f}, {3f, 4f} };
     /// float[,] B = { {5f, 6f}, {7f, 8f} };
-    /// float[,] result = MatrixOperations.Multiply<float>(A, B);
+    /// float[,] result = MatrixOperations.Multiply&lt;float&gt;(A, B);
     /// // result is { {19f, 22f}, {43f, 50f} }
     /// </code>
     /// </example>
@@ -152,7 +152,7 @@ public static class MatrixOperations
     /// <code>
     /// float[,] A = { {1f, 2f}, {3f, 4f}, {5f, 6f} };
     /// float[] B = { 7f, 8f };
-    /// float[] result = MatrixOperations.Multiply<float>(A, B);
+    /// float[] result = MatrixOperations.Multiply&lt;float&gt;(A, B);
     /// // result is { 23f, 53f, 83f }
     /// </code>
     /// </example>
@@ -217,9 +217,12 @@ public static class MatrixOperations
     /// <summary>
     /// Calculates combinations C(n, k).
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="n"/> is negative.</exception>
     public static T Combinations<T>(int n, int k)
         where T : IFloatingPointIeee754<T>
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(n, nameof(n));
+
         if (k < 0 || k > n)
             return T.Zero;
         if (k == 0 || k == n)
@@ -319,6 +322,9 @@ public static class MatrixOperations
     public static bool TrySolveLinearSystem<T>(T[,] A, T[] b, [NotNullWhen(true)] out T[]? solution, out string? errorMessage)
         where T : IFloatingPointIeee754<T>
     {
+        ArgumentNullException.ThrowIfNull(A);
+        ArgumentNullException.ThrowIfNull(b);
+
         solution = null;
         errorMessage = null;
 
@@ -458,170 +464,6 @@ public static class MatrixOperations
     }
 
     /// <summary>
-    /// Calculates the Euclidean norm of a specified column in a matrix using SIMD optimization.
-    /// </summary>
-    private static double CalculateNorm(double[,] A, int column, int rowCount, int vectorLength)
-    {
-        double sumOfSquares = 0;
-        var columnValues = new double[rowCount];
-
-        for (var rowIndex = 0; rowIndex < rowCount; rowIndex++)
-        {
-            columnValues[rowIndex] = A[rowIndex, column];
-        }
-
-        int index;
-        for (index = 0; index <= rowCount - vectorLength; index += vectorLength)
-        {
-            var vector = new Vector<double>(columnValues, index);
-            sumOfSquares += Vector.Dot(vector, vector);
-        }
-
-        for (; index < rowCount; index++)
-        {
-            sumOfSquares += columnValues[index] * columnValues[index];
-        }
-
-        return Math.Sqrt(sumOfSquares);
-    }
-
-    /// <summary>
-    /// Normalizes a specified column in matrix A and stores the result in matrix Q.
-    /// </summary>
-    private static void NormalizeColumn(double[,] A, double[,] Q, int column, double norm, int rowCount)
-    {
-        for (var i = 0; i < rowCount; i++)
-        {
-            Q[i, column] = A[i, column] / norm;
-        }
-    }
-
-    /// <summary>
-    /// Calculates the dot product of two specified columns from matrices Q and A using SIMD optimization.
-    /// </summary>
-    private static double CalculateDotProduct(double[,] Q, double[,] A, int qColumn, int aColumn, int rowCount, int vectorLength)
-    {
-        double dotProductSum = 0;
-
-        var columnQValues = new double[rowCount];
-        var columnAValues = new double[rowCount];
-
-        for (var rowIndex = 0; rowIndex < rowCount; rowIndex++)
-        {
-            columnQValues[rowIndex] = Q[rowIndex, qColumn];
-            columnAValues[rowIndex] = A[rowIndex, aColumn];
-        }
-
-        int index;
-        for (index = 0; index <= rowCount - vectorLength; index += vectorLength)
-        {
-            var vectorQ = new Vector<double>(columnQValues, index);
-            var vectorA = new Vector<double>(columnAValues, index);
-            dotProductSum += Vector.Dot(vectorQ, vectorA);
-        }
-
-        for (; index < rowCount; index++)
-        {
-            dotProductSum += columnQValues[index] * columnAValues[index];
-        }
-
-        return dotProductSum;
-    }
-
-    /// <summary>
-    /// Updates a specified column in matrix A using the values from matrix Q and the calculated dot product.
-    /// </summary>
-    private static void UpdateColumn(double[,] A, double[,] Q, int qColumn, int aColumn, double dotProduct, int rowCount)
-    {
-        for (var i = 0; i < rowCount; i++)
-        {
-            A[i, aColumn] -= Q[i, qColumn] * dotProduct;
-        }
-    }
-
-    /// <summary>
-    /// Computes the product of the transpose of matrix Q and vector Y (Q^T * Y) using SIMD optimization.
-    /// </summary>
-    private static double[] ComputeQTransposeY(double[,] Q, double[] Y, int rowCount, int columnCount, int vectorLength)
-    {
-        var qTransposeY = new double[columnCount];
-        var columnQValues = new double[rowCount];
-
-        for (var colIndex = 0; colIndex < columnCount; colIndex++)
-        {
-            double dotProductSum = 0;
-
-            for (var rowIndex = 0; rowIndex < rowCount; rowIndex++)
-            {
-                columnQValues[rowIndex] = Q[rowIndex, colIndex];
-            }
-
-            int index;
-            for (index = 0; index <= rowCount - vectorLength; index += vectorLength)
-            {
-                var vectorQ = new Vector<double>(columnQValues, index);
-                var vectorYPart = new Vector<double>(Y, index);
-                dotProductSum += Vector.Dot(vectorQ, vectorYPart);
-            }
-
-            for (; index < rowCount; index++)
-            {
-                dotProductSum += columnQValues[index] * Y[index];
-            }
-
-            qTransposeY[colIndex] = dotProductSum;
-        }
-
-        return qTransposeY;
-    }
-
-    /// <summary>
-    /// Solves the upper triangular system R * x = Q^T * y using back substitution.
-    /// </summary>
-    private static double[] BackSubstitution(double[,] R, double[] QTy, int dimension)
-    {
-        var solution = new double[dimension];
-
-        for (var rowIndex = dimension - 1; rowIndex >= 0; rowIndex--)
-        {
-            solution[rowIndex] = QTy[rowIndex];
-
-            for (var columnIndex = rowIndex + 1; columnIndex < dimension; columnIndex++)
-            {
-                solution[rowIndex] -= R[rowIndex, columnIndex] * solution[columnIndex];
-            }
-
-            solution[rowIndex] /= R[rowIndex, rowIndex];
-        }
-
-        return solution;
-    }
-
-    private static bool TryBackSubstitution(double[,] R, double[] QTy, int dimension, out double[] solution)
-    {
-        solution = new double[dimension];
-
-        for (var rowIndex = dimension - 1; rowIndex >= 0; rowIndex--)
-        {
-            if (Math.Abs(R[rowIndex, rowIndex]) < SingularityTolerance)
-            {
-                return false;
-            }
-
-            solution[rowIndex] = QTy[rowIndex];
-
-            for (var columnIndex = rowIndex + 1; columnIndex < dimension; columnIndex++)
-            {
-                solution[rowIndex] -= R[rowIndex, columnIndex] * solution[columnIndex];
-            }
-
-            solution[rowIndex] /= R[rowIndex, rowIndex];
-        }
-
-        return true;
-    }
-
-    /// <summary>
     /// Creates an augmented matrix by appending the identity matrix to the given matrix.
     /// </summary>
     private static double[,] CreateAugmentedMatrix(double[,] matrix, int dimension)
@@ -643,13 +485,48 @@ public static class MatrixOperations
 
     /// <summary>
     /// Performs the Gauss-Jordan elimination process on the augmented matrix.
+    /// Uses partial pivoting so that invertible matrices with small or zero diagonal elements
+    /// (e.g. permutation matrices) are handled correctly.
     /// </summary>
     private static void PerformGaussJordanElimination(double[,] augmented, int dimension)
     {
+        // Scale used to detect singularity independently of the matrix magnitude.
+        var scale = 0.0;
         for (var i = 0; i < dimension; i++)
         {
+            for (var j = 0; j < dimension; j++)
+            {
+                scale = Math.Max(scale, Math.Abs(augmented[i, j]));
+            }
+        }
+
+        var tolerance = SingularityTolerance * scale;
+
+        for (var i = 0; i < dimension; i++)
+        {
+            // Select the row with the largest magnitude in the current column (partial pivoting).
+            var maxRow = i;
+            var maxAbs = Math.Abs(augmented[i, i]);
+            for (var k = i + 1; k < dimension; k++)
+            {
+                var candidate = Math.Abs(augmented[k, i]);
+                if (candidate > maxAbs)
+                {
+                    maxAbs = candidate;
+                    maxRow = k;
+                }
+            }
+
+            if (maxRow != i)
+            {
+                for (var j = 0; j < 2 * dimension; j++)
+                {
+                    (augmented[maxRow, j], augmented[i, j]) = (augmented[i, j], augmented[maxRow, j]);
+                }
+            }
+
             var diagElement = augmented[i, i];
-            if (Math.Abs(diagElement) < SingularityTolerance)
+            if (!double.IsFinite(diagElement) || maxAbs <= tolerance)
             {
                 throw new ArgumentException("Matrix is singular and cannot be inverted.");
             }

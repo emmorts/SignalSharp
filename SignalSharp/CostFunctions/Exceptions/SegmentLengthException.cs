@@ -1,7 +1,7 @@
 namespace SignalSharp.CostFunctions.Exceptions;
 
 /// <summary>
-/// Exception thrown when the segment length of the RBF kernel is invalid.
+/// Exception thrown when the length of a segment passed to a cost function is invalid.
 /// </summary>
 /// <param name="message">The exception message.</param>
 public class SegmentLengthException(string? message) : Exception(message)
@@ -12,7 +12,7 @@ public class SegmentLengthException(string? message) : Exception(message)
     /// <param name="segmentLength">The segment length to validate.</param>
     /// <param name="minSegmentLength">The minimum valid segment length (default is 1).</param>
     /// <param name="message">Custom message for the exception.</param>
-    /// <exception cref="SegmentLengthException">Thrown when the segment length is less than 1.</exception>
+    /// <exception cref="SegmentLengthException">Thrown when the segment length is less than <paramref name="minSegmentLength"/>.</exception>
     public static void ThrowIfInvalid(int segmentLength, int minSegmentLength = 1, string? message = null)
     {
         if (segmentLength < minSegmentLength)

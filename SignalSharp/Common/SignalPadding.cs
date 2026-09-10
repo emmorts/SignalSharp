@@ -31,6 +31,13 @@ public static class SignalPadding
     /// <param name="padding">The type of padding to apply.</param>
     /// <param name="paddedValue">The value to use for constant padding.</param>
     /// <returns>A new signal array with the applied padding.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="signal"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="windowSize"/> is negative or an unknown padding mode is supplied.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="signal"/> is empty and padding other than <see cref="Padding.None"/> is requested.</exception>
+    /// <remarks>
+    /// When <paramref name="padding"/> is <see cref="Padding.None"/> the input array is returned unchanged (same reference).
+    /// Mirror and periodic padding support window sizes larger than the signal by reflecting/repeating the signal.
+    /// </remarks>
     /// <example>
     /// <code>
     /// double[] signal = { 1.0, 2.0, 3.0 };
@@ -42,8 +49,16 @@ public static class SignalPadding
     /// </example>
     public static double[] ApplyPadding(double[] signal, int windowSize, Padding padding, double paddedValue)
     {
+        ArgumentNullException.ThrowIfNull(signal);
+        ArgumentOutOfRangeException.ThrowIfNegative(windowSize, nameof(windowSize));
+
         if (padding == Padding.None)
             return signal;
+
+        if (signal.Length == 0)
+        {
+            throw new ArgumentException("Signal must contain at least one element to apply padding.", nameof(signal));
+        }
 
         var halfWindow = windowSize / 2;
         var extendedLength = signal.Length + 2 * halfWindow;
@@ -65,6 +80,8 @@ public static class SignalPadding
             case Padding.Periodic:
                 ApplyPeriodicPadding(extendedSignal, halfWindow, extendedLength, signal);
                 break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(padding), padding, "Unknown padding mode.");
         }
 
         return extendedSignal;
@@ -88,7 +105,20 @@ public static class SignalPadding
     /// <para>This method removes the padding added by the <see cref="ApplyPadding"/> method and returns the signal to its original length.</para>
     public static double[] TrimPadding(double[] extendedSignal, int originalLength, int windowSize)
     {
+        ArgumentNullException.ThrowIfNull(extendedSignal);
+        ArgumentOutOfRangeException.ThrowIfNegative(originalLength, nameof(originalLength));
+        ArgumentOutOfRangeException.ThrowIfNegative(windowSize, nameof(windowSize));
+
         var halfWindow = windowSize / 2;
+
+        if (extendedSignal.Length < originalLength + 2 * halfWindow)
+        {
+            throw new ArgumentException(
+                $"Extended signal (length {extendedSignal.Length}) is too short to contain {originalLength} original samples with window size {windowSize}.",
+                nameof(extendedSignal)
+            );
+        }
+
         var trimmedSignal = new double[originalLength];
 
         Array.Copy(extendedSignal, halfWindow, trimmedSignal, 0, originalLength);
@@ -109,8 +139,8 @@ public static class SignalPadding
     {
         for (var i = 0; i < halfWindow; i++)
         {
-            extendedSignal[i] = signal[halfWindow - i - 1];
-            extendedSignal[extendedLength - 1 - i] = signal[signal.Length - halfWindow + i];
+            extendedSignal[i] = signal[MirrorIndex(halfWindow - i - 1, signal.Length)];
+            extendedSignal[extendedLength - 1 - i] = signal[MirrorIndex(signal.Length - halfWindow + i, signal.Length)];
         }
     }
 
@@ -127,8 +157,28 @@ public static class SignalPadding
     {
         for (var i = 0; i < halfWindow; i++)
         {
-            extendedSignal[i] = signal[signal.Length - halfWindow + i];
-            extendedSignal[extendedLength - 1 - i] = signal[i];
+            extendedSignal[i] = signal[PeriodicIndex(signal.Length - halfWindow + i, signal.Length)];
+            extendedSignal[extendedLength - halfWindow + i] = signal[PeriodicIndex(i, signal.Length)];
         }
+    }
+
+    /// <summary>
+    /// Maps an arbitrary (possibly negative or out-of-range) index onto a signal index using
+    /// symmetric, edge-inclusive reflection. For indices inside <c>[0, length)</c> this is the identity.
+    /// </summary>
+    private static int MirrorIndex(int index, int length)
+    {
+        var period = 2 * length;
+        var k = ((index % period) + period) % period;
+
+        return k < length ? k : period - k - 1;
+    }
+
+    /// <summary>
+    /// Maps an arbitrary (possibly negative) index onto a signal index by wrapping periodically.
+    /// </summary>
+    private static int PeriodicIndex(int index, int length)
+    {
+        return ((index % length) + length) % length;
     }
 }

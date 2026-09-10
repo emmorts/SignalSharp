@@ -30,14 +30,27 @@ public class SimpleExponentialSmoothingExtrapolator<T> : IExtrapolator<T>
     /// <summary>
     /// Fits the Simple Exponential Smoothing model to the provided historical signal data.
     /// </summary>
-    /// <param name="signal">The historical time series data. Must not be empty.</param>
+    /// <param name="signal">The historical time series data. Must not be empty and must contain only finite values.</param>
     /// <returns>The fitted extrapolator instance.</returns>
-    /// <exception cref="ArgumentException">Thrown if the <paramref name="signal"/> is empty.</exception>
+    /// <exception cref="ArgumentException">Thrown if the <paramref name="signal"/> is empty or contains NaN/infinite values.</exception>
     public IExtrapolator<T> Fit(ReadOnlySpan<T> signal)
     {
         if (signal.IsEmpty)
         {
             throw new ArgumentException("Signal cannot be empty.", nameof(signal));
+        }
+
+        if (_options.InitialLevel.HasValue && !double.IsFinite(_options.InitialLevel.Value))
+        {
+            throw new ArgumentOutOfRangeException(nameof(_options.InitialLevel), _options.InitialLevel.Value, "InitialLevel must be a finite value.");
+        }
+
+        for (var i = 0; i < signal.Length; i++)
+        {
+            if (!T.IsFinite(signal[i]))
+            {
+                throw new ArgumentException($"Signal contains a non-finite value at index {i}.", nameof(signal));
+            }
         }
 
         _level = _options.InitialLevel.HasValue ? T.CreateChecked(_options.InitialLevel.Value) : signal[0];
@@ -76,6 +89,8 @@ public class SimpleExponentialSmoothingExtrapolator<T> : IExtrapolator<T>
     /// <param name="signal">The historical time series data.</param>
     /// <param name="horizon">The number of future time steps to predict.</param>
     /// <returns>An array of type <typeparamref name="T"/> containing the extrapolated signal values.</returns>
+    /// <exception cref="ArgumentException">Thrown if the signal is empty or contains NaN/infinite values.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="horizon"/> is less than 1.</exception>
     public T[] FitAndExtrapolate(ReadOnlySpan<T> signal, int horizon)
     {
         Fit(signal);

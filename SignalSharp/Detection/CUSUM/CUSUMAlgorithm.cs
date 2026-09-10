@@ -24,24 +24,54 @@ public class CUSUMAlgorithm
     /// Initializes a new instance of the <see cref="CUSUMAlgorithm"/> class with optional configuration settings.
     /// </summary>
     /// <param name="options">The configuration options for the CUSUM algorithm. If null, default options are used.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when an option is not finite, when <see cref="CUSUMOptions.ExpectedStandardDeviation"/> or
+    /// <see cref="CUSUMOptions.ThresholdFactor"/> is not positive, when <see cref="CUSUMOptions.SlackFactor"/> is negative,
+    /// or when the derived threshold/slack overflow to a non-finite value.
+    /// </exception>
     public CUSUMAlgorithm(CUSUMOptions? options = null)
     {
         _options = options ?? new CUSUMOptions();
 
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(_options.ExpectedStandardDeviation, nameof(_options.ExpectedStandardDeviation));
-        ArgumentOutOfRangeException.ThrowIfNegative(_options.SlackFactor, nameof(_options.SlackFactor));
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(_options.ThresholdFactor, nameof(_options.ThresholdFactor));
+        ValidateFiniteOption(_options.ExpectedMean, nameof(CUSUMOptions.ExpectedMean));
+        ValidateFiniteOption(_options.ExpectedStandardDeviation, nameof(CUSUMOptions.ExpectedStandardDeviation));
+        ValidateFiniteOption(_options.SlackFactor, nameof(CUSUMOptions.SlackFactor));
+        ValidateFiniteOption(_options.ThresholdFactor, nameof(CUSUMOptions.ThresholdFactor));
+
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(_options.ExpectedStandardDeviation, nameof(CUSUMOptions.ExpectedStandardDeviation));
+        ArgumentOutOfRangeException.ThrowIfNegative(_options.SlackFactor, nameof(CUSUMOptions.SlackFactor));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(_options.ThresholdFactor, nameof(CUSUMOptions.ThresholdFactor));
 
         _threshold = _options.ThresholdFactor * _options.ExpectedStandardDeviation;
         _slack = _options.SlackFactor * _options.ExpectedStandardDeviation;
+
+        if (!double.IsFinite(_threshold) || !double.IsFinite(_slack))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                $"Derived threshold ({_threshold}) and slack ({_slack}) must be finite; reduce ThresholdFactor, SlackFactor or ExpectedStandardDeviation."
+            );
+        }
+    }
+
+    /// <summary>
+    /// Throws when an option value is not finite (NaN or infinity), which would silently disable change detection.
+    /// </summary>
+    private static void ValidateFiniteOption(double value, string parameterName)
+    {
+        if (!double.IsFinite(value))
+        {
+            throw new ArgumentOutOfRangeException(parameterName, value, "Option must be a finite value.");
+        }
     }
 
     /// <summary>
     /// Detects change points in the time series using the CUSUM algorithm.
     /// </summary>
     /// <param name="signal">The one-dimensional time series data to fit.</param>
-    /// <returns>An array of indices representing the change points.</returns>
+    /// <returns>An array of indices representing the change points. Empty when the signal has fewer than two samples.</returns>
     /// <exception cref="ArgumentNullException">Thrown when the signal data is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when the signal contains NaN or infinite values.</exception>
     /// <example>
     /// <code>
     /// var options = new CUSUMOptions
@@ -60,6 +90,14 @@ public class CUSUMAlgorithm
     public int[] Detect(double[] signal)
     {
         ArgumentNullException.ThrowIfNull(signal, nameof(signal));
+
+        for (var i = 0; i < signal.Length; i++)
+        {
+            if (!double.IsFinite(signal[i]))
+            {
+                throw new ArgumentException($"Signal contains a non-finite value at index {i}; CUSUM requires finite input.", nameof(signal));
+            }
+        }
 
         if (signal.Length < 2)
             return [];

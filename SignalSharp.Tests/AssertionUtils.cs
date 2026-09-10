@@ -13,7 +13,11 @@ public static class AssertionUtils
         {
             for (int i = 0; i < expected.Length; i++)
             {
-                Assert.That(actual[i], Is.EqualTo(expected[i]).Within(NumericUtils.GetDefaultEpsilon<T>()), $"Mismatch at index {i}");
+                Assert.That(
+                    double.CreateChecked(actual[i]),
+                    Is.EqualTo(double.CreateChecked(expected[i])).Within(double.CreateChecked(NumericUtils.GetDefaultEpsilon<T>())),
+                    $"Mismatch at index {i}"
+                );
             }
         });
     }

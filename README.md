@@ -46,7 +46,7 @@ Hyperparameter tuning methods to find the best-performing parameters for a model
 #### Utilities
 
   * **Signal Padding**: Methods for common padding modes (`Constant`, `Mirror`, `Nearest`, `Periodic`).
-  * **Statistical Functions**: Basic statistics (`Mean`, `Variance`, `StdDev`, `Median`, `Normalization`, etc.).
+  * **Statistical Functions**: Basic statistics (`Mean`, `Variance`, `StandardDeviation`, `Median`, `Normalization`, etc.).
 
 ### Installation
 

@@ -53,10 +53,10 @@ public class L1CostFunction : CostFunctionBase
     /// </remarks>
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
-
-        _data = signalMatrix;
-        _medians = PrecomputeMedians(signalMatrix);
+        ValidateSignalFiniteness(signalMatrix);
+        ValidateQuadraticStorageCapacity(signalMatrix.GetLength(0), signalMatrix.GetLength(1), nameof(L1CostFunction));
+        _data = (double[,])signalMatrix.Clone();
+        _medians = PrecomputeMedians(_data);
 
         return this;
     }
@@ -135,7 +135,10 @@ public class L1CostFunction : CostFunctionBase
 
         if (length % 2 == 0)
         {
-            return (slice[length / 2 - 1] + slice[length / 2]) / 2;
+            // Avoid overflow for values near the type maximum: midpoint without summing first.
+            var lower = slice[length / 2 - 1];
+            var upper = slice[length / 2];
+            return lower + (upper - lower) / 2;
         }
 
         return slice[length / 2];

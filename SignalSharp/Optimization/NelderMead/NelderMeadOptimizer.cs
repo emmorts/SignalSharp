@@ -12,6 +12,10 @@ namespace SignalSharp.Optimization.NelderMead;
 /// </summary>
 /// <typeparam name="TInput">The type of the input data provided to the objective function.</typeparam>
 /// <typeparam name="TMetric">The type of the objective metric (e.g., SSE), which must be a floating-point type.</typeparam>
+/// <remarks>
+/// Instances keep mutable run state (evaluation counters) and are not thread-safe: use a separate instance per
+/// concurrent optimization.
+/// </remarks>
 public class NelderMeadOptimizer<TInput, TMetric>(
     NelderMeadOptimizerOptions? options = null,
     ILogger<NelderMeadOptimizer<TInput, TMetric>>? logger = null,
@@ -19,13 +23,22 @@ public class NelderMeadOptimizer<TInput, TMetric>(
 ) : IParameterOptimizer<TInput, TMetric>
     where TMetric : IFloatingPointIeee754<TMetric>
 {
-    private readonly NelderMeadOptimizerOptions _options = options ?? new NelderMeadOptimizerOptions();
+    private readonly NelderMeadOptimizerOptions _options = ValidateOptions(options ?? new NelderMeadOptimizerOptions());
+
     private readonly ILogger _logger = (ILogger?)logger ?? NullLogger.Instance;
 
     private int _functionEvaluations;
     private readonly Random _random = random ?? new Random();
-    private readonly Dictionary<string, double> _parameterPool = new();
 
+    /// <summary>
+    /// Optimizes the objective function synchronously.
+    /// </summary>
+    /// <param name="inputData">The input data passed to the objective function.</param>
+    /// <param name="parametersToOptimize">The parameters to optimize, with unique names.</param>
+    /// <param name="objectiveFunction">The objective function to minimize.</param>
+    /// <returns>The optimization result.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the parameters or objective function are null.</exception>
+    /// <exception cref="ArgumentException">Thrown when parameter names are duplicated.</exception>
     public OptimizationResult<TMetric> Optimize(
         TInput inputData,
         IEnumerable<ParameterDefinition> parametersToOptimize,
@@ -35,7 +48,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         _logger.LogInformation("Starting Nelder-Mead optimization...");
         _functionEvaluations = 0;
 
-        var optimizableParamsList = parametersToOptimize.ToList();
+        var optimizableParamsList = ValidateAndMaterializeParameters(parametersToOptimize, objectiveFunction);
         int dimensionCount = optimizableParamsList.Count;
 
         if (dimensionCount == 0)
@@ -57,6 +70,18 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         return RunMultiStartOptimization(inputData, optimizableParamsList, paramNames, objectiveFunction, CancellationToken.None);
     }
 
+    /// <summary>
+    /// Asynchronously optimizes the objective function. The computation is CPU-bound and executes
+    /// synchronously on the calling thread; the returned task is already completed when the method returns.
+    /// Cancellation is observed between objective evaluations.
+    /// </summary>
+    /// <param name="inputData">The input data passed to the objective function.</param>
+    /// <param name="parametersToOptimize">The parameters to optimize, with unique names.</param>
+    /// <param name="objectiveFunction">The objective function to minimize.</param>
+    /// <param name="cancellationToken">Token to cancel the optimization process.</param>
+    /// <returns>A task containing the optimization result.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the parameters or objective function are null.</exception>
+    /// <exception cref="ArgumentException">Thrown when parameter names are duplicated.</exception>
     public Task<OptimizationResult<TMetric>> OptimizeAsync(
         TInput inputData,
         IEnumerable<ParameterDefinition> parametersToOptimize,
@@ -67,7 +92,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         _logger.LogInformation("Starting Nelder-Mead optimization...");
         _functionEvaluations = 0;
 
-        var optimizableParamsList = parametersToOptimize.ToList();
+        var optimizableParamsList = ValidateAndMaterializeParameters(parametersToOptimize, objectiveFunction);
         int dimensionCount = optimizableParamsList.Count;
 
         if (dimensionCount == 0)
@@ -89,6 +114,48 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         var paramNames = optimizableParamsList.Select(p => p.Name).ToList();
 
         return Task.FromResult(RunMultiStartOptimization(inputData, optimizableParamsList, paramNames, objectiveFunction, cancellationToken));
+    }
+
+    /// <summary>
+    /// Validates the supplied options (including instances produced by <c>with</c> expressions).
+    /// </summary>
+    private static NelderMeadOptimizerOptions ValidateOptions(NelderMeadOptimizerOptions options)
+    {
+        options.Validate();
+        return options;
+    }
+
+    /// <summary>
+    /// Validates the public entry-point arguments and materializes the parameter list.
+    /// </summary>
+    private static List<ParameterDefinition> ValidateAndMaterializeParameters(
+        IEnumerable<ParameterDefinition> parametersToOptimize,
+        Func<TInput, IReadOnlyDictionary<string, double>, ObjectiveEvaluation<TMetric>> objectiveFunction
+    )
+    {
+        ArgumentNullException.ThrowIfNull(parametersToOptimize, nameof(parametersToOptimize));
+        ArgumentNullException.ThrowIfNull(objectiveFunction, nameof(objectiveFunction));
+
+        var parameters = parametersToOptimize.ToList();
+
+        if (parameters.Any(p => p is null))
+        {
+            throw new ArgumentException("Parameter definitions must not contain null entries.", nameof(parametersToOptimize));
+        }
+
+        foreach (var parameter in parameters)
+        {
+            parameter.Validate();
+        }
+
+        var duplicateName = parameters.GroupBy(p => p.Name, StringComparer.Ordinal).FirstOrDefault(group => group.Count() > 1)?.Key;
+
+        if (duplicateName is not null)
+        {
+            throw new ArgumentException($"Duplicate parameter name '{duplicateName}'. Parameter names must be unique.", nameof(parametersToOptimize));
+        }
+
+        return parameters;
     }
 
     private OptimizationResult<TMetric> RunMultiStartOptimization(
@@ -197,7 +264,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         if (IsSimplexDegenerate(simplex))
         {
             _logger.LogWarning("Initial simplex is degenerate. Using alternative initialization.");
-            simplex = InitializeSimplexWithRandomPerturbationsAsync(inputData, paramDefinitions, paramNames, objectiveFunction, cancellationToken);
+            simplex = InitializeSimplexWithRandomPerturbations(inputData, paramDefinitions, paramNames, objectiveFunction, cancellationToken);
 
             if (IsSimplexDegenerate(simplex))
             {
@@ -319,6 +386,8 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         simplex.Sort();
         var finalBestVertex = simplex[0];
 
+        // Only NaN and +Infinity signal a failed run: -Infinity is a legitimate (if extreme) minimum for a
+        // minimization objective. IsSimplexFlat/HasConverged keep the simplex from stalling on non-finite values.
         bool success = !TMetric.IsNaN(finalBestVertex.Value) && !TMetric.IsPositiveInfinity(finalBestVertex.Value);
 
         return (
@@ -486,7 +555,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         bool overallSuccess
     )
     {
-        string message = DetermineResultMessage(totalIterations, maxRestarts);
+        string message = DetermineResultMessage(totalIterations, maxRestarts, overallSuccess);
 
         var finalParams = bestParamsAcrossStarts ?? new Dictionary<string, double>();
         var finalMetric = bestParamsAcrossStarts != null ? bestMetricAcrossStarts : TMetric.PositiveInfinity;
@@ -520,14 +589,19 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         );
     }
 
-    private string DetermineResultMessage(int totalIterations, int maxRestarts)
+    private string DetermineResultMessage(int totalIterations, int maxRestarts, bool overallSuccess)
     {
+        if (!overallSuccess)
+        {
+            return "Optimization failed: no run produced a finite metric.";
+        }
+
         if (_options.MaxFunctionEvaluations.HasValue && _functionEvaluations >= _options.MaxFunctionEvaluations.Value)
         {
             return "Reached maximum function evaluations.";
         }
 
-        if (totalIterations >= _options.MaxIterations * (maxRestarts + 1))
+        if (totalIterations >= (long)_options.MaxIterations * (maxRestarts + 1))
         {
             return "Reached maximum iterations.";
         }
@@ -553,7 +627,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
             else
             {
                 // use initial guess if provided, otherwise use midpoint
-                initialGuessArray[i] = pDef.InitialGuess ?? (pDef.MinValue + pDef.MaxValue) / 2.0;
+                initialGuessArray[i] = pDef.InitialGuess ?? (pDef.MinValue + (pDef.MaxValue - pDef.MinValue) / 2.0);
             }
         }
 
@@ -602,9 +676,17 @@ public class NelderMeadOptimizer<TInput, TMetric>(
             return true;
 
         var firstValue = simplex[0].Value;
+
+        // A NaN anywhere in the simplex means the vertices cannot be compared meaningfully,
+        // so the simplex must not be declared flat (which would end the search).
+        if (!TMetric.IsFinite(firstValue))
+        {
+            return false;
+        }
+
         for (int i = 1; i < simplex.Count; i++)
         {
-            if (TMetric.Abs(simplex[i].Value - firstValue) > tolerance)
+            if (!TMetric.IsFinite(simplex[i].Value) || TMetric.Abs(simplex[i].Value - firstValue) > tolerance)
             {
                 return false;
             }
@@ -790,7 +872,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
 
         if (paramRange > 1e-9)
         {
-            double baseValue = Math.Abs(paramDef.InitialGuess ?? (paramDef.MinValue + paramDef.MaxValue) / 2.0);
+            double baseValue = Math.Abs(paramDef.InitialGuess ?? (paramDef.MinValue + (paramDef.MaxValue - paramDef.MinValue) / 2.0));
             perturbation = Math.Max(baseValue * 0.1, paramRange * _options.InitialSimplexRangeFactor);
 
             perturbation = Math.Min(perturbation, paramRange * 0.5);
@@ -803,7 +885,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         return perturbation;
     }
 
-    private List<SimplexVertex<TMetric>> InitializeSimplexWithRandomPerturbationsAsync(
+    private List<SimplexVertex<TMetric>> InitializeSimplexWithRandomPerturbations(
         TInput inputData,
         IReadOnlyList<ParameterDefinition> paramDefs,
         IReadOnlyList<string> paramNames,
@@ -817,7 +899,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         var baseParams = new double[n];
         for (int i = 0; i < n; i++)
         {
-            baseParams[i] = (paramDefs[i].MinValue + paramDefs[i].MaxValue) / 2;
+            baseParams[i] = paramDefs[i].MinValue + (paramDefs[i].MaxValue - paramDefs[i].MinValue) / 2;
         }
 
         simplex.Add(EvaluateNewVertex(baseParams, inputData, paramNames, paramDefs, objectiveFunction, cancellationToken));
@@ -866,13 +948,17 @@ public class NelderMeadOptimizer<TInput, TMetric>(
             var evalResult = objectiveFunction(inputData, paramsDict);
             metricValue = evalResult.MetricValue;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Objective function threw an exception for parameters: [{Params}]. Assigning PositiveInfinity.", FormatParams(paramsDict));
             metricValue = TMetric.PositiveInfinity;
         }
 
-        Interlocked.Increment(ref _functionEvaluations);
+        _functionEvaluations++;
 
         return new SimplexVertex<TMetric>(clampedParamsArray, paramsDict, metricValue);
     }
@@ -883,17 +969,16 @@ public class NelderMeadOptimizer<TInput, TMetric>(
         IReadOnlyList<ParameterDefinition> paramDefs
     )
     {
-        _parameterPool.Clear();
-
         var clampedArray = new double[paramsArray.Length];
+        var parametersDict = new Dictionary<string, double>(paramsArray.Length);
 
         for (int i = 0; i < paramsArray.Length; i++)
         {
             clampedArray[i] = Math.Clamp(paramsArray[i], paramDefs[i].MinValue, paramDefs[i].MaxValue);
-            _parameterPool[paramNames[i]] = clampedArray[i];
+            parametersDict[paramNames[i]] = clampedArray[i];
         }
 
-        return (clampedArray, _parameterPool);
+        return (clampedArray, parametersDict);
     }
 
     private static double[] ComputeCentroid(List<SimplexVertex<TMetric>> simplex, int dimensionCount)
@@ -965,7 +1050,7 @@ public class NelderMeadOptimizer<TInput, TMetric>(
             if (bestParams.TryGetValue(paramDef.Name, out double value))
             {
                 double paramRange = paramDef.MaxValue - paramDef.MinValue;
-                if (paramRange <= 1e-9)
+                if (paramRange == 0)
                 {
                     var isAtMin = NumericUtils.AreApproximatelyEqual(value, paramDef.MinValue);
                     var isAtMax = NumericUtils.AreApproximatelyEqual(value, paramDef.MaxValue);

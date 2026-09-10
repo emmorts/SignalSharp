@@ -14,8 +14,16 @@ namespace SignalSharp.Optimization.GridSearch;
 public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, TMetric>
     where TMetric : IFloatingPointIeee754<TMetric>
 {
+    /// <summary>
+    /// Maximum number of grid combinations materialized in a single search. Larger grids are systematically
+    /// sampled down to this limit, and a grid larger than this without an evaluation budget is rejected rather
+    /// than exhausting memory. The limit bounds the (quadratic-ish) dictionary overhead of the combination list.
+    /// </summary>
+    private const long MaxMaterializedCombinations = 1_000_000;
+
     private readonly GridSearchOptimizerOptions _options;
     private readonly ILogger _logger;
+    private readonly ILogger<GridSearchOptimizer<TInput, TMetric>> _typedLogger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GridSearchOptimizer{TInput, TMetric}"/> class.
@@ -25,10 +33,20 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
     public GridSearchOptimizer(GridSearchOptimizerOptions? options = null, ILogger<GridSearchOptimizer<TInput, TMetric>>? logger = null)
     {
         _options = options ?? new GridSearchOptimizerOptions();
-        _logger = (ILogger?)logger ?? NullLogger.Instance;
+        _options.Validate();
+        _typedLogger = logger ?? NullLogger<GridSearchOptimizer<TInput, TMetric>>.Instance;
+        _logger = _typedLogger;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Optimizes the objective function synchronously by running the asynchronous search and waiting for it.
+    /// </summary>
+    /// <param name="inputData">The input data passed to the objective function.</param>
+    /// <param name="parametersToOptimize">The parameters to optimize, with unique names.</param>
+    /// <param name="objectiveFunction">The objective function to minimize.</param>
+    /// <returns>The optimization result.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the parameters or objective function are null.</exception>
+    /// <exception cref="ArgumentException">Thrown when parameter names are duplicated.</exception>
     public OptimizationResult<TMetric> Optimize(
         TInput inputData,
         IEnumerable<ParameterDefinition> parametersToOptimize,
@@ -48,7 +66,26 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
     {
         _logger.LogInformation("Starting grid search optimization...");
 
+        ArgumentNullException.ThrowIfNull(parametersToOptimize, nameof(parametersToOptimize));
+        ArgumentNullException.ThrowIfNull(objectiveFunction, nameof(objectiveFunction));
+
         var optimizableParams = parametersToOptimize.ToList();
+        if (optimizableParams.Any(p => p is null))
+        {
+            throw new ArgumentException("Parameter definitions must not contain null entries.", nameof(parametersToOptimize));
+        }
+
+        foreach (var parameter in optimizableParams)
+        {
+            parameter.Validate();
+        }
+
+        var duplicateName = optimizableParams.GroupBy(p => p.Name, StringComparer.Ordinal).FirstOrDefault(group => group.Count() > 1)?.Key;
+        if (duplicateName is not null)
+        {
+            throw new ArgumentException($"Duplicate parameter name '{duplicateName}'. Parameter names must be unique.", nameof(parametersToOptimize));
+        }
+
         if (optimizableParams.Count == 0)
         {
             return CreateEmptyParametersResult();
@@ -57,23 +94,28 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
         var paramValueRanges = GenerateParameterRanges(optimizableParams);
         var paramNames = optimizableParams.Select(p => p.Name).ToList();
 
-        var bestResult = await ExecuteGridSearchAsync(inputData, paramNames, paramValueRanges, objectiveFunction, cancellationToken);
+        var bestResult = await ExecuteGridSearchAsync(inputData, paramNames, paramValueRanges, objectiveFunction, cancellationToken).ConfigureAwait(false);
 
         // only try refinement if there's enough budget for a meaningful refinement
         if (ShouldPerformAdaptiveRefinement(bestResult))
         {
             int remainingEvaluations = CalculateRemainingEvaluations(bestResult);
-            _logger.LogDebug("Refinement check: budget available {Available}, minimum needed {Minimum}", remainingEvaluations, optimizableParams.Count * 3);
+            _logger.LogDebug(
+                "Refinement check: budget available {Available}, minimum needed {Minimum}",
+                remainingEvaluations,
+                _options.RefinementGridSteps * 2
+            );
 
             bestResult = await RefineAroundBestSolutionAsync(
-                inputData,
-                paramNames,
-                optimizableParams,
-                bestResult,
-                objectiveFunction,
-                remainingEvaluations,
-                cancellationToken
-            );
+                    inputData,
+                    paramNames,
+                    optimizableParams,
+                    bestResult,
+                    objectiveFunction,
+                    remainingEvaluations,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         var resultWithBoundaryAnalysis = AddBoundaryAnalysisToResult(bestResult, optimizableParams);
@@ -206,8 +248,17 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
         CancellationToken cancellationToken
     )
     {
-        long totalCombinations = paramValueRanges.Aggregate(1L, (acc, values) => acc * values.Length);
+        long totalCombinations = ComputeTotalCombinationCount(paramValueRanges);
         int effectiveMaxEvaluations = _options.MaxFunctionEvaluations ?? int.MaxValue;
+
+        if (_options.MaxFunctionEvaluations is null && totalCombinations > MaxMaterializedCombinations)
+        {
+            throw new InvalidOperationException(
+                $"The grid contains {totalCombinations} combinations, which exceeds the supported maximum of "
+                    + $"{MaxMaterializedCombinations} without an evaluation budget. Set "
+                    + $"{nameof(GridSearchOptimizerOptions.MaxFunctionEvaluations)} to sample the grid or reduce the grid steps."
+            );
+        }
 
         _logger.LogDebug(
             "Grid search: {ParamCount} parameters, {TotalCombinations} total combinations. " + "Default steps: {DefaultSteps}, Max evaluations: {MaxEvals}",
@@ -217,34 +268,19 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
             _options.MaxFunctionEvaluations?.ToString() ?? "unlimited"
         );
 
-        var paramCombinations = GenerateParameterCombinations(paramNames, paramValueRanges);
-        paramCombinations = LimitCombinationsIfNeeded(paramCombinations, effectiveMaxEvaluations, totalCombinations);
+        var paramCombinations = GenerateParameterCombinations(paramNames, paramValueRanges, totalCombinations, effectiveMaxEvaluations);
 
         var searchState = new GridSearchState<TMetric>();
-        await ProcessCombinationsAsync(inputData, paramCombinations, objectiveFunction, searchState, cancellationToken);
+        await ProcessCombinationsAsync(inputData, paramCombinations, objectiveFunction, searchState, cancellationToken).ConfigureAwait(false);
 
         return CreateSearchResult(searchState);
     }
 
-    private List<Dictionary<string, double>> LimitCombinationsIfNeeded(
-        List<Dictionary<string, double>> paramCombinations,
-        int effectiveMaxEvaluations,
-        long totalCombinations
-    )
-    {
-        if (paramCombinations.Count > effectiveMaxEvaluations)
-        {
-            _logger.LogInformation("Limiting grid search to {MaxEvals} combinations out of {TotalCombinations}", effectiveMaxEvaluations, totalCombinations);
-
-            paramCombinations = ReduceCombinations(paramCombinations, effectiveMaxEvaluations);
-        }
-
-        return paramCombinations;
-    }
-
     private OptimizationResult<TMetric> CreateSearchResult(GridSearchState<TMetric> searchState)
     {
-        if (TMetric.IsPositiveInfinity(searchState.MinMetric) || searchState.BestParams.Count == 0)
+        // Only NaN and +Infinity signal a failed search: a minimization objective may legitimately return
+        // -Infinity, and the evaluation loop accepts any non-NaN metric as the current best.
+        if (TMetric.IsNaN(searchState.MinMetric) || TMetric.IsPositiveInfinity(searchState.MinMetric) || searchState.BestParams.Count == 0)
         {
             const string errorMsg =
                 "Grid search optimization failed to find any valid parameters where the metric "
@@ -363,6 +399,7 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
         catch (OperationCanceledException)
         {
             _logger.LogWarning("Grid search optimization was cancelled.");
+            throw;
         }
     }
 
@@ -380,7 +417,7 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
             if (cancellationToken.IsCancellationRequested)
             {
                 _logger.LogWarning("Grid search optimization was cancelled.");
-                break;
+                throw new OperationCanceledException(cancellationToken);
             }
 
             var combination = paramCombinations[i];
@@ -444,6 +481,11 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
             var evaluationResult = objectiveFunction(inputData, parameters);
             return (evaluationResult.MetricValue, evaluationResult.Gradient);
         }
+        catch (OperationCanceledException)
+        {
+            // Propagate cancellation raised by the objective instead of treating it as a failed evaluation.
+            throw;
+        }
         catch (Exception ex)
         {
             string paramsString = string.Join(", ", parameters.Select(kvp => $"{kvp.Key}={kvp.Value:F4}"));
@@ -457,79 +499,75 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
     }
 
     /// <summary>
-    /// Generates all parameter combinations from the parameter ranges.
+    /// Computes the total number of grid combinations, detecting overflow of the Cartesian product.
     /// </summary>
-    private static List<Dictionary<string, double>> GenerateParameterCombinations(IReadOnlyList<string> paramNames, IReadOnlyList<double[]> paramValueRanges)
+    /// <exception cref="OverflowException">Thrown when the number of combinations exceeds the range of a 64-bit integer.</exception>
+    private static long ComputeTotalCombinationCount(IReadOnlyList<double[]> paramValueRanges)
     {
-        var combinations = new List<Dictionary<string, double>>();
+        long total = 1;
+
+        foreach (var values in paramValueRanges)
+        {
+            total = checked(total * values.Length);
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// Generates the parameter combinations to evaluate.
+    /// </summary>
+    /// <remarks>
+    /// Each sampled combination is decoded directly from its flat mixed-radix index, so the number of generated
+    /// combinations is bounded by the evaluation budget (and by <see cref="MaxMaterializedCombinations"/>) even
+    /// when the full grid is astronomically large. When the grid is larger than the budget, combinations are
+    /// stride-sampled for systematic coverage instead of materializing the whole product.
+    /// </remarks>
+    private List<Dictionary<string, double>> GenerateParameterCombinations(
+        IReadOnlyList<string> paramNames,
+        IReadOnlyList<double[]> paramValueRanges,
+        long totalCombinations,
+        int effectiveMaxEvaluations
+    )
+    {
+        // Never generate more than the budget allows, and never more than the hard materialization cap:
+        // an evaluation budget is an upper bound, so exceeding the cap only means fewer sampled combinations.
+        var limit = Math.Min(Math.Min(totalCombinations, effectiveMaxEvaluations), MaxMaterializedCombinations);
+        var stride = Math.Max(1L, totalCombinations / Math.Max(1L, limit));
+        var combinations = new List<Dictionary<string, double>>((int)limit);
+
         var indices = new int[paramNames.Count];
 
-        do
+        for (long sample = 0; sample < limit; sample++)
         {
-            var combination = new Dictionary<string, double>();
+            // Decode the flat index: parameter 0 varies fastest, the last parameter slowest.
+            var remainder = sample * stride;
+            for (var i = 0; i < paramNames.Count; i++)
+            {
+                var radix = paramValueRanges[i].Length;
+                indices[i] = (int)(remainder % radix);
+                remainder /= radix;
+            }
+
+            var combination = new Dictionary<string, double>(paramNames.Count);
             for (int i = 0; i < paramNames.Count; i++)
             {
                 combination[paramNames[i]] = paramValueRanges[i][indices[i]];
             }
 
             combinations.Add(combination);
+        }
 
-            int k = 0;
-            while (k < paramNames.Count)
-            {
-                indices[k]++;
-                if (indices[k] < paramValueRanges[k].Length)
-                    break;
-                indices[k] = 0;
-                k++;
-            }
-
-            if (k == paramNames.Count)
-                break;
-        } while (true);
+        if (stride > 1)
+        {
+            _logger.LogInformation(
+                "Grid search limited to {Selected} systematically sampled combinations out of {TotalCombinations}.",
+                combinations.Count,
+                totalCombinations
+            );
+        }
 
         return combinations;
-    }
-
-    /// <summary>
-    /// Reduces the number of combinations to evaluate while maintaining good coverage of the parameter space.
-    /// </summary>
-    private static List<Dictionary<string, double>> ReduceCombinations(List<Dictionary<string, double>> allCombinations, int maxCombinations)
-    {
-        if (allCombinations.Count <= maxCombinations)
-        {
-            return allCombinations;
-        }
-
-        var selectedCombinations = new List<Dictionary<string, double>>(maxCombinations);
-        var addedIndices = new HashSet<int>();
-
-        // first pass: systematic sampling
-        double samplingRate = (double)maxCombinations / allCombinations.Count;
-        int step = Math.Max(1, (int)Math.Floor(1.0 / samplingRate));
-
-        for (int i = 0; i < allCombinations.Count && selectedCombinations.Count < maxCombinations; i++)
-        {
-            if (i % step == 0)
-            {
-                selectedCombinations.Add(allCombinations[i]);
-                addedIndices.Add(i);
-            }
-        }
-
-        // second pass: fill remaining slots if needed
-        if (selectedCombinations.Count < maxCombinations)
-        {
-            for (int i = 0; i < allCombinations.Count && selectedCombinations.Count < maxCombinations; i++)
-            {
-                if (!addedIndices.Contains(i))
-                {
-                    selectedCombinations.Add(allCombinations[i]);
-                }
-            }
-        }
-
-        return selectedCombinations;
     }
 
     /// <summary>
@@ -549,7 +587,7 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
 
         var refinedParams = CreateRefinedParameters(paramNames, originalParams, initialResult);
         var refinedOptions = CreateRefinementOptions(remainingEvaluations);
-        var refinedOptimizer = new GridSearchOptimizer<TInput, TMetric>(refinedOptions, (ILogger<GridSearchOptimizer<TInput, TMetric>>)_logger);
+        var refinedOptimizer = new GridSearchOptimizer<TInput, TMetric>(refinedOptions, _typedLogger);
 
         var refinementResult = await refinedOptimizer.OptimizeAsync(inputData, refinedParams, objectiveFunction, cancellationToken);
 
@@ -604,12 +642,22 @@ public class GridSearchOptimizer<TInput, TMetric> : IParameterOptimizer<TInput, 
     {
         if (refinementResult.Success && refinementResult.MinimizedMetric < initialResult.MinimizedMetric)
         {
-            _logger.LogInformation(
-                "Refinement improved solution. New metric: {Metric:G6}, " + "Previous: {PreviousMetric:G6}, Improvement: {Improvement:P2}",
-                Convert.ToDouble(refinementResult.MinimizedMetric),
-                Convert.ToDouble(initialResult.MinimizedMetric),
-                1 - Convert.ToDouble(refinementResult.MinimizedMetric) / Convert.ToDouble(initialResult.MinimizedMetric)
-            );
+            double previousMetric = Convert.ToDouble(initialResult.MinimizedMetric);
+            double newMetric = Convert.ToDouble(refinementResult.MinimizedMetric);
+
+            if (previousMetric == 0.0)
+            {
+                _logger.LogInformation("Refinement improved solution. New metric: {Metric:G6}, Previous: {PreviousMetric:G6}", newMetric, previousMetric);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Refinement improved solution. New metric: {Metric:G6}, " + "Previous: {PreviousMetric:G6}, Improvement: {Improvement:P2}",
+                    newMetric,
+                    previousMetric,
+                    1 - newMetric / previousMetric
+                );
+            }
 
             return refinementResult with
             {

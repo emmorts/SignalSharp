@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using SignalSharp.Common.Exceptions;
+using SignalSharp.CostFunctions.Exceptions;
 using SignalSharp.Detection.PELT.Exceptions;
 using SignalSharp.Logging;
 
@@ -24,6 +25,10 @@ namespace SignalSharp.Detection.PELT;
 /// When `Jump` > 1 in `PELTOptions`, the algorithm becomes approximate by only checking potential
 /// previous changepoints at intervals defined by `Jump`, significantly increasing speed for some cost functions
 /// at the cost of guaranteed optimality. For exact results, use `Jump = 1`.
+/// </para>
+/// <para>
+/// Instances are stateful: <see cref="Fit(double[,])"/> and <see cref="Detect(double)"/> mutate shared state and
+/// are not thread-safe. Use one instance per concurrent operation.
 /// </para>
 /// </remarks>
 public class PELTAlgorithm : IPELTAlgorithm
@@ -52,7 +57,7 @@ public class PELTAlgorithm : IPELTAlgorithm
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="PELTAlgorithm"/> class with default options (L2 Cost, MinSize=2, Jump=5).
+    /// Initializes a new instance of the <see cref="PELTAlgorithm"/> class with default options (L2 cost, MinSize=1, Jump=1).
     /// </summary>
     public PELTAlgorithm()
         : this(new PELTOptions()) { }
@@ -105,9 +110,17 @@ public class PELTAlgorithm : IPELTAlgorithm
         ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
         ArgumentNullException.ThrowIfNull(Options.CostFunction, "Cost function must be initialized.");
 
+        if (signalMatrix.GetLength(1) == 0)
+        {
+            throw new ArgumentException("Signal must contain at least one data point.", nameof(signalMatrix));
+        }
+
+        // Fit the cost function first: if it throws, the algorithm's state stays consistent with the
+        // previously fitted signal instead of mixing a new signal with a stale cost function.
+        Options.CostFunction.Fit(signalMatrix);
+
         _signal = signalMatrix;
         _signalLength = _signal.GetLength(1);
-        Options.CostFunction.Fit(signalMatrix);
 
         return this;
     }
@@ -118,7 +131,8 @@ public class PELTAlgorithm : IPELTAlgorithm
     /// <param name="penalty">The penalty value to control the number of change points. Must be non-negative.</param>
     /// <returns>An array of indices representing the change points in the signal. The indices correspond to the first point *after* the change.</returns>
     /// <exception cref="UninitializedDataException">Thrown when Fit method has not been called before Detect.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the penalty is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the penalty is negative or not finite.</exception>
+    /// <exception cref="PELTAlgorithmException">Thrown when an optimal segmentation cannot be computed or reconstructed.</exception>
     /// <remarks>
     /// This method executes the core PELT algorithm to find the optimal segmentation based on the fitted data, cost function, and penalty.
     /// If `Jump > 1` was specified in options, this may return an approximate solution.
@@ -132,6 +146,12 @@ public class PELTAlgorithm : IPELTAlgorithm
     public virtual int[] Detect(double penalty)
     {
         UninitializedDataException.ThrowIfUninitialized(_signal, "Fit() must be called before Detect().");
+
+        if (!double.IsFinite(penalty))
+        {
+            throw new ArgumentOutOfRangeException(nameof(penalty), penalty, "Penalty must be a finite, non-negative value.");
+        }
+
         ArgumentOutOfRangeException.ThrowIfNegative(penalty, nameof(penalty));
 
         if (_signalLength < Options.MinSize)
@@ -139,12 +159,13 @@ public class PELTAlgorithm : IPELTAlgorithm
             _logger.LogWarning("Signal length ({SignalLength}) is less than MinSize ({MinSize}). No changepoints possible.", _signalLength, Options.MinSize);
             return []; // not enough data even for one segment
         }
-        if (_signalLength < Options.MinSize * 2)
+
+        if (_signalLength < 2L * Options.MinSize)
         {
             _logger.LogInformation(
                 "Signal length ({SignalLength}) is less than MinSize*2 ({MinSizeX2}). Cannot have any changepoints.",
                 _signalLength,
-                Options.MinSize * 2
+                2L * Options.MinSize
             );
             return []; // not enough data for a changepoint
         }
@@ -244,16 +265,25 @@ public class PELTAlgorithm : IPELTAlgorithm
                         currentOptimalLastCp = prevCpCandidate;
                     }
                 }
-                catch (Exception ex)
+                catch (SegmentLengthException ex)
                 {
-                    _logger.LogWarning(
-                        "Error computing cost for segment ({prevCpCandidate}, {currentEndPoint}): {Message}",
+                    // A candidate whose segment is shorter than the cost function's minimum (e.g. AR models need
+                    // order + 1 points) is simply not admissible for this model; other candidates may still be.
+                    _logger.LogTrace(
+                        "Skipping candidate segment ({prevCpCandidate}, {currentEndPoint}): {Message}",
                         prevCpCandidate,
                         currentEndPoint,
                         ex.Message
                     );
-                    // todo: should we throw?
-                    // throw new PELTAlgorithmException($"Error computing cost for segment ({prevCpCandidate}, {currentEndPoint}): {ex.Message}", ex);
+                }
+                catch (Exception ex)
+                {
+                    // Silently skipping a failing segment would return a plausible-looking but incomplete
+                    // (or empty) changepoint set, so fail fast with context instead.
+                    throw new PELTAlgorithmException(
+                        $"Error computing cost for segment ({prevCpCandidate}, {currentEndPoint}) with cost function {Options.CostFunction.GetType().Name}: {ex.Message}",
+                        ex
+                    );
                 }
 
                 // if Jump=1, need to check the next point. If Jump>1, we jump.
@@ -261,14 +291,14 @@ public class PELTAlgorithm : IPELTAlgorithm
                     continue;
 
                 // ensure we check index 0 if it's admissible and reachable by the jump logic
-                if (admissible.Contains(0) && currentEndPoint - 0 >= Options.MinSize)
+                if (admissible.Contains(0))
                 {
                     prevCpCandidate = Options.Jump;
                 }
             }
             // --- End Cost Calculation Loop ---
 
-            if (double.IsPositiveInfinity(currentMinCost) && currentEndPoint >= Options.MinSize)
+            if (double.IsPositiveInfinity(currentMinCost))
             {
                 // this might happen if the only admissible point is 0, and cost(0, currentEndPoint) failed or if no admissible point led to a valid segment.
                 // indicate this segment is unreachable or problematic
@@ -356,14 +386,16 @@ public class PELTAlgorithm : IPELTAlgorithm
             var prevCp = lastChangePoints[currentIndex];
             if (prevCp <= 0)
             {
-                // if prevCp is -1, it means F[currentIndex] was +inf, path is broken.
+                // prevCp == -1 means F[currentIndex] was +inf: the optimal-partition chain is broken,
+                // so returning a partial segmentation would be silently wrong.
                 if (prevCp == -1)
                 {
-                    _logger.LogWarning(
-                        "Breakpoint reconstruction encountered an unreachable point at index {currentIndex}. Results may be incomplete.",
-                        currentIndex
+                    throw new PELTAlgorithmException(
+                        $"Breakpoint reconstruction encountered an unreachable point at index {currentIndex}. "
+                            + "No valid segmentation exists for the current signal, cost function and penalty."
                     );
                 }
+
                 break;
             }
 

@@ -512,6 +512,26 @@ public class StatisticalFunctionsTests
     }
 
     [Test]
+    public void ZScoreNormalization_Double_IdenticalValuesWithInexactMean_ShouldReturnZeros()
+    {
+        // The sum of 0.1 three times is 0.30000000000000004, so the mean is not exactly representable and the
+        // computed standard deviation is a tiny non-zero value; constant input must still normalize to zeros.
+        double[] values = [0.1, 0.1, 0.1];
+        var normalized = StatisticalFunctions.ZScoreNormalization<double>(values.AsSpan());
+        double[] expected = [0.0, 0.0, 0.0];
+        AssertEqualWithin(expected, normalized);
+    }
+
+    [Test]
+    public void ZScoreNormalization_Float_IdenticalValuesWithInexactMean_ShouldReturnZeros()
+    {
+        float[] values = [.. Enumerable.Repeat(0.1f, 7)];
+        var normalized = StatisticalFunctions.ZScoreNormalization<float>(values.AsSpan());
+        float[] expected = [0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f];
+        AssertEqualWithin(expected, normalized);
+    }
+
+    [Test]
     public void ZScoreNormalization_Float_IdenticalValues_ShouldReturnZeros()
     {
         float[] values = [5.0f, 5.0f, 5.0f, 5.0f];

@@ -33,7 +33,7 @@ public static class Constants
     /// Default relative tolerance for double-precision floating-point comparisons.
     /// </summary>
     /// <remarks>
-    /// Used in relative comparison checks: `abs(a - b) <= absoluteTolerance + relativeTolerance * abs(b)`.
+    /// Used in relative comparison checks: `abs(a - b) &lt;= absoluteTolerance + relativeTolerance * abs(b)`.
     /// A typical value balances precision needs without being overly strict.
     /// </remarks>
     public const double DefaultRelativeEpsilon = 1e-7;

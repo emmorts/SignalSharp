@@ -19,6 +19,8 @@ SignalSharp provides a range of tools organized into several categories:
 *   **Change Point Detection:** Algorithms like [PELT](./detection/pelt.md) and [CUSUM](./detection/cusum.md) find points in time where signal properties change significantly.
 *   **Smoothing:** Techniques such as [Moving Average](./smoothing/moving-average.md) and the [Savitzky-Golay Filter](./smoothing/savitzky-golay-filter.md) help reduce noise and highlight underlying trends.
 *   **Resampling:** Includes methods for [downsampling](./resampling/resampling.md) signals and computing [segment statistics](./resampling/resampling.md) (mean, median, etc.).
+*   **Extrapolation:** Forecast future values with [Linear](./extrapolation/linear-extrapolation.md), [Simple Exponential Smoothing](./extrapolation/simple-exponential-smoothing.md) and [Holt's method](./extrapolation/holt-method.md) extrapolators.
+*   **Optimization:** Tune model parameters with the [Grid Search](./optimization/grid-search.md) and [Nelder-Mead](./optimization/nelder-mead.md) optimizers.
 *   **Cost Functions:** Various functions (L1, L2, RBF, Likelihood-based) used by algorithms like PELT to quantify segment characteristics. See the [PELT documentation](./detection/pelt.md#cost-functions) for details.
 
 ## Basic Usage Example: Applying the Savitzky-Golay Filter
@@ -28,8 +30,8 @@ Let's demonstrate a common use case: smoothing a noisy signal using the Savitzky
 1.  **Prepare your data:** Start with an array representing your signal.
 
     ```csharp
-    // Sample noisy signal
-    double[] noisySignal = {1.0, 2.5, 2.0, 3.5, 4.0, 5.0, 4.5, 6.0};
+    // Sample noisy signal (at least 2 * windowLength + 1 samples are required)
+    double[] noisySignal = {1.0, 2.5, 2.0, 3.5, 4.0, 5.0, 4.5, 6.0, 5.5, 6.5, 7.0, 6.8};
     ```
 
 2.  **Apply the filter:** Use `SavitzkyGolayFilter.Apply` method. You need to specify the `windowLength` (odd number, how many points to use for each polynomial fit) and the `polynomialOrder` (degree of the polynomial, must be less than `windowLength`).
@@ -38,8 +40,8 @@ Let's demonstrate a common use case: smoothing a noisy signal using the Savitzky
     using SignalSharp.Smoothing.SavitzkyGolay; // Import the necessary namespace
     using System; // For Console.WriteLine
 
-    // Sample noisy signal
-    double[] noisySignal = {1.0, 2.5, 2.0, 3.5, 4.0, 5.0, 4.5, 6.0};
+    // Sample noisy signal (at least 2 * windowLength + 1 samples are required)
+    double[] noisySignal = {1.0, 2.5, 2.0, 3.5, 4.0, 5.0, 4.5, 6.0, 5.5, 6.5, 7.0, 6.8};
 
     // Define filter parameters
     int windowLength = 5; // Use 5 points for each polynomial fit

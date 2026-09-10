@@ -87,7 +87,7 @@ public class BernoulliLikelihoodCostFunction : CostFunctionBase, ILikelihoodCost
     /// <exception cref="ArgumentException">Thrown if any data point in <paramref name="signalMatrix"/> is not close to 0 or 1 within the default tolerance.</exception>
     public override IPELTCostFunction Fit(double[,] signalMatrix)
     {
-        ArgumentNullException.ThrowIfNull(signalMatrix, nameof(signalMatrix));
+        ValidateSignalFiniteness(signalMatrix);
         _logger.LogTrace("Fitting BernoulliLikelihoodCostFunction to {Rows}D signal of length {Length}.", signalMatrix.GetLength(0), signalMatrix.GetLength(1));
 
         _numDimensions = signalMatrix.GetLength(0);
