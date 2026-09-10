@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.1.10</Version>
+    <Version>0.1.11</Version>
     <Title>SignalSharp</Title>
     <Authors>emmorts</Authors>
     <Description>SignalSharp is a library designed for signal processing and time series analysis.</Description>
@@ -42,6 +42,6 @@
     <Folder Include="CostFunctions\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
   </ItemGroup>
 </Project>

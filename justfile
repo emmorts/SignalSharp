@@ -11,7 +11,7 @@ format:
     dotnet csharpier format .
 
 benchmark-list:
-    @dotnet run --project SignalSharp.Benchmark\SignalSharp.Benchmark.csproj -c Release -- --job short --runtimes net9.0 --list flat
+    @dotnet run --project SignalSharp.Benchmark\SignalSharp.Benchmark.csproj -c Release -- --job short --runtimes net10.0 --list flat
 
 benchmark-run filter:
     @dotnet run --project SignalSharp.Benchmark\SignalSharp.Benchmark.csproj -c Release -- --job short --filter {{filter}}
