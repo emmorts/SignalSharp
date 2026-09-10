@@ -24,7 +24,6 @@ Signal processing is a critical component in various applications, including tel
 ### Smoothing and Filtering
 - **Savitzky-Golay Filter**: Smooths data to reduce noise while preserving the shape of the signal.
 - **Moving Average**: Smoothing a signal using a moving average filter.
-- **Kalman Filter**: Estimates the state of a linear dynamic system from a series of noisy measurements.
 
 ### Resampling
 - **Downsampling**: Reducing the number of samples in a signal.

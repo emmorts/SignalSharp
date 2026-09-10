@@ -1,6 +1,6 @@
 # Moving Average
 
-The @"SignalSharp.Smoothing.MovingAverage" class provides methods to calculate various types of moving averages on a signal. Moving averages are fundamental tools in signal processing and time series analysis, primarily used for smoothing data to reveal underlying trends, reduce noise, and highlight patterns by averaging out short-term fluctuations.
+The @"SignalSharp.Smoothing.MovingAverage.MovingAverage" class provides methods to calculate various types of moving averages on a signal. Moving averages are fundamental tools in signal processing and time series analysis, primarily used for smoothing data to reveal underlying trends, reduce noise, and highlight patterns by averaging out short-term fluctuations.
 
 ## How Moving Averages Work
 
@@ -62,7 +62,7 @@ The formula is recursive:
 $$ \text{EMA}_t = \alpha \cdot \text{signal}_t + (1 - \alpha) \cdot \text{EMA}_{t-1} $$
 where $\text{EMA}_0$ is typically initialized as $\text{signal}_0$.
 
-The @"SignalSharp.Smoothing.MovingAverage.ExponentialMovingAverage(double[],double)?text=ExponentialMovingAverage" method calculates the EMA directly on the input signal. Padding is not applicable to the standard EMA calculation.
+The `ExponentialMovingAverage` method of @"SignalSharp.Smoothing.MovingAverage.MovingAverage" calculates the EMA directly on the input signal. Padding is not applicable to the standard EMA calculation.
 
 #### Parameters
 
@@ -96,7 +96,7 @@ The calculation is:
 $$ \text{WMA}_i = \frac{\sum_{j=0}^{W-1} \text{signal}_{i+j} \cdot \text{weights}_j}{\sum_{j=0}^{W-1} \text{weights}_j} $$
 (Assuming `Padding.None`, index `i` refers to the start of the window in the original signal).
 
-The @"SignalSharp.Smoothing.MovingAverage.WeightedMovingAverage(double[],double[],SignalSharp.Common.Models.Padding,double)?text=WeightedMovingAverage" method calculates the WMA.
+The `WeightedMovingAverage` method of @"SignalSharp.Smoothing.MovingAverage.MovingAverage" calculates the WMA.
 
 #### Parameters
 
@@ -150,5 +150,5 @@ The choice of padding mode depends on the specific application and assumptions a
 
 ## API References
 
--   @"SignalSharp.Smoothing.MovingAverage"
+-   @"SignalSharp.Smoothing.MovingAverage.MovingAverage"
 -   @"SignalSharp.Common.SignalPadding"

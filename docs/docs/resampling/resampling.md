@@ -1,23 +1,19 @@
 # Resampling
 
-Resampling is a critical process in signal processing and data analysis. It involves altering the sampling rate of a signal to either reduce (downsample) or increase (upsample) the number of samples. This is particularly useful when dealing with signals of different sampling rates, reducing data size, or preparing data for further analysis. SignalSharp provides various methods for resampling signals, including downsampling, segment statistics, and approximation techniques.
+Resampling is a critical process in signal processing and data analysis. It involves altering the sampling rate of a signal to either reduce (downsample) or increase (upsample) the number of samples. This is particularly useful when dealing with signals of different sampling rates, reducing data size, or preparing data for further analysis. SignalSharp provides various methods for resampling signals, including downsampling and segment statistics.
 
 ## Overview
 
 The @"SignalSharp.Resampling.Resampling" class includes methods for:
 - **Downsampling**: Reducing the number of samples in a signal.
 - **Segment Statistics**: Computing statistics (mean, median, max, min) for segments of a signal.
-- **Moving Average**: Smoothing a signal using a moving average filter.
-- **Chebyshev Approximation**: Approximating a signal using Chebyshev polynomials.
 
 ### Why Resampling?
 
 Resampling is necessary in various scenarios:
 - **Data Reduction**: Downsampling helps reduce the size of large datasets, making them easier to manage and analyze.
 - **Rate Matching**: When combining or comparing signals recorded at different sampling rates, resampling ensures consistency.
-- **Noise Reduction**: Techniques like moving average can help smooth out short-term fluctuations and highlight longer-term trends.
 - **Feature Extraction**: Segment-based statistics can summarize and simplify signals, making it easier to extract meaningful features for further analysis.
-- **Signal Compression**: Approximation methods can reduce the complexity of a signal while retaining its essential characteristics, useful in data compression.
 
 ## Usage Examples
 
@@ -53,30 +49,25 @@ Console.WriteLine("Segment Means: " + string.Join(", ", segmentMeans));
 double[] temperatureReadings = {20.1, 20.3, 20.5, 21.0, 21.2, 21.3, 21.5, 22.0, 22.1, 22.3};
 int factor = 3;
 double[] segmentMedians = Resampling.SegmentMedian(temperatureReadings, factor, true);
-Console.WriteLine("Segment Medians: " + string.join(", ", segmentMedians));
+Console.WriteLine("Segment Medians: " + string.Join(", ", segmentMedians));
 ```
 
-### Example 3: Applying a Moving Average Filter to Stock Prices
+## Moving Averages
 
-A moving average filter can smooth out fluctuations in stock prices, helping to identify trends and make trading decisions.
+Smoothing a signal with a moving average is provided by the @"SignalSharp.Smoothing.MovingAverage.MovingAverage" class, not by `Resampling`. Use `SimpleMovingAverage` for an unweighted average, `WeightedMovingAverage` for custom weights, or `ExponentialMovingAverage` for exponential weighting:
 
 ```csharp
+using SignalSharp.Smoothing.MovingAverage;
+
 double[] stockPrices = {150, 152, 153, 155, 158, 157, 156, 158, 160, 162, 161, 159};
 int windowSize = 3;
-double[] smoothedStockPrices = Resampling.MovingAverage(stockPrices, windowSize);
+double[] smoothedStockPrices = MovingAverage.SimpleMovingAverage(stockPrices, windowSize);
 Console.WriteLine("Smoothed Stock Prices: " + string.Join(", ", smoothedStockPrices));
 ```
 
-### Example 4: Chebyshev Approximation of Audio Signal
+With the default `Padding.None`, the output length is `signal.Length - windowSize + 1`. See the [Moving Average](../smoothing/moving-average.md) documentation for the full set of methods and padding modes.
 
-Chebyshev approximation can simplify an audio signal, reducing its complexity for storage or further processing while retaining essential features.
-
-```csharp
-double[] audioSignal = {0.2, 0.3, 0.1, -0.1, -0.2, 0.0, 0.1, 0.3, 0.2, 0.0, -0.1, -0.2};
-int order = 2;
-double[] approximatedAudioSignal = Resampling.ChebyshevApproximation(audioSignal, order);
-Console.WriteLine("Approximated Audio Signal: " + string.Join(", ", approximatedAudioSignal));
-```
+> **Note:** SignalSharp 0.1.1 and earlier exposed `Resampling.MovingAverage` and `Resampling.ChebyshevApproximation`. Both were removed in 0.1.2: the moving average now lives in `SignalSharp.Smoothing.MovingAverage`, and Chebyshev approximation is no longer part of the library.
 
 ## Understanding the `useQuickSelect` argument in `SegmentMedian`
 
@@ -97,3 +88,4 @@ The `useQuickSelect` argument in the `SegmentMedian` method determines the algor
 ## API References
 
 - @"SignalSharp.Resampling.Resampling"
+- @"SignalSharp.Smoothing.MovingAverage.MovingAverage"

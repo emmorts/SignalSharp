@@ -3,7 +3,7 @@ using SignalSharp.Utilities;
 namespace SignalSharp.Resampling;
 
 /// <summary>
-/// Provides various methods for resampling signals, including downsampling, segment statistics, and approximation techniques.
+/// Provides various methods for resampling signals, including downsampling and segment-based statistics.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -13,9 +13,9 @@ namespace SignalSharp.Resampling;
 /// </para>
 ///
 /// <para>
-/// The <see cref="Resampling"/> class includes methods for downsampling, computing segment-based statistics (mean, median, max, min),
-/// applying a moving average, and approximating a signal using Chebyshev polynomials. Each method is designed to handle common
-/// tasks in signal processing with efficiency and accuracy.
+/// The <see cref="Resampling"/> class includes methods for downsampling and computing segment-based statistics
+/// (mean, median, max, min). Each method is designed to handle common tasks in signal processing with efficiency and accuracy.
+/// For smoothing a signal with a moving average, see <see cref="SignalSharp.Smoothing.MovingAverage.MovingAverage"/>.
 /// </para>
 ///
 /// <para>
@@ -23,8 +23,6 @@ namespace SignalSharp.Resampling;
 /// <list type="bullet">
 ///     <item>Signal data needs to be reduced in size while retaining essential information.</item>
 ///     <item>Segment-based statistics are required for analysis or feature extraction.</item>
-///     <item>A smoothing technique like moving average is needed to reduce noise.</item>
-///     <item>An efficient approximation of the signal is necessary for further processing or analysis.</item>
 /// </list>
 /// </para>
 /// </remarks>
