@@ -1,6 +1,6 @@
 # Grid Search Optimizer
 
-The Grid Search optimizer is a straightforward yet powerful method for hyperparameter tuning. It systematically works through multiple combinations of parameter values, cross-validating the model for each combination to determine which one gives the best performance. It is a brute-force, exhaustive search method that is simple to implement and understand.
+The Grid Search optimizer is a straightforward yet powerful method for hyperparameter tuning. It systematically works through multiple combinations of parameter values, cross-validating the model for each combination to determine which one gives the best performance. It is a brute-force method that is simple to implement and understand: within the evaluation budget it searches the grid exhaustively, and beyond it the grid is systematically subsampled.
 
 ## How Grid Search Works
 

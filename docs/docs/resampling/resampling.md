@@ -65,7 +65,17 @@ double[] smoothedStockPrices = MovingAverage.SimpleMovingAverage(stockPrices, wi
 Console.WriteLine("Smoothed Stock Prices: " + string.Join(", ", smoothedStockPrices));
 ```
 
-With the default `Padding.None`, the output length is `signal.Length - windowSize + 1`. See the [Moving Average](../smoothing/moving-average.md) documentation for the full set of methods and padding modes.
+With the default `Padding.None`, the output length is `signal.Length - windowSize + 1`: the averages are taken over sliding, overlapping windows. The padded modes instead return one value per input sample, as does `ExponentialMovingAverage` (which has no window and therefore no valid-mode trimming). See the [Moving Average](../smoothing/moving-average.md) documentation for the full set of methods and padding modes.
+
+So if you want a moving average that *reduces* the sample count:
+
+| Goal                                             | Call                                                                                            | Output length                                             |
+|:-------------------------------------------------|:------------------------------------------------------------------------------------------------|:----------------------------------------------------------|
+| Sliding averages over the signal                  | `MovingAverage.SimpleMovingAverage(signal, windowSize)` (default `Padding.None`); `WeightedMovingAverage` behaves the same way | `signal.Length - windowSize + 1`                          |
+| One average per non-overlapping block             | `Resampling.SegmentMean(signal, factor)` (and `SegmentMedian`, `SegmentMax`, `SegmentMin`)       | one value per block of `factor` samples, final block included |
+| Every `factor`-th sample, without averaging       | `Resampling.Downsample(signal, factor)`                                                          | `signal.Length / factor` samples, rounded up              |
+
+The removed `Resampling.MovingAverage(signal, windowSize)` behaved like the first row: `SimpleMovingAverage(signal, windowSize)` is its direct replacement.
 
 > **Note:** SignalSharp 0.1.1 and earlier exposed `Resampling.MovingAverage` and `Resampling.ChebyshevApproximation`. Both were removed in 0.1.2: the moving average now lives in `SignalSharp.Smoothing.MovingAverage`, and Chebyshev approximation is no longer part of the library.
 

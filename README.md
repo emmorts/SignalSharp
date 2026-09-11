@@ -40,7 +40,7 @@ Methods for forecasting future values based on historical data.
 
 Hyperparameter tuning methods to find the best-performing parameters for a model.
 
-  * **Grid Search**: An exhaustive search method that systematically evaluates a grid of parameter combinations to find the one that yields the best performance. It supports parallel processing and an "adaptive refinement" feature that performs a second, more focused search around the best initial result.
+  * **Grid Search**: Systematically evaluates a grid of parameter combinations to find the one that yields the best performance. Grids up to 1,000,000 combinations are evaluated exhaustively; larger grids are systematically subsampled within the configured evaluation budget (`MaxFunctionEvaluations`). It supports parallel processing and an "adaptive refinement" feature that performs a second, more focused search around the best initial result.
   * **Nelder-Mead**: A direct search method that "crawls" toward the minimum of a function in a multi-dimensional space without requiring derivative information. This makes it well-suited for objective functions that are noisy or non-differentiable. It can be configured to perform multiple restarts from different starting points to increase the likelihood of finding a global minimum.
 
 #### Utilities

@@ -138,7 +138,9 @@ Console.WriteLine("WMA (Padded): " + string.Join(", ", wmaPadded));
 
 ## Padding Modes for SMA and WMA
 
-When using SMA or WMA, the `padding` parameter affects how the calculations are performed near the signal boundaries. The @"SignalSharp.Common.Models.Padding" enum provides these options:
+When using SMA or WMA, the `padding` parameter affects how the calculations are performed near the signal boundaries. The @"SignalSharp.Common.Models.Padding" enum provides these options.
+
+Only `Padding.None` changes the output length: SMA and WMA then return `signal.Length - windowSize + 1` samples. Every padded mode returns one value per input sample, as does `ExponentialMovingAverage`, which has no window and therefore no valid-mode trimming.
 
 -   **`None`**: Computes the moving average only where the window fits entirely within the original signal. The output is shorter than the input.
 -   **`Constant`**: Pads the signal boundaries with a specified `paddedValue` before computing the moving average. The output has the same length as the input.
