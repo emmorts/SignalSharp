@@ -28,12 +28,12 @@ jobs:
         dotnet-version: [ '10.x' ]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup .NET ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
@@ -57,7 +57,7 @@ jobs:
 
     steps:
       - name: Setup .NET ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
@@ -81,10 +81,10 @@ jobs:
     needs: [ validate ]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Setup .NET ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
@@ -120,7 +120,7 @@ jobs:
           path: ${{ env.NuGetDirectory }}
 
       - name: Setup .NET ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 

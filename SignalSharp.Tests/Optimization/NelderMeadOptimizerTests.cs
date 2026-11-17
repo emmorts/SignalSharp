@@ -394,7 +394,7 @@ public class NelderMeadOptimizerTests
     #region Cancellation Tests
 
     [Test]
-    public void OptimizeAsync_CancellationRequested_TerminatesGracefully()
+    public async Task OptimizeAsync_CancellationRequested_TerminatesGracefully()
     {
         var options = new NelderMeadOptimizerOptions
         {
@@ -426,7 +426,7 @@ public class NelderMeadOptimizerTests
 
         // measure execution time to ensure it's less than an uncancellable run
         var stopwatch = Stopwatch.StartNew();
-        Assert.ThrowsAsync<OperationCanceledException>(async () =>
+        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
             result = await optimizer.OptimizeAsync(_testInputData, parameters, objectiveFuncWithCancel, cts.Token)
         );
         stopwatch.Stop();
